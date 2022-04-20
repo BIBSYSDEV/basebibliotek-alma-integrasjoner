@@ -1,6 +1,15 @@
 plugins {
     id 'java'
+    id 'checkstyle'
+    id 'pmd'
+    id 'jacoco'
+    id 'com.github.johnrengelman.shadow' version '6.1.0'
+    id 'org.owasp.dependencycheck' version '7.0.4.1'
+    id 'nebula.lint' version '17.7.0'
 }
+
+sourceCompatibility = JavaVersion.VERSION_11  // source-code version and must be <= targetCompatibility
+targetCompatibility = JavaVersion.VERSION_11 // bytecode target version
 
 group 'no.sikt'
 version '1.0-SNAPSHOT'
@@ -9,11 +18,76 @@ repositories {
     mavenCentral()
 }
 
+test {
+    useJUnitPlatform()
+    failFast = true
+    finalizedBy jacocoTestReport
+}
+
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+
+    shadowJar {
+        archiveClassifier.set('')
+        zip64 true
+    }
 }
 
-test {
-    useJUnitPlatform()
+// We don't want a jar, just a fatJar
+jar.enabled = false
+project.tasks.build.dependsOn project.tasks.shadowJar
+
+pmd {
+    ruleSetConfig = rootProject.resources.text.fromFile('config/pmd/ruleset.xml')
+    ruleSets = []
+    ignoreFailures = false
+}
+
+checkstyle {
+    configFile = rootProject.resources.text.fromFile('config/checkstyle/checkstyle.xml').asFile()
+    showViolations = true
+}
+
+tasks.withType(Checkstyle) {
+    reports {
+        xml.enabled false
+        html.enabled true
+        html.stylesheet rootProject.resources.text.fromFile('config/checkstyle/checkstyle-simple.xsl')
+    }
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled false
+        csv.enabled false
+        html.destination file("${buildDir}/reports/jacoco")
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.5"
+}
+
+check.dependsOn jacocoTestCoverageVerification
+jacocoTestCoverageVerification.dependsOn(jacocoTestReport)
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                counter = 'METHOD'
+                value = 'COVEREDRATIO'
+                minimum = 0.90
+            }
+        }
+
+        rule {
+            limit {
+                counter = 'CLASS'
+                value = 'COVEREDRATIO'
+                minimum = 1.0
+            }
+        }
+    }
 }
