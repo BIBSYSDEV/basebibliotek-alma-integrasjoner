@@ -17,4 +17,4 @@ phases:
       - envsubst '${BUILD_TIMESTAMP}' < packaged_raw.yaml > packaged.yaml
 artifacts:
   files:
-    - packaged.yaml
+    - '**/*'
