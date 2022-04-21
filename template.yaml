@@ -1,0 +1,134 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  AWS
+
+  Sample SAM Template for AWS
+
+Parameters:
+  BasebibliotekXmlBucketName:
+    Type: String
+    Default: "basebibliotek-xml-file"
+    Description: Name of bucket for basebibliotek xml file
+  ReportBucketName:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: 'basebibliotek-report'
+  ReportEventBucketArn:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: 'BasebibliotekReportArn'
+  ReportEventsBusArn:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: 'ReportEventsBusArn'
+  ReportEventsBusName:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: 'ReportEventsBusName'
+
+Globals:
+  Function:
+    Timeout: 900
+    MemorySize: 1798
+    Runtime: java11
+  Api:
+    Cors:
+      AllowMethods: "'POST,OPTIONS'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+      AllowOrigin: "'*'"
+Resources:
+  ApiAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+
+  ResourceSharingPartnerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: resource-sharing-partners
+      Handler: no.sikt.rsp.ResourceSharingPartnerHandler::handleRequest
+      Role: !GetAtt ResourceSharingPartnerHandlerRole.Arn
+      Environment:
+        Variables:
+          EVENTS_BUCKET: !Ref ReportBucketName
+          EVENTS_BUS: !Ref ReportEventsBusName
+      Events:
+        Basebibliotek:
+          Type: S3
+          Properties:
+            Bucket: !Ref BasebibliotekXmlBucket
+            Events: 's3:ObjectCreated:*'
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: '.xml'
+
+  ResourceSharingPartnerHandlerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+
+  DefaultLambdaPermissions:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub DefaultLambdaPermissions-${AWS::StackName}
+      Roles:
+        - !Ref ResourceSharingPartnerHandlerRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - lambda:InvokeFunction
+            Resource: "*"
+
+  BasebibliotekXmlBucketAccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub BasebibliotekXmlBucketAccessPolicy-${AWS::StackName}
+      Roles:
+        - !Ref ResourceSharingPartnerHandlerRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 's3:*'
+            Resource:
+              - !Sub '${BasebibliotekXmlBucket.Arn}/*'
+
+  SendEventsToReports:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub SendEventsToReports-${AWS::StackName}
+      Roles:
+        - !Ref ResourceSharingPartnerHandlerRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 's3:*'
+            Resource:
+              - !Sub '${ReportEventBucketArn}/*'
+          - Effect: Allow
+            Action:
+              - events:PutEvents
+            Resource:
+              - !Ref ReportEventsBusArn
+
+  BasebibliotekXmlBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: !Sub "${BasebibliotekXmlBucketName}-${AWS::AccountId}"
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteContentAfter3Days
+            Status: Enabled
+            ExpirationInDays: 3
