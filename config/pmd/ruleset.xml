@@ -12,6 +12,7 @@
   <rule ref="category/java/errorprone.xml">
     <exclude name="DataflowAnomalyAnalysis"/>
     <exclude name="MissingSerialVersionUID"/>
+    <exclude name="BeanMembersShouldSerialize"/>
   </rule>
 
   <rule ref="category/java/multithreading.xml"/>
@@ -34,6 +35,7 @@
     <exclude name="MethodArgumentCouldBeFinal"/>
     <exclude name="TooManyStaticImports"/>
     <exclude name="ClassNamingConventions"/>
+    <exclude name="UnnecessaryConstructor"/>
 
     <!--<exclude name="BeanMembersShouldSerialize"/>-->
 
