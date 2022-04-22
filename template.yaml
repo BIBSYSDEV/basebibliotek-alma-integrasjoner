@@ -11,17 +11,8 @@ Parameters:
     Default: "basebibliotek-xml-file"
     Description: Name of bucket for basebibliotek xml file
   ReportBucketName:
-    Type: 'AWS::SSM::Parameter::Value<String>'
+    Type: String
     Default: 'basebibliotek-report'
-  ReportEventBucketArn:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    Default: 'BasebibliotekReportArn'
-  ReportEventsBusArn:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    Default: 'ReportEventsBusArn'
-  ReportEventsBusName:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    Default: 'ReportEventsBusName'
 
 Globals:
   Function:
@@ -46,7 +37,6 @@ Resources:
       Environment:
         Variables:
           EVENTS_BUCKET: !Ref ReportBucketName
-          EVENTS_BUS: !Ref ReportEventsBusName
       Events:
         Basebibliotek:
           Type: S3
@@ -102,10 +92,10 @@ Resources:
             Resource:
               - !Sub '${BasebibliotekXmlBucket.Arn}/*'
 
-  SendEventsToReports:
+  ReportBucketAccessPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Sub SendEventsToReports-${AWS::StackName}
+      PolicyName: !Sub ReportBucketAccessPolicy-${AWS::StackName}
       Roles:
         - !Ref ResourceSharingPartnerHandlerRole
       PolicyDocument:
@@ -115,12 +105,7 @@ Resources:
             Action:
               - 's3:*'
             Resource:
-              - !Sub '${ReportEventBucketArn}/*'
-          - Effect: Allow
-            Action:
-              - events:PutEvents
-            Resource:
-              - !Ref ReportEventsBusArn
+              - !Sub '${ReportBucket.Arn}/*'
 
   BasebibliotekXmlBucket:
     Type: AWS::S3::Bucket
@@ -132,3 +117,9 @@ Resources:
           - Id: DeleteContentAfter3Days
             Status: Enabled
             ExpirationInDays: 3
+
+  ReportBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: !Sub "${ReportBucketName}-${AWS::AccountId}"
