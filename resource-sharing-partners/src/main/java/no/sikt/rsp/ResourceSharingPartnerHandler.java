@@ -11,8 +11,6 @@ public class ResourceSharingPartnerHandler implements RequestHandler<Map<String,
 
     @Override
     public String handleRequest(Map<String, Object> s3Event, Context context) {
-        var lambdalogger = context.getLogger();
-        lambdalogger.log("lambdalogger");
         log.info("Starting lambda");
         log.warn("testing warning");
         log.debug("testing debug");
