@@ -15,4 +15,8 @@ public class ResourceSharingPartnerHandler implements RequestHandler<Map<String,
         log.info("hello world");
         return "";
     }
+
+    public void doStuffs(){
+        log.info("doing stuffs");
+    }
 }
