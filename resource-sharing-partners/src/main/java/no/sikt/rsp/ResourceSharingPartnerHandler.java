@@ -12,13 +12,9 @@ public class ResourceSharingPartnerHandler implements RequestHandler<Map<String,
 
     @Override
     public String handleRequest(Map<String, Object> s3Event, Context context) {
-        log.info("Starting lambda", "hello");
-        log.warn("testing warning", "hello");
-        log.debug("testing debug", "hello");
+        log.info("Starting lambda");
+        log.warn("testing warning");
+        log.debug("testing debug");
         return "";
-    }
-
-    public void doStuffs(){
-        log.info("doing stuffs");
     }
 }
