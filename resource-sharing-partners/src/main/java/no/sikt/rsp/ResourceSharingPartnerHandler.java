@@ -14,6 +14,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<Map<String,
         log.info("Starting lambda");
         log.warn("testing warning");
         log.debug("testing debug");
+        System.out.println("testing");
         return "done handling request";
     }
 }
