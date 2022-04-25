@@ -1,16 +1,19 @@
-<Configuration status="WARN">
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configuration
+  packages="com.amazonaws.services.lambda.runtime.log4j2" status="INFO"
+  strict="true">
   <Appenders>
-    <Lambda name="Lambda">
+    <Appender name="Lambda" type="Lambda">
       <PatternLayout>
-        <pattern>%d{yyyy-MM-dd HH:mm:ss} %X{AWSRequestId} %-5p %c{1} - %m%n</pattern>
+        <pattern>%d{ISO8601_OFFSET_DATE_TIME_HHCMM} %X{AWSRequestId} %-5p %c{1.}:%L - %m%n</pattern>
       </PatternLayout>
-    </Lambda>
+    </Appender>
+
   </Appenders>
   <Loggers>
     <Root level="INFO">
       <AppenderRef ref="Lambda"/>
     </Root>
-    <Logger name="software.amazon.awssdk" level="WARN" />
-    <Logger name="software.amazon.awssdk.request" level="DEBUG" />
   </Loggers>
 </Configuration>
