@@ -15,10 +15,10 @@ Parameters:
     Default: 'basebibliotek-report'
   BasebibliotekUsername:
     Type: String
-    Default: "{{resolve:secretsmanager:basebibliotek-login:SecretString:username}}"
+    Default: "{{resolve:secretsmanager:basebibliotek-login:SecretString:USERNAME}}"
   BasebibliotekPassword:
     Type: String
-    Default: "{{resolve:secretsmanager:basebibliotek-login:SecretString:password}}"
+    Default: "{{resolve:secretsmanager:basebibliotek-login:SecretString:PASSWORD}}"
   BasebibliotekUrl:
     Type: String
     Default: 'https://www.nb.no/baser/bibliotek/eksport/biblev/'
