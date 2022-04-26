@@ -64,7 +64,7 @@ Resources:
         ScheduledUpdate:
           Type: Schedule
           Properties:
-            Schedule: cron(0 15 * * ? *)
+            Schedule: cron(0 13 * * ? *)
 
   ResourceSharingPartnerHandlerRole:
     Type: AWS::IAM::Role
