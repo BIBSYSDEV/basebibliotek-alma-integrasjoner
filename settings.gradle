@@ -1,3 +1,4 @@
-rootProject.name = 'basebibliotek-alma-integrasjoner'
+rootProject.name = 'basebibliotek-alma-integrations'
 include 'resource-sharing-partners'
+include 'basebibliotek-generated'
 

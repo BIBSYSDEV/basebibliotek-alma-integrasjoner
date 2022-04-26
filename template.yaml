@@ -13,6 +13,15 @@ Parameters:
   ReportBucketName:
     Type: String
     Default: 'basebibliotek-report'
+  BasebibliotekUsername:
+    Type: String
+    Default: "{{resolve:secretsmanager:basebibliotek-login:SecretString:username}}"
+  BasebibliotekPassword:
+    Type: String
+    Default: "{{resolve:secretsmanager:basebibliotek-login:SecretString:password}}"
+  BasebibliotekUrl:
+    Type: String
+    Default: 'https://www.nb.no/baser/bibliotek/eksport/biblev/'
 
 Globals:
   Function:
@@ -36,9 +45,13 @@ Resources:
       Role: !GetAtt ResourceSharingPartnerHandlerRole.Arn
       Environment:
         Variables:
-          EVENTS_BUCKET: !Ref ReportBucketName
+          REPORT_BUCKET: !Ref ReportBucketName
+          BASEBIBLIOTEK_USERNAME: !Ref BasebibliotekUsername
+          BASEBIBLIOTEK_PASSWORD: !Ref BasebibliotekPassword
+          BASEBIBLIOTEK_URL: !Ref BasebibliotekUrl
+          BASEBIBLIOTEK_XML_BUCKET: !Ref BasebibliotekXmlBucketName
       Events:
-        Basebibliotek:
+        BasebibliotekFileUpload:
           Type: S3
           Properties:
             Bucket: !Ref BasebibliotekXmlBucket
@@ -48,6 +61,10 @@ Resources:
                 Rules:
                   - Name: suffix
                     Value: '.xml'
+        ScheduledUpdate:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 15 * * ? *)
 
   ResourceSharingPartnerHandlerRole:
     Type: AWS::IAM::Role

@@ -23,10 +23,14 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
     implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.1'
     implementation group: 'com.amazonaws', name: 'aws-lambda-java-log4j2', version: '1.5.1'
+    implementation group: 'org.glassfish.jaxb', name: 'jaxb-runtime', version: '3.0.2'
     implementation 'org.apache.logging.log4j:log4j-api:2.17.2'
     implementation 'org.apache.logging.log4j:log4j-core:2.17.2'
     implementation 'org.apache.logging.log4j:log4j-slf4j18-impl:2.17.2'
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.7'
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.9.0'
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+    implementation project(":basebibliotek-generated")
 
     shadowJar {
         archiveClassifier.set('')
@@ -84,7 +88,7 @@ jacocoTestCoverageVerification {
             limit {
                 counter = 'METHOD'
                 value = 'COVEREDRATIO'
-                minimum = 0.2
+                minimum = 0.4
             }
         }
 
