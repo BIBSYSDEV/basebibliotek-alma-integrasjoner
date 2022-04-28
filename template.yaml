@@ -60,7 +60,7 @@ Resources:
               S3Key:
                 Rules:
                   - Name: suffix
-                    Value: '.xml'
+                    Value: '.xml', '.txt'
         ScheduledUpdate:
           Type: Schedule
           Properties:
