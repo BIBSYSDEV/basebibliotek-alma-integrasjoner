@@ -7,7 +7,9 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
+import jakarta.xml.bind.JAXB;
 import jakarta.xml.bind.JAXBElement;
+import java.io.StringWriter;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Collection;
@@ -46,6 +48,12 @@ public class BasebibliotekGenerator {
         var baseBibliotek = new BaseBibliotek();
         baseBibliotek.getRecord().addAll(generateRandomRecords());
         return baseBibliotek;
+    }
+
+    public static String toXml(BaseBibliotek baseBibliotek) {
+        StringWriter xmlWriter = new StringWriter();
+        JAXB.marshal(baseBibliotek, xmlWriter);
+        return xmlWriter.toString();
     }
 
     private static Collection<? extends Record> generateRandomRecords() {
@@ -92,7 +100,7 @@ public class BasebibliotekGenerator {
             record.setStengt(generateSetStengtStatus());
         }
         if (randomBoolean()) {
-            var start = randomInstant(Instant.now());
+            var start = randomInstant();
             var end = randomInstant(start);
             record.setStengtTil(getGregorianDate(end));
             if (randomBoolean()) {

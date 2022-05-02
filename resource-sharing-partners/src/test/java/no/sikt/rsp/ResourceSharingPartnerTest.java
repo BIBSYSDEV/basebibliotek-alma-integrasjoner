@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import test.utils.BasebibliotekGenerator;
 
 public class ResourceSharingPartnerTest {
 
@@ -82,6 +83,15 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), fullBaseBibliotekFile);
         var s3Event = createS3Event(uri);
         assertDoesNotThrow(() -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
+    }
+
+    @Test
+    public void shouldConvertBaseBibliotekToBaseBibliotekBean() throws IOException {
+        var basebibliotek = BasebibliotekGenerator.randomBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+        var basebibliotekBean = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
     }
 
     private UnixPath randomS3Path() {
