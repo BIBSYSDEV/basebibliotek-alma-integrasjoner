@@ -1,5 +1,6 @@
 package no.sikt.rsp;
 
+import static nva.commons.core.StringUtils.isEmpty;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -8,7 +9,12 @@ import com.google.gson.Gson;
 import jakarta.xml.bind.JAXB;
 import java.io.StringReader;
 import java.net.URI;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import no.nb.basebibliotek.generated.BaseBibliotek;
+import no.nb.basebibliotek.generated.Record;
+import no.sikt.basebibliotek.BaseBibliotekBean;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
@@ -16,7 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
 
-public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, BaseBibliotek> {
+public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, List<BaseBibliotekBean>> {
 
     public static final String INVALID_BASEBIBLIOTEK_XML_ERROR_MESSAGE = "Invalid basebibliotek xml ";
     private static final Logger logger = LoggerFactory.getLogger(ResourceSharingPartnerHandler.class);
@@ -38,11 +44,36 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, Ba
     }
 
     @Override
-    public BaseBibliotek handleRequest(S3Event s3event, Context context) {
+    public List<BaseBibliotekBean> handleRequest(S3Event s3event, Context context) {
         logger.info(EVENT + gson.toJson(s3event));
         return attempt(() -> readFile(s3event))
                    .map(this::parseXmlFile)
+                   .map(this::convertBasebibliotekToBaseBibliotekBean)
                    .orElseThrow(fail -> logErrorAndThrowException(fail.getException()));
+    }
+
+    private List<BaseBibliotekBean> convertBasebibliotekToBaseBibliotekBean(BaseBibliotek baseBibliotek) {
+        return baseBibliotek
+                   .getRecord()
+                   .stream()
+                   .map(this::convertRecordToBasebibliotekBeanIfBibNrAndLandkodeIsSet)
+                   .flatMap(Optional::stream)
+                   .collect(Collectors.toList());
+    }
+
+    private Optional<BaseBibliotekBean> convertRecordToBasebibliotekBeanIfBibNrAndLandkodeIsSet(Record record) {
+        return isEmpty(record.getBibnr()) || isEmpty(record.getLandkode())
+                   ? Optional.empty()
+                   : Optional.of(convertRecordToBasebibliotekBean(record));
+    }
+
+    private BaseBibliotekBean convertRecordToBasebibliotekBean(Record record) {
+        BaseBibliotekBean baseBibliotekBean = new BaseBibliotekBean();
+        baseBibliotekBean.setBibNr(record.getBibnr());
+        baseBibliotekBean.setStengt(record.getStengt());
+        baseBibliotekBean.setInst(record.getInst());
+        baseBibliotekBean.setKatsyst(record.getKatsyst());
+        return baseBibliotekBean;
     }
 
     private BaseBibliotek parseXmlFile(String file) {

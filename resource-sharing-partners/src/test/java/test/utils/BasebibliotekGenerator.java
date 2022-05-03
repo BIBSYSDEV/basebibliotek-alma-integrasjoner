@@ -14,6 +14,7 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.GregorianCalendar;
+import java.util.List;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -44,9 +45,32 @@ public class BasebibliotekGenerator {
     private static final String INACTIVE_U = "U";
     private static final String INACTIVE_X = "X";
 
-    public static BaseBibliotek randomBaseBibliotek() {
+    private BigInteger currentRid;
+
+    private final Collection<? extends Record> records;
+
+    public BasebibliotekGenerator(List<RecordSpecification> specificationList) {
+        currentRid = BigInteger.ONE;
+        records = generateRecordsFromSpecificationList(specificationList);
+    }
+
+    private Collection<? extends Record> generateRecordsFromSpecificationList(
+        List<RecordSpecification> specificationList) {
+        return specificationList
+                   .stream()
+                   .map(recordsSpecification -> generateRecord(recordsSpecification.getWithBibnr(),
+                                                               recordsSpecification.getWithLandkode()))
+                   .collect(Collectors.toList());
+    }
+
+    public BasebibliotekGenerator() {
+        currentRid = BigInteger.ONE;
+        records = generateRandomRecords();
+    }
+
+    public BaseBibliotek generateBaseBibliotek() {
         var baseBibliotek = new BaseBibliotek();
-        baseBibliotek.getRecord().addAll(generateRandomRecords());
+        baseBibliotek.getRecord().addAll(records);
         return baseBibliotek;
     }
 
@@ -56,22 +80,24 @@ public class BasebibliotekGenerator {
         return xmlWriter.toString();
     }
 
-    private static Collection<? extends Record> generateRandomRecords() {
-        int maxNumberOfRecords = 10;
-        return IntStream.range(0, randomInteger(maxNumberOfRecords) + 1)
+    private Collection<? extends Record> generateRandomRecords() {
+        int maxNumberOfRandomRecords = 10;
+        return IntStream.range(0, randomInteger(maxNumberOfRandomRecords) + 1)
                    .boxed()
-                   .map(BasebibliotekGenerator::randomRecord)
+                   .map(index -> generateRecord(randomBoolean(), randomBoolean()))
                    .collect(Collectors.toList());
     }
 
-    private static Record randomRecord(int index) {
+    private Record generateRecord(boolean shouldHaveBibNr, boolean shouldHaveLandkode) {
         var record = new Record();
-        //required fields:
-        record.setBibnr(randomString());
-        record.setRid(BigInteger.valueOf(index));
+        record.setRid(incrementCurrentRidAndReturnResult());
         record.setTstamp(randomLocalDate().toString());
 
         //optional fields:
+
+        if (shouldHaveBibNr) {
+            record.setBibnr(randomString());
+        }
         if (randomBoolean()) {
             record.setIsil(randomString());
             if (randomBoolean()) {
@@ -149,7 +175,7 @@ public class BasebibliotekGenerator {
         if (randomBoolean()) {
             record.setBesadr(randomString());
         }
-        if (randomBoolean()) {
+        if (shouldHaveLandkode) {
             record.setLandkode(randomString());
         }
         if (randomBoolean()) {
@@ -220,6 +246,15 @@ public class BasebibliotekGenerator {
         }
 
         return record;
+    }
+
+    private BigInteger incrementCurrentRidAndReturnResult() {
+        setCurrentRid(currentRid.add(BigInteger.ONE));
+        return currentRid;
+    }
+
+    private void setCurrentRid(BigInteger i) {
+        currentRid = i;
     }
 
     private static UregistrerteFilialer randomUregistrerteFilialer() {

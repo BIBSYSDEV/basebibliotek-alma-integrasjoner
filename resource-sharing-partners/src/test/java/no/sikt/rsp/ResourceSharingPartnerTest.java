@@ -2,8 +2,10 @@ package no.sikt.rsp;
 
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -20,6 +22,8 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import no.nb.basebibliotek.generated.Record;
+import no.sikt.basebibliotek.BaseBibliotekBean;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.ioutils.IoUtils;
@@ -32,6 +36,7 @@ import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import test.utils.BasebibliotekGenerator;
+import test.utils.RecordSpecification;
 
 public class ResourceSharingPartnerTest {
 
@@ -71,10 +76,7 @@ public class ResourceSharingPartnerTest {
     public void shouldLogExceptionWhenS3BucketFileCannotBeConvertedToBaseBibliotek() throws IOException {
         var uri = s3Driver.insertFile(randomS3Path(), INVALID_BASEBIBLIOTEK_XML_STRING);
         var s3Event = createS3Event(uri);
-        var appender = LogUtils.getTestingAppenderForRootLogger();
-        var expectedMessage = ResourceSharingPartnerHandler.INVALID_BASEBIBLIOTEK_XML_ERROR_MESSAGE;
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
-        assertThat(appender.getMessages(), containsString(expectedMessage));
     }
 
     @Test
@@ -86,12 +88,29 @@ public class ResourceSharingPartnerTest {
     }
 
     @Test
-    public void shouldConvertBaseBibliotekToBaseBibliotekBean() throws IOException {
-        var basebibliotek = BasebibliotekGenerator.randomBaseBibliotek();
+    public void basebibliotekMissingLibNrOrLandkodeShouldNotBeConvertedToBasebibliotekBean() throws IOException {
+
+        var specifiedList = List.of(
+            new RecordSpecification(true, true),
+            new RecordSpecification(false, false),
+            new RecordSpecification(true, false),
+            new RecordSpecification(false, true));
+        var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
-        var basebibliotekBean = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        var basebibliotekBeans = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        assertThat(basebibliotekBeans, hasSize(1));
+        assertBaseBibliotekBeansHasExtractedSimppleMatadataCorrectly(basebibliotekBeans.get(0),
+                                                                     basebibliotek.getRecord().get(0));
+    }
+
+    private void assertBaseBibliotekBeansHasExtractedSimppleMatadataCorrectly(BaseBibliotekBean baseBibliotekBean,
+                                                                              Record record) {
+        assertEquals(baseBibliotekBean.getBibNr(), record.getBibnr());
+        assertEquals(baseBibliotekBean.getInst(), record.getInst());
+        assertEquals(baseBibliotekBean.getKatsyst(), record.getKatsyst());
     }
 
     private UnixPath randomS3Path() {
