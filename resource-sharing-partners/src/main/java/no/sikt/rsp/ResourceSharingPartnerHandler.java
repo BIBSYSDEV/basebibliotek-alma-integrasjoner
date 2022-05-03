@@ -1,27 +1,17 @@
 package no.sikt.rsp;
 
-import static nva.commons.core.StringUtils.isEmpty;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.google.gson.Gson;
 import jakarta.xml.bind.JAXB;
-import jakarta.xml.bind.JAXBElement;
 import java.io.StringReader;
 import java.net.URI;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import javax.xml.datatype.XMLGregorianCalendar;
 import no.nb.basebibliotek.generated.BaseBibliotek;
-import no.nb.basebibliotek.generated.Record;
 import no.sikt.basebibliotek.BaseBibliotekBean;
+import no.sikt.basebibliotek.BasebibliotekConverter;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
@@ -31,9 +21,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, List<BaseBibliotekBean>> {
 
-    private static final String NNCIP_URI_FIELD_NAME = "nncip_uri";
-
-    private static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
     private static final Logger logger = LoggerFactory.getLogger(ResourceSharingPartnerHandler.class);
     public static final int SINGLE_EXPECTED_RECORD = 0;
     private static final String EVENT = "event";
@@ -57,66 +44,8 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, Li
         logger.info(EVENT + gson.toJson(s3event));
         return attempt(() -> readFile(s3event))
                    .map(this::parseXmlFile)
-                   .map(this::convertBasebibliotekToBaseBibliotekBean)
+                   .map(BasebibliotekConverter::convertBasebibliotekToBaseBibliotekBean)
                    .orElseThrow(fail -> logErrorAndThrowException(fail.getException()));
-    }
-
-    private List<BaseBibliotekBean> convertBasebibliotekToBaseBibliotekBean(BaseBibliotek baseBibliotek) {
-        return baseBibliotek
-                   .getRecord()
-                   .stream()
-                   .map(this::convertRecordToBasebibliotekBeanIfBibNrAndLandkodeIsSet)
-                   .flatMap(Optional::stream)
-                   .collect(Collectors.toList());
-    }
-
-    private Optional<BaseBibliotekBean> convertRecordToBasebibliotekBeanIfBibNrAndLandkodeIsSet(Record record) {
-        return isEmpty(record.getBibnr()) || isEmpty(record.getLandkode())
-                   ? Optional.empty()
-                   : Optional.of(convertRecordToBasebibliotekBean(record));
-    }
-
-    private BaseBibliotekBean convertRecordToBasebibliotekBean(Record record) {
-        BaseBibliotekBean baseBibliotekBean = new BaseBibliotekBean();
-        baseBibliotekBean.setBibNr(record.getBibnr());
-        baseBibliotekBean.setStengt(record.getStengt());
-        baseBibliotekBean.setInst(record.getInst());
-        baseBibliotekBean.setNncippServer(getNncippServer(record).orElse(null));
-        baseBibliotekBean.setKatsyst(record.getKatsyst());
-        baseBibliotekBean.setStengtFra(createDateString(record.getStengtFra()).orElse(null));
-        baseBibliotekBean.setStengtTil(createDateString(record.getStengtTil()).orElse(null));
-        return baseBibliotekBean;
-    }
-
-    private Optional<String> createDateString(XMLGregorianCalendar xmlGregorianCalendar) {
-        return Objects.nonNull(xmlGregorianCalendar)
-                   ? Optional.of(formatDateSynchronized(xmlGregorianCalendar.toGregorianCalendar().getTime()))
-                   : Optional.empty();
-    }
-
-    private String formatDateSynchronized(Date date) {
-        synchronized (dateFormat) {
-            return dateFormat.format(date);
-        }
-    }
-
-    private Optional<String> getNncippServer(Record record) {
-        var eressurser = record.getEressurser();
-        return Objects.nonNull(eressurser)
-                   ? eressurser.getOAIOrSRUOrArielIp()
-                         .stream()
-                         .filter(this::isNncipUri)
-                         .findFirst()
-                         .map(this::getJaxbElementValue)
-                   : Optional.empty();
-    }
-
-    private String getJaxbElementValue(JAXBElement<String> oaiOrSruOrAirelIP) {
-        return oaiOrSruOrAirelIP.getValue().trim();
-    }
-
-    private boolean isNncipUri(JAXBElement<String> oaiOrSruOrArielIp) {
-        return NNCIP_URI_FIELD_NAME.equals(oaiOrSruOrArielIp.getName().getLocalPart());
     }
 
     private BaseBibliotek parseXmlFile(String file) {
