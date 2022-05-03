@@ -1,5 +1,6 @@
 package no.sikt.rsp;
 
+import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -21,8 +22,12 @@ import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotificatio
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
+import javax.xml.datatype.XMLGregorianCalendar;
 import no.nb.basebibliotek.generated.Record;
 import no.sikt.basebibliotek.BaseBibliotekBean;
 import no.unit.nva.s3.S3Driver;
@@ -42,6 +47,7 @@ import test.utils.RecordSpecification;
 public class ResourceSharingPartnerTest {
 
     public static final RequestParametersEntity EMPTY_REQUEST_PARAMETERS = null;
+    private static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
     public static final ResponseElementsEntity EMPTY_RESPONSE_ELEMENTS = null;
     public static final UserIdentityEntity EMPTY_USER_IDENTITY = null;
     public static final long SOME_FILE_SIZE = 100L;
@@ -92,10 +98,10 @@ public class ResourceSharingPartnerTest {
     public void basebibliotekMissingLibNrOrLandkodeShouldNotBeConvertedToBasebibliotekBean() throws IOException {
 
         var specifiedList = List.of(
-            new RecordSpecification(true, true, null),
-            new RecordSpecification(false, false, null),
-            new RecordSpecification(true, false, null),
-            new RecordSpecification(false, true, null));
+            new RecordSpecification(true, true, null, randomBoolean(), randomBoolean()),
+            new RecordSpecification(false, false, null, randomBoolean(), randomBoolean()),
+            new RecordSpecification(true, false, null, randomBoolean(), randomBoolean()),
+            new RecordSpecification(false, true, null, randomBoolean(), randomBoolean()));
         var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
@@ -111,7 +117,7 @@ public class ResourceSharingPartnerTest {
     public void basebibliotekBeanShouldContainNncipUri() throws IOException {
         var expectedUri = randomUri().toString();
         var specifiedList = List.of(
-            new RecordSpecification(true, true, expectedUri));
+            new RecordSpecification(true, true, expectedUri, randomBoolean(), randomBoolean()));
 
         var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
@@ -120,6 +126,23 @@ public class ResourceSharingPartnerTest {
         var s3Event = createS3Event(uri);
         var basebibliotekBeans = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         assertEquals(expectedUri, basebibliotekBeans.get(0).getNncippServer());
+    }
+
+    @Test
+    public void basebibliotekBeanShouldContainCorrectStengtTilandStengtFraDates() throws IOException {
+        var expectedUri = randomUri().toString();
+        var specifiedList = List.of(
+            new RecordSpecification(true, true, expectedUri, true, true));
+        var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+        var basebibliotekBeans = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        assertEquals(basebibliotekBeans.get(0).getStengtFra(),
+                     createDateString(basebibliotek.getRecord().get(0).getStengtFra()));
+        assertEquals(basebibliotekBeans.get(0).getStengtTil(),
+                     createDateString(basebibliotek.getRecord().get(0).getStengtTil()));
     }
 
     private void assertBaseBibliotekBeansHasExtractedSimppleMatadataCorrectly(BaseBibliotekBean baseBibliotekBean,
@@ -160,6 +183,12 @@ public class ResourceSharingPartnerTest {
 
     private String randomDate() {
         return Instant.now().toString();
+    }
+
+    private String createDateString(XMLGregorianCalendar xmlGregorianCalendar) {
+        synchronized (dateFormat) {
+            return dateFormat.format(xmlGregorianCalendar.toGregorianCalendar().getTime());
+        }
     }
 
     private static class FakeS3ClientThrowingException extends FakeS3Client {

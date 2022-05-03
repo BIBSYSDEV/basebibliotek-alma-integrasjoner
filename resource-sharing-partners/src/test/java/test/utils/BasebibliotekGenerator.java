@@ -62,13 +62,10 @@ public class BasebibliotekGenerator {
                    .stream()
                    .map(recordsSpecification -> generateRecord(recordsSpecification.getWithBibnr(),
                                                                recordsSpecification.getWithLandkode(),
-                                                               recordsSpecification.getNncipUri()))
+                                                               recordsSpecification.getNncipUri(),
+                                                               recordsSpecification.getWithStengtFra(),
+                                                               recordsSpecification.getWithStengtTil()))
                    .collect(Collectors.toList());
-    }
-
-    public BasebibliotekGenerator() {
-        currentRid = BigInteger.ONE;
-        records = generateRandomRecords();
     }
 
     public BaseBibliotek generateBaseBibliotek() {
@@ -83,15 +80,11 @@ public class BasebibliotekGenerator {
         return xmlWriter.toString();
     }
 
-    private Collection<? extends Record> generateRandomRecords() {
-        int maxNumberOfRandomRecords = 10;
-        return IntStream.range(0, randomInteger(maxNumberOfRandomRecords) + 1)
-                   .boxed()
-                   .map(index -> generateRecord(randomBoolean(), randomBoolean(), randomString()))
-                   .collect(Collectors.toList());
-    }
-
-    private Record generateRecord(boolean shouldHaveBibNr, boolean shouldHaveLandkode, String specifiedNncipUri) {
+    private Record generateRecord(boolean shouldHaveBibNr,
+                                  boolean shouldHaveLandkode,
+                                  String specifiedNncipUri,
+                                  boolean withStengtFra,
+                                  boolean withStengtTil) {
         var record = new Record();
         record.setRid(incrementCurrentRidAndReturnResult());
         record.setTstamp(randomLocalDate().toString());
@@ -101,11 +94,27 @@ public class BasebibliotekGenerator {
         if (shouldHaveBibNr) {
             record.setBibnr(randomString());
         }
+        var start = randomInstant();
+        var end = randomInstant(start);
+        if (withStengtFra) {
+            record.setStengtFra(getGregorianDate(start));
+        }
+        if (withStengtTil) {
+            record.setStengtTil(getGregorianDate(end));
+        }
+        if (shouldHaveLandkode) {
+            record.setLandkode(randomString());
+        }
         if (randomBoolean()) {
             record.setIsil(randomString());
             if (randomBoolean()) {
                 record.setIsilAgency(randomString());
             }
+        }
+        if (!Objects.nonNull(specifiedNncipUri)) {
+            record.setEressurser(randomEressurser());
+        } else {
+            record.setEressurser(generateEressurserWithSpecifiedNncipServer(specifiedNncipUri));
         }
         if (randomBoolean()) {
             record.setBibkode(randomString());
@@ -128,14 +137,7 @@ public class BasebibliotekGenerator {
         if (randomBoolean()) {
             record.setStengt(generateSetStengtStatus());
         }
-        if (randomBoolean()) {
-            var start = randomInstant();
-            var end = randomInstant(start);
-            record.setStengtTil(getGregorianDate(end));
-            if (randomBoolean()) {
-                record.setStengtFra(getGregorianDate(start));
-            }
-        }
+
         if (randomBoolean()) {
             record.setKommnr(randomString());
         }
@@ -177,9 +179,6 @@ public class BasebibliotekGenerator {
         }
         if (randomBoolean()) {
             record.setBesadr(randomString());
-        }
-        if (shouldHaveLandkode) {
-            record.setLandkode(randomString());
         }
         if (randomBoolean()) {
             record.setTlf(randomString());
@@ -234,11 +233,6 @@ public class BasebibliotekGenerator {
         }
         if (randomBoolean()) {
             record.setAndreKoder(generateRandomAndreKoder());
-        }
-        if (!Objects.nonNull(specifiedNncipUri)) {
-            record.setEressurser(randomEressurser());
-        } else {
-            record.setEressurser(generateEressurserWithSpecifiedNncipServer(specifiedNncipUri));
         }
         if (randomBoolean()) {
             record.setWressurser(randomWressurser());

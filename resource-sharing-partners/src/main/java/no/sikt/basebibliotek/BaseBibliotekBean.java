@@ -3,6 +3,7 @@ package no.sikt.basebibliotek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
+import nva.commons.core.JacocoGenerated;
 import org.apache.commons.lang3.StringUtils;
 
 public class BaseBibliotekBean {
@@ -74,6 +75,7 @@ public class BaseBibliotekBean {
         }
     }
 
+    @JacocoGenerated
     public String getStengt() {
         return stengt;
     }
