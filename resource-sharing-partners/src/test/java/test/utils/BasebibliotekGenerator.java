@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Objects;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -44,6 +45,7 @@ public class BasebibliotekGenerator {
     private static final String IO_WS_FIELD_NAME = "io_ws";
     private static final String INACTIVE_U = "U";
     private static final String INACTIVE_X = "X";
+    public static final String HTTP_NB_NO_BASE_BIBLIOTEK_NAME_SPACE = "http://nb.no/BaseBibliotek";
 
     private BigInteger currentRid;
 
@@ -59,7 +61,8 @@ public class BasebibliotekGenerator {
         return specificationList
                    .stream()
                    .map(recordsSpecification -> generateRecord(recordsSpecification.getWithBibnr(),
-                                                               recordsSpecification.getWithLandkode()))
+                                                               recordsSpecification.getWithLandkode(),
+                                                               recordsSpecification.getNncipUri()))
                    .collect(Collectors.toList());
     }
 
@@ -84,11 +87,11 @@ public class BasebibliotekGenerator {
         int maxNumberOfRandomRecords = 10;
         return IntStream.range(0, randomInteger(maxNumberOfRandomRecords) + 1)
                    .boxed()
-                   .map(index -> generateRecord(randomBoolean(), randomBoolean()))
+                   .map(index -> generateRecord(randomBoolean(), randomBoolean(), randomString()))
                    .collect(Collectors.toList());
     }
 
-    private Record generateRecord(boolean shouldHaveBibNr, boolean shouldHaveLandkode) {
+    private Record generateRecord(boolean shouldHaveBibNr, boolean shouldHaveLandkode, String specifiedNncipUri) {
         var record = new Record();
         record.setRid(incrementCurrentRidAndReturnResult());
         record.setTstamp(randomLocalDate().toString());
@@ -232,8 +235,10 @@ public class BasebibliotekGenerator {
         if (randomBoolean()) {
             record.setAndreKoder(generateRandomAndreKoder());
         }
-        if (randomBoolean()) {
+        if (!Objects.nonNull(specifiedNncipUri)) {
             record.setEressurser(randomEressurser());
+        } else {
+            record.setEressurser(generateEressurserWithSpecifiedNncipServer(specifiedNncipUri));
         }
         if (randomBoolean()) {
             record.setWressurser(randomWressurser());
@@ -246,6 +251,13 @@ public class BasebibliotekGenerator {
         }
 
         return record;
+    }
+
+    private Eressurser generateEressurserWithSpecifiedNncipServer(String specifiedNncipUri) {
+        var eressurser = new Eressurser();
+        eressurser.getOAIOrSRUOrArielIp()
+            .add(generateJaxbElementString(NNCIP_URI_FIELD_NAME, specifiedNncipUri));
+        return eressurser;
     }
 
     private BigInteger incrementCurrentRidAndReturnResult() {
@@ -348,7 +360,11 @@ public class BasebibliotekGenerator {
     }
 
     private static JAXBElement<String> randomJaxbElementString(String type) {
-        return new JAXBElement<>(new QName(type), String.class, randomString());
+        return new JAXBElement<>(new QName(HTTP_NB_NO_BASE_BIBLIOTEK_NAME_SPACE, type), String.class, randomString());
+    }
+
+    private static JAXBElement<String> generateJaxbElementString(String type, String value) {
+        return new JAXBElement<>(new QName(HTTP_NB_NO_BASE_BIBLIOTEK_NAME_SPACE, type), String.class, value);
     }
 
     private static String generateSetStengtStatus() {

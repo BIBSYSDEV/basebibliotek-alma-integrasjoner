@@ -1,6 +1,7 @@
 package no.sikt.rsp;
 
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.StringContains.containsString;
@@ -91,10 +92,10 @@ public class ResourceSharingPartnerTest {
     public void basebibliotekMissingLibNrOrLandkodeShouldNotBeConvertedToBasebibliotekBean() throws IOException {
 
         var specifiedList = List.of(
-            new RecordSpecification(true, true),
-            new RecordSpecification(false, false),
-            new RecordSpecification(true, false),
-            new RecordSpecification(false, true));
+            new RecordSpecification(true, true, null),
+            new RecordSpecification(false, false, null),
+            new RecordSpecification(true, false, null),
+            new RecordSpecification(false, true, null));
         var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
@@ -104,6 +105,21 @@ public class ResourceSharingPartnerTest {
         assertThat(basebibliotekBeans, hasSize(1));
         assertBaseBibliotekBeansHasExtractedSimppleMatadataCorrectly(basebibliotekBeans.get(0),
                                                                      basebibliotek.getRecord().get(0));
+    }
+
+    @Test
+    public void basebibliotekBeanShouldContainNncipUri() throws IOException {
+        var expectedUri = randomUri().toString();
+        var specifiedList = List.of(
+            new RecordSpecification(true, true, expectedUri));
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+        var basebibliotekBeans = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        assertEquals(expectedUri, basebibliotekBeans.get(0).getNncippServer());
     }
 
     private void assertBaseBibliotekBeansHasExtractedSimppleMatadataCorrectly(BaseBibliotekBean baseBibliotekBean,
