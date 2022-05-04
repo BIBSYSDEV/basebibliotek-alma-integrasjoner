@@ -4,10 +4,11 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -125,7 +126,7 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
         var basebibliotekBeans = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
-        assertEquals(expectedUri, basebibliotekBeans.get(0).getNncippServer());
+        assertThat(basebibliotekBeans.get(0).getNncippServer(), is(equalTo(expectedUri)));
     }
 
     @Test
@@ -139,17 +140,17 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
         var basebibliotekBeans = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
-        assertEquals(basebibliotekBeans.get(0).getStengtFra(),
-                     createDateString(basebibliotek.getRecord().get(0).getStengtFra()));
-        assertEquals(basebibliotekBeans.get(0).getStengtTil(),
-                     createDateString(basebibliotek.getRecord().get(0).getStengtTil()));
+        assertThat(basebibliotekBeans.get(0).getStengtFra(),
+                   is(equalTo(createDateString(basebibliotek.getRecord().get(0).getStengtFra()))));
+        assertThat(basebibliotekBeans.get(0).getStengtTil(),
+                   is(equalTo(createDateString(basebibliotek.getRecord().get(0).getStengtTil()))));
     }
 
     private void assertBaseBibliotekBeansHasExtractedSimppleMatadataCorrectly(BaseBibliotekBean baseBibliotekBean,
                                                                               Record record) {
-        assertEquals(baseBibliotekBean.getBibNr(), record.getBibnr());
-        assertEquals(baseBibliotekBean.getInst(), record.getInst());
-        assertEquals(baseBibliotekBean.getKatsyst(), record.getKatsyst());
+        assertThat(baseBibliotekBean.getBibNr(), is(equalTo(record.getBibnr())));
+        assertThat(baseBibliotekBean.getInst(), is(equalTo(record.getInst())));
+        assertThat(baseBibliotekBean.getKatsyst(), is(equalTo(record.getKatsyst())));
     }
 
     private UnixPath randomS3Path() {

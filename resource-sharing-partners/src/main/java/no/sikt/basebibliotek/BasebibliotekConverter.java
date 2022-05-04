@@ -74,8 +74,8 @@ public class BasebibliotekConverter {
                    : Optional.empty();
     }
 
-    private static boolean isNncipUri(JAXBElement<String> oaiOrSruOrArielIp) {
-        return NNCIP_URI_FIELD_NAME.equals(oaiOrSruOrArielIp.getName().getLocalPart());
+    private static boolean isNncipUri(JAXBElement<String> externalResource) {
+        return NNCIP_URI_FIELD_NAME.equals(externalResource.getName().getLocalPart());
     }
 
     private static String getJaxbElementValue(JAXBElement<String> oaiOrSruOrAirelIP) {
