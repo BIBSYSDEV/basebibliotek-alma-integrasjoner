@@ -21,6 +21,12 @@ public class PartnerConverter {
     private static final Logger logger = LoggerFactory.getLogger(PartnerConverter.class);
     private static final String COULD_NOT_CONVERT_RECORD = "Could not convert record to partner, missing %s, record: "
                                                            + "%s";
+    private static final int AVG_SUPPLY_TIME = 1;
+    public static final int DELIVERY_DELAY = 0;
+    public static final String LENDING_WORKFLOW = "Lending";
+    public static final boolean BORROWING_IS_SUPPORTED = true;
+    public static final String BORROWING_WORKFLOW = "Borrowing";
+    public static final boolean LENDING_IS_SUPPORTED = true;
 
     @JacocoGenerated
     public PartnerConverter() {
@@ -71,7 +77,20 @@ public class PartnerConverter {
     private static PartnerDetails extractPartnerDetailsFromRecord(Record record) {
         var partnerDetails = new PartnerDetails();
         partnerDetails.setCode(extractIsilCode(record));
+        partnerDetails.setName(extractName(record));
+        partnerDetails.setAvgSupplyTime(AVG_SUPPLY_TIME);
+        partnerDetails.setDeliveryDelay(DELIVERY_DELAY);
+        partnerDetails.setLendingWorkflow(LENDING_WORKFLOW);
+        partnerDetails.setLendingSupported(LENDING_IS_SUPPORTED);
+        partnerDetails.setBorrowingSupported(BORROWING_IS_SUPPORTED);
+        partnerDetails.setBorrowingWorkflow(BORROWING_WORKFLOW);
         return partnerDetails;
+    }
+
+    private static String extractName(Record record) {
+        return Objects.nonNull(record.getInst())
+                   ? record.getInst().replaceAll("\n", " - ")
+                   : StringUtils.EMPTY_STRING;
     }
 
     private static String extractIsilCode(Record record) {

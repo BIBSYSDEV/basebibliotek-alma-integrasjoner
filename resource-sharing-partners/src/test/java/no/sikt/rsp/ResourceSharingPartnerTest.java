@@ -177,6 +177,37 @@ public class ResourceSharingPartnerTest {
                    is(equalTo(expectedCraftedPartnerCode)));
     }
 
+    @Test
+    void shouldExtractBasicPartnerDetailsCorrectly() throws IOException {
+        var specifiedList = List.of(
+            new RecordSpecification(true,
+                                    true,
+                                    null, randomBoolean(),
+                                    randomBoolean(),
+                                    randomBoolean(),
+                                    randomBoolean(),
+                                    randomBoolean()));
+        var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+        var partners = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        var expectedAvgSupplyTime = 1;
+        var expectedDeliveryDelay = 0;
+        var expectedLendingSupported = true;
+        var expectedLendingWorkflow = "Lending";
+        var expectedBorrowingSupported = true;
+        var expectedBorrowingWorkflow = "Borrowing";
+        assertThat(partners.get(0).getPartnerDetails().getName(), is(equalTo(basebibliotek.getRecord().get(0).getInst())));
+        assertThat(partners.get(0).getPartnerDetails().getAvgSupplyTime(), is(equalTo(expectedAvgSupplyTime)));
+        assertThat(partners.get(0).getPartnerDetails().getDeliveryDelay(), is(equalTo(expectedDeliveryDelay)));
+        assertThat(partners.get(0).getPartnerDetails().isLendingSupported(), is(equalTo(expectedLendingSupported)));
+        assertThat(partners.get(0).getPartnerDetails().getLendingWorkflow(), is(equalTo(expectedLendingWorkflow)));
+        assertThat(partners.get(0).getPartnerDetails().isBorrowingSupported(), is(equalTo(expectedBorrowingSupported)));
+        assertThat(partners.get(0).getPartnerDetails().getBorrowingWorkflow(), is(equalTo(expectedBorrowingWorkflow)));
+    }
+
     private void assertContactInfo(ContactInfo contactInfo, Record record) {
         assertAddresses(contactInfo.getAddresses().getAddress(), record);
         assertPhone(contactInfo.getPhones(), record);
