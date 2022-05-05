@@ -1,4 +1,5 @@
 rootProject.name = 'basebibliotek-alma-integrations'
 include 'resource-sharing-partners'
 include 'basebibliotek-generated'
+include 'alma-generated'
 

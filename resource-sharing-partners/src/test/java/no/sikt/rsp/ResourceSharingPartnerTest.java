@@ -2,9 +2,9 @@ package no.sikt.rsp;
 
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.StringContains.containsString;
@@ -28,15 +28,22 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import javax.xml.datatype.XMLGregorianCalendar;
 import no.nb.basebibliotek.generated.Record;
-import no.sikt.basebibliotek.BaseBibliotekBean;
+import no.sikt.alma.generated.Address;
+import no.sikt.alma.generated.ContactInfo;
+import no.sikt.alma.generated.Email;
+import no.sikt.alma.generated.Emails;
+import no.sikt.alma.generated.Phones;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
+import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
+import org.hamcrest.core.IsNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
@@ -96,61 +103,131 @@ public class ResourceSharingPartnerTest {
     }
 
     @Test
-    public void basebibliotekMissingLibNrOrLandkodeShouldNotBeConvertedToBasebibliotekBean() throws IOException {
-
+    public void shouldExtractContactDetailsCorrectly() throws IOException {
+        var withPaddr = true;
+        var withVaddr = true;
         var specifiedList = List.of(
-            new RecordSpecification(true, true, null, randomBoolean(), randomBoolean()),
-            new RecordSpecification(false, false, null, randomBoolean(), randomBoolean()),
-            new RecordSpecification(true, false, null, randomBoolean(), randomBoolean()),
-            new RecordSpecification(false, true, null, randomBoolean(), randomBoolean()));
+            new RecordSpecification(true, true, null, randomBoolean(), randomBoolean(), withPaddr, withVaddr));
         var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
-        var basebibliotekBeans = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
-        assertThat(basebibliotekBeans, hasSize(1));
-        assertBaseBibliotekBeansHasExtractedSimppleMatadataCorrectly(basebibliotekBeans.get(0),
-                                                                     basebibliotek.getRecord().get(0));
+        var partners = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        assertContactInfo(partners.get(0).getContactInfo(), basebibliotek.getRecord().get(0));
     }
 
-    @Test
-    public void basebibliotekBeanShouldContainNncipUri() throws IOException {
-        var expectedUri = randomUri().toString();
-        var specifiedList = List.of(
-            new RecordSpecification(true, true, expectedUri, randomBoolean(), randomBoolean()));
-
-        var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
-        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
-        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
-        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
-        var s3Event = createS3Event(uri);
-        var basebibliotekBeans = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
-        assertThat(basebibliotekBeans.get(0).getNncippServer(), is(equalTo(expectedUri)));
+    private void assertContactInfo(ContactInfo contactInfo, Record record) {
+        assertAddresses(contactInfo.getAddresses().getAddress(), record);
+        assertPhone(contactInfo.getPhones(), record);
+        assertEmails(contactInfo.getEmails(), record);
     }
 
-    @Test
-    public void basebibliotekBeanShouldContainCorrectStengtTilandStengtFraDates() throws IOException {
-        var expectedUri = randomUri().toString();
-        var specifiedList = List.of(
-            new RecordSpecification(true, true, expectedUri, true, true));
-        var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
-        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
-        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
-        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
-        var s3Event = createS3Event(uri);
-        var basebibliotekBeans = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
-        assertThat(basebibliotekBeans.get(0).getStengtFra(),
-                   is(equalTo(createDateString(basebibliotek.getRecord().get(0).getStengtFra()))));
-        assertThat(basebibliotekBeans.get(0).getStengtTil(),
-                   is(equalTo(createDateString(basebibliotek.getRecord().get(0).getStengtTil()))));
+    private void assertEmails(Emails emails, Record record) {
+
+        var emailBestShouldExist = Objects.nonNull(record.getEpostBest());
+        var emailRegularShouldExist = Objects.nonNull(record.getEpostAdr());
+        var expectedEmailsSize = (emailBestShouldExist ? 1 : 0) + (emailRegularShouldExist ? 1 : 0);
+        assertThat(emails.getEmail(), hasSize(expectedEmailsSize));
+        var emailBest = emails.getEmail()
+                            .stream()
+                            .filter(email -> hasEmailAddressCorresponding(email,
+                                                                          record.getEpostBest()))
+                            .findFirst()
+                            .orElse(null);
+        var emailRegular = emails.getEmail()
+                               .stream()
+                               .filter(email -> hasEmailAddressCorresponding(email,
+                                                                             record.getEpostAdr()))
+                               .findFirst()
+                               .orElse(null);
+        if (emailBestShouldExist) {
+            assertEmail(emailBest, record.getEpostBest(), true);
+        }
+
+        if (emailRegularShouldExist) {
+            assertEmail(emailRegular, record.getEpostAdr(), !emailBestShouldExist);
+        }
     }
 
-    private void assertBaseBibliotekBeansHasExtractedSimppleMatadataCorrectly(BaseBibliotekBean baseBibliotekBean,
-                                                                              Record record) {
-        assertThat(baseBibliotekBean.getBibNr(), is(equalTo(record.getBibnr())));
-        assertThat(baseBibliotekBean.getInst(), is(equalTo(record.getInst())));
-        assertThat(baseBibliotekBean.getKatsyst(), is(equalTo(record.getKatsyst())));
+    public void assertEmail(Email email, String emailAddress, boolean shouldBePreferred) {
+        assertThat(email, is(IsNull.notNullValue()));
+        var expectedEmailTypes = List.of("claimMail", "orderMail", "paymentMail", "queries", "returnsMail");
+        assertThat(email.getEmailTypes().getEmailType(), hasSize(expectedEmailTypes.size()));
+        expectedEmailTypes.forEach(emailType -> assertThat(email.getEmailTypes().getEmailType(),
+                                                           hasItem(containsString(emailType))));
+        var expectedEmailAddress = Objects.nonNull(emailAddress) ? emailAddress : StringUtils.EMPTY_STRING;
+        assertThat(email.getEmailAddress(), is(equalTo(expectedEmailAddress)));
+        assertThat(email.isPreferred(), is(equalTo(shouldBePreferred)));
+    }
+
+    private boolean hasEmailAddressCorresponding(Email email, String recordEmail) {
+        return Objects.nonNull(recordEmail) && recordEmail.equals(email.getEmailAddress());
+    }
+
+    private void assertPhone(Phones phones, Record record) {
+        var expectedPhoneTypes = List.of("claimPhone", "orderPhone", "paymentPhone", "returnsPhone");
+        assertThat(phones.getPhone(), hasSize(1));
+        var phone = phones.getPhone().get(0);
+        assertThat(phone.isPreferred(), is(equalTo(true)));
+        assertThat(phone.getPhoneTypes().getPhoneType(), hasSize(expectedPhoneTypes.size()));
+        expectedPhoneTypes.forEach(expectedPhoneType -> assertThat(phone.getPhoneTypes().getPhoneType(),
+                                                                   hasItem(containsString(expectedPhoneType))));
+        if (StringUtils.isEmpty(record.getTlf())) {
+            assertThat(phone.getPhoneNumber(), is(equalTo(StringUtils.EMPTY_STRING)));
+        } else {
+            assertThat(phone.getPhoneNumber(), is(equalTo(record.getTlf())));
+        }
+    }
+
+    private void assertAddresses(List<Address> addresses, Record record) {
+        var postAddressShouldExist = Objects.nonNull(record.getPadr());
+        var visitationAddressShouldExist = Objects.nonNull(record.getVadr());
+        var expectedAddressSize = (postAddressShouldExist ? 1 : 0) + (visitationAddressShouldExist ? 1 : 0);
+        assertThat(addresses, hasSize(expectedAddressSize));
+        var postAddress =
+            addresses.stream()
+                .filter(address -> hasLine1CorrespondingToRecord(address, record.getPadr()))
+                .findFirst()
+                .orElse(null);
+        var visitationAddress =
+            addresses.stream()
+                .filter(address -> hasLine1CorrespondingToRecord(address, record.getVadr()))
+                .findFirst()
+                .orElse(null);
+        if (postAddressShouldExist) {
+            assertAddress(postAddress, record.getPadr(), record.getBibnr(), record.getPpoststed(), record.getPpostnr(),
+                          record.getLandkode(), true);
+        }
+        if (visitationAddressShouldExist) {
+            assertAddress(visitationAddress,
+                          record.getVadr(),
+                          record.getBibnr(),
+                          record.getVpoststed(),
+                          record.getVpostnr(),
+                          record.getLandkode(),
+                          !postAddressShouldExist);
+        }
+    }
+
+    private void assertAddress(Address address, String expectedLine1, String expectedLine5,
+                               String expectedCity, String expectedPostalCode, String expectedCountry,
+                               boolean expectedPreferred) {
+        assertThat(address, is(IsNull.notNullValue()));
+        assertThat(address.getLine1(), is(equalTo(expectedLine1)));
+        assertThat(address.getLine5(), is(equalTo(expectedLine5)));
+        assertThat(address.isPreferred(), is(expectedPreferred));
+        assertThat(address.getCity(), is(equalTo(expectedCity)));
+        assertThat(address.getPostalCode(), is(equalTo(expectedPostalCode)));
+        assertThat(address.getCountry().getValue(), is(equalTo(expectedCountry.toUpperCase())));
+        var expectedAddressTypes = List.of("billing", "claim", "order", "payment", "returns", "shipping");
+        assertThat(address.getAddressTypes().getAddressType(), hasSize(expectedAddressTypes.size()));
+        expectedAddressTypes.forEach(expectedAddressType -> assertThat(address.getAddressTypes().getAddressType(),
+                                                                       hasItem(containsString(expectedAddressType))));
+    }
+
+    private boolean hasLine1CorrespondingToRecord(Address address, String recordAddr) {
+        return recordAddr.equals(address.getLine1());
     }
 
     private UnixPath randomS3Path() {

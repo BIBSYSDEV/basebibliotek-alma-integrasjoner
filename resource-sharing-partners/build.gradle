@@ -42,6 +42,7 @@ dependencies {
 
     implementation group: 'com.github.bibsysdev', name: 'core', version: '1.22.1-alpha3'
     implementation project(":basebibliotek-generated")
+    implementation project(":alma-generated")
 
     shadowJar {
         archiveClassifier.set('')

@@ -2,8 +2,12 @@ plugins {
     id 'java'
 }
 
-group 'no.nb.basebibliotek.generated'
+group 'no.sikt'
 version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
 
 repositories {
     mavenCentral()
@@ -34,8 +38,8 @@ task xsd2java() {
         ant.jaxbTargetDir = jaxbTargetDir
         ant.xjc(
                 destdir: '${jaxbTargetDir}',
-                package: 'no.nb.basebibliotek.generated',
-                schema: 'https://www.nb.no/baser/bibliotek/eksport/basebibliotek.xsd'
+                package: 'no.sikt.alma.generated',
+                schema: 'https://developers.exlibrisgroup.com/wp-content/uploads/alma/xsd/rest_partners.xsd'
         )
     }
 }

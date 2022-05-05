@@ -64,7 +64,9 @@ public class BasebibliotekGenerator {
                                                                recordsSpecification.getWithLandkode(),
                                                                recordsSpecification.getNncipUri(),
                                                                recordsSpecification.getWithStengtFra(),
-                                                               recordsSpecification.getWithStengtTil()))
+                                                               recordsSpecification.getWithStengtTil(),
+                                                               recordsSpecification.getWithPaddr(),
+                                                               recordsSpecification.getWithVaddr()))
                    .collect(Collectors.toList());
     }
 
@@ -84,7 +86,9 @@ public class BasebibliotekGenerator {
                                   boolean shouldHaveLandkode,
                                   String specifiedNncipUri,
                                   boolean withStengtFra,
-                                  boolean withStengtTil) {
+                                  boolean withStengtTil,
+                                  boolean withPaddr,
+                                  boolean withVaddr) {
         var record = new Record();
         record.setRid(incrementCurrentRidAndReturnResult());
         record.setTstamp(randomLocalDate().toString());
@@ -159,22 +163,22 @@ public class BasebibliotekGenerator {
         if (randomBoolean()) {
             record.setInstKort(randomString());
         }
-        if (randomBoolean()) {
+        if (withPaddr) {
             record.setPadr(randomString());
         }
-        if (randomBoolean()) {
+        if (withPaddr) {
             record.setPpostnr(randomString());
         }
-        if (randomBoolean()) {
+        if (withPaddr) {
             record.setPpoststed(randomString());
         }
-        if (randomBoolean()) {
+        if (withVaddr) {
             record.setVadr(randomString());
         }
-        if (randomBoolean()) {
+        if (withVaddr) {
             record.setVpostnr(randomString());
         }
-        if (randomBoolean()) {
+        if (withVaddr) {
             record.setVpoststed(randomString());
         }
         if (randomBoolean()) {

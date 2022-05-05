@@ -10,8 +10,7 @@ import java.io.StringReader;
 import java.net.URI;
 import java.util.List;
 import no.nb.basebibliotek.generated.BaseBibliotek;
-import no.sikt.basebibliotek.BaseBibliotekBean;
-import no.sikt.basebibliotek.BasebibliotekConverter;
+import no.sikt.alma.generated.Partner;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
@@ -19,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
 
-public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, List<BaseBibliotekBean>> {
+public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, List<Partner>> {
 
     private static final Logger logger = LoggerFactory.getLogger(ResourceSharingPartnerHandler.class);
     public static final int SINGLE_EXPECTED_RECORD = 0;
@@ -40,11 +39,11 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, Li
     }
 
     @Override
-    public List<BaseBibliotekBean> handleRequest(S3Event s3event, Context context) {
+    public List<Partner> handleRequest(S3Event s3event, Context context) {
         logger.info(EVENT + gson.toJson(s3event));
         return attempt(() -> readFile(s3event))
                    .map(this::parseXmlFile)
-                   .map(BasebibliotekConverter::convertBasebibliotekToBaseBibliotekBean)
+                   .map(PartnerConverter::convertBasebibliotekToPartners)
                    .orElseThrow(fail -> logErrorAndThrowException(fail.getException()));
     }
 
