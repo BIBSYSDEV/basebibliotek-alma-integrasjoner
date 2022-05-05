@@ -107,7 +107,13 @@ public class ResourceSharingPartnerTest {
         var withPaddr = true;
         var withVaddr = true;
         var specifiedList = List.of(
-            new RecordSpecification(true, true, null, randomBoolean(), randomBoolean(), withPaddr, withVaddr));
+            new RecordSpecification(true,
+                                    true,
+                                    null, randomBoolean(),
+                                    randomBoolean(),
+                                    withPaddr,
+                                    withVaddr,
+                                    randomBoolean()));
         var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
@@ -115,6 +121,60 @@ public class ResourceSharingPartnerTest {
         var s3Event = createS3Event(uri);
         var partners = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         assertContactInfo(partners.get(0).getContactInfo(), basebibliotek.getRecord().get(0));
+    }
+
+    @Test
+    public void shouldRecordHandleIsilBibNrAndLandKode() throws IOException {
+        var withBibNr = true;
+        var withLandkode = true;
+        var withIsil = true;
+        var appender = LogUtils.getTestingAppenderForRootLogger();
+        var expectedLogMessage = "Could not convert record to partner, missing landkode bibNr, record";
+        var shouldNotBeConvertedToPartner = new RecordSpecification(!withBibNr,
+                                                                    !withLandkode,
+                                                                    null,
+                                                                    randomBoolean(),
+                                                                    randomBoolean(),
+                                                                    randomBoolean(),
+                                                                    randomBoolean(),
+                                                                    !withIsil);
+        var shouldUseIsilAsPartnerDetailsCode = new RecordSpecification(!withBibNr,
+                                                                        !withLandkode,
+                                                                        null,
+                                                                        randomBoolean(),
+                                                                        randomBoolean(),
+                                                                        randomBoolean(),
+                                                                        randomBoolean(),
+                                                                        withIsil);
+        var shouldCombineBibNrAndLandKodeAsPartnerDetailsCode = new RecordSpecification(withBibNr,
+                                                                                        withLandkode,
+                                                                                        null,
+                                                                                        randomBoolean(),
+                                                                                        randomBoolean(),
+                                                                                        randomBoolean(),
+                                                                                        randomBoolean(),
+                                                                                        !withIsil);
+        var specifiedList = List.of(
+            shouldUseIsilAsPartnerDetailsCode,
+            shouldCombineBibNrAndLandKodeAsPartnerDetailsCode,
+            shouldNotBeConvertedToPartner);
+        var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+        var partners = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        var recordWithIsil = basebibliotek.getRecord().get(0);
+        assertThat(partners, hasSize(2));
+        assertThat(appender.getMessages(), containsString(expectedLogMessage));
+        assertThat(partners.get(0).getPartnerDetails().getCode(), is(equalTo(recordWithIsil.getIsil())));
+
+        var recordWithoutIsilButContainingBibNrAndLandKode = basebibliotek.getRecord().get(1);
+        var expectedCraftedPartnerCode =
+            recordWithoutIsilButContainingBibNrAndLandKode.getLandkode().toUpperCase(Locale.ROOT)
+            + recordWithoutIsilButContainingBibNrAndLandKode.getBibnr();
+        assertThat(partners.get(1).getPartnerDetails().getCode(),
+                   is(equalTo(expectedCraftedPartnerCode)));
     }
 
     private void assertContactInfo(ContactInfo contactInfo, Record record) {

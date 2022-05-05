@@ -66,7 +66,8 @@ public class BasebibliotekGenerator {
                                                                recordsSpecification.getWithStengtFra(),
                                                                recordsSpecification.getWithStengtTil(),
                                                                recordsSpecification.getWithPaddr(),
-                                                               recordsSpecification.getWithVaddr()))
+                                                               recordsSpecification.getWithVaddr(),
+                                                               recordsSpecification.getWithIsil()))
                    .collect(Collectors.toList());
     }
 
@@ -88,7 +89,8 @@ public class BasebibliotekGenerator {
                                   boolean withStengtFra,
                                   boolean withStengtTil,
                                   boolean withPaddr,
-                                  boolean withVaddr) {
+                                  boolean withVaddr,
+                                  boolean withIsil) {
         var record = new Record();
         record.setRid(incrementCurrentRidAndReturnResult());
         record.setTstamp(randomLocalDate().toString());
@@ -109,7 +111,7 @@ public class BasebibliotekGenerator {
         if (shouldHaveLandkode) {
             record.setLandkode(randomString());
         }
-        if (randomBoolean()) {
+        if (withIsil) {
             record.setIsil(randomString());
             if (randomBoolean()) {
                 record.setIsilAgency(randomString());

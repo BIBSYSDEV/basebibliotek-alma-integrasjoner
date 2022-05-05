@@ -51,6 +51,8 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, Li
         return JAXB.unmarshal(new StringReader(file), BaseBibliotek.class);
     }
 
+
+
     private RuntimeException logErrorAndThrowException(Exception exception) {
         logger.error(exception.getMessage());
         return exception instanceof RuntimeException
