@@ -206,19 +206,22 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
         var partners = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+
+        var expectedName = Objects.nonNull(basebibliotek.getRecord().get(0).getInst())
+                               ? basebibliotek.getRecord().get(0).getInst().replaceAll("\n", " - ")
+                               : StringUtils.EMPTY_STRING;
+        assertThat(partners.get(0).getPartnerDetails().getName(), is(equalTo(expectedName)));
         var expectedAvgSupplyTime = 1;
-        var expectedDeliveryDelay = 0;
-        var expectedLendingSupported = true;
-        var expectedLendingWorkflow = "Lending";
-        var expectedBorrowingSupported = true;
-        var expectedBorrowingWorkflow = "Borrowing";
-        assertThat(partners.get(0).getPartnerDetails().getName(),
-                   is(equalTo(basebibliotek.getRecord().get(0).getInst())));
         assertThat(partners.get(0).getPartnerDetails().getAvgSupplyTime(), is(equalTo(expectedAvgSupplyTime)));
+        var expectedDeliveryDelay = 0;
         assertThat(partners.get(0).getPartnerDetails().getDeliveryDelay(), is(equalTo(expectedDeliveryDelay)));
+        var expectedLendingSupported = true;
         assertThat(partners.get(0).getPartnerDetails().isLendingSupported(), is(equalTo(expectedLendingSupported)));
+        var expectedLendingWorkflow = "Lending";
         assertThat(partners.get(0).getPartnerDetails().getLendingWorkflow(), is(equalTo(expectedLendingWorkflow)));
+        var expectedBorrowingSupported = true;
         assertThat(partners.get(0).getPartnerDetails().isBorrowingSupported(), is(equalTo(expectedBorrowingSupported)));
+        var expectedBorrowingWorkflow = "Borrowing";
         assertThat(partners.get(0).getPartnerDetails().getBorrowingWorkflow(), is(equalTo(expectedBorrowingWorkflow)));
     }
 
@@ -243,15 +246,16 @@ public class ResourceSharingPartnerTest {
         var s3Event = createS3Event(uri);
         var isAlmaOrBibsys = BIBSYS.equals(katsys) || ALMA.equals(katsys);
         var expectedHoldingCode = isAlmaOrBibsys
-                                         ? basebibliotek.getRecord().get(0).getLandkode().toUpperCase(Locale.ROOT)
-                                           + basebibliotek.getRecord().get(0).getBibnr()
-                                         : null;
+                                      ? basebibliotek.getRecord().get(0).getLandkode().toUpperCase(Locale.ROOT)
+                                        + basebibliotek.getRecord().get(0).getBibnr()
+                                      : null;
         var expectedSystemTypeValueValue = isAlmaOrBibsys
-            ? ALMA.toUpperCase(Locale.ROOT) : OTHER.toUpperCase(Locale.ROOT);
+                                               ? ALMA.toUpperCase(Locale.ROOT) : OTHER.toUpperCase(Locale.ROOT);
         var expectedSystemTypeValueDesc = isAlmaOrBibsys ? ALMA : OTHER;
         var partners = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         assertThat(partners.get(0).getPartnerDetails().getHoldingCode(), is(equalTo(expectedHoldingCode)));
-        assertThat(partners.get(0).getPartnerDetails().getSystemType().getValue(), is(equalTo(expectedSystemTypeValueValue)));
+        assertThat(partners.get(0).getPartnerDetails().getSystemType().getValue(),
+                   is(equalTo(expectedSystemTypeValueValue)));
         assertThat(partners.get(0).getPartnerDetails().getSystemType().getDesc(),
                    is(equalTo(expectedSystemTypeValueDesc)));
         //TODO:LocateProfile in partnerDetails should be set when isAlmaOrBibsys, otherwise null. SMILE-1573

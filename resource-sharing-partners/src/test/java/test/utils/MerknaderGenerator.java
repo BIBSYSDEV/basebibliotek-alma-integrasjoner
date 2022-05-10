@@ -21,7 +21,11 @@ import no.nb.basebibliotek.generated.Omtale;
 import no.nb.basebibliotek.generated.SpesSaml;
 import no.unit.nva.language.LanguageConstants;
 
-public class MerknaderGenerator {
+public final class MerknaderGenerator {
+
+    private MerknaderGenerator() {
+
+    }
 
     public static Merknader randomMerknader() {
         var merknader = new Merknader();

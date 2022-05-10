@@ -88,32 +88,35 @@ public class PartnerConverter {
         partnerDetails.setLendingSupported(LENDING_IS_SUPPORTED);
         partnerDetails.setBorrowingSupported(BORROWING_IS_SUPPORTED);
         partnerDetails.setBorrowingWorkflow(BORROWING_WORKFLOW);
-        partnerDetails.setHoldingCode(extractHoldingCodeIfAlmaORBibsysLibrary(record).orElse(null));
+        partnerDetails.setHoldingCode(extractHoldingCodeIfAlmaOrBibsysLibrary(record).orElse(null));
         partnerDetails.setSystemType(extractSystemType(record));
         return partnerDetails;
     }
 
     private static SystemType extractSystemType(Record record) {
         PartnerDetails.SystemType systemTypeValue = new PartnerDetails.SystemType();
-        systemTypeValue.setValue(isAlmaOrBibsysLibrary(record) ? ALMA.toUpperCase(Locale.ROOT) : OTHER);
-        systemTypeValue.setDesc(isAlmaOrBibsysLibrary(record) ? ALMA.toLowerCase(Locale.ROOT) : OTHER.toLowerCase(Locale.ROOT));
+        systemTypeValue.setValue(isAlmaOrBibsysLibrary(record)
+                                     ? ALMA.toUpperCase(Locale.ROOT)
+                                     : OTHER);
+        systemTypeValue.setDesc(
+            isAlmaOrBibsysLibrary(record)
+                ? ALMA.toLowerCase(Locale.ROOT)
+                : OTHER.toLowerCase(Locale.ROOT));
         return systemTypeValue;
     }
 
-
-
-    private static Optional<String> extractHoldingCodeIfAlmaORBibsysLibrary(Record record) {
-        return (isAlmaOrBibsysLibrary(record)) ? Optional.of(extractHoldingCode(record)) : Optional.empty();
+    private static Optional<String> extractHoldingCodeIfAlmaOrBibsysLibrary(Record record) {
+        return isAlmaOrBibsysLibrary(record) ? Optional.of(extractHoldingCode(record)) : Optional.empty();
     }
 
     private static boolean isAlmaOrBibsysLibrary(Record record) {
         if (Objects.nonNull(record.getKatsyst())) {
             return record.getKatsyst()
                        .toLowerCase(Locale.ROOT)
-                       .contains(BIBSYS) ||
-                   record.getKatsyst()
-                       .toLowerCase(Locale.ROOT)
-                       .contains(ALMA);
+                       .contains(BIBSYS)
+                   || record.getKatsyst()
+                          .toLowerCase(Locale.ROOT)
+                          .contains(ALMA);
         } else {
             return false;
         }

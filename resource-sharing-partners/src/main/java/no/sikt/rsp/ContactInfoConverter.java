@@ -16,10 +16,9 @@ import no.sikt.alma.generated.Emails;
 import no.sikt.alma.generated.Phone;
 import no.sikt.alma.generated.Phone.PhoneTypes;
 import no.sikt.alma.generated.Phones;
-import nva.commons.core.JacocoGenerated;
 import nva.commons.core.StringUtils;
 
-public class ContactInfoConverter {
+public final class ContactInfoConverter {
 
     private static final boolean BEST_EMAIL_IS_ALWAYS_PREFERRED = true;
     private static final boolean THERE_IS_ONLY_ONE_PHONE_SO_IT_IS_ALWAYS_PREFERRED = true;
@@ -30,8 +29,7 @@ public class ContactInfoConverter {
     private static final List<String> EMAIL_TYPES = List.of("claimMail", "orderMail", "paymentMail", "queries",
                                                             "returnsMail");
 
-    @JacocoGenerated
-    public ContactInfoConverter() {
+    private ContactInfoConverter() {
     }
 
     public static ContactInfo extractContactInfoFromRecord(Record record) {
@@ -45,14 +43,14 @@ public class ContactInfoConverter {
     private static Emails createEmails(Record record) {
         var emailBest = createEmailBest(record);
         var emailBestExists = emailBest.isPresent();
-        var emailRegular = createEmailRecgular(record, emailBestExists);
+        var emailRegular = createEmailRegular(record, emailBestExists);
         var emails = new Emails();
         emailBest.ifPresent(email -> emails.getEmail().add(email));
         emailRegular.ifPresent(email -> emails.getEmail().add(email));
         return emails;
     }
 
-    private static Optional<Email> createEmailRecgular(Record record, boolean emailBestExists) {
+    private static Optional<Email> createEmailRegular(Record record, boolean emailBestExists) {
         return Objects.nonNull(record.getEpostAdr())
                    ? Optional.of(createEmail(record.getEpostAdr(), !emailBestExists))
                    : Optional.empty();
@@ -157,7 +155,7 @@ public class ContactInfoConverter {
     private static Country createCountry(String landkode) {
         var country = new Country();
         if (!StringUtils.isEmpty(landkode)) {
-            country.setValue(landkode.toUpperCase(Locale.getDefault()));
+            country.setValue(landkode.toUpperCase(Locale.ROOT));
         }
         return country;
     }
