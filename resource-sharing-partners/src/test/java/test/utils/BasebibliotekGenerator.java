@@ -67,7 +67,8 @@ public class BasebibliotekGenerator {
                                                                recordsSpecification.getWithStengtTil(),
                                                                recordsSpecification.getWithPaddr(),
                                                                recordsSpecification.getWithVaddr(),
-                                                               recordsSpecification.getWithIsil()))
+                                                               recordsSpecification.getWithIsil(),
+                                                               recordsSpecification.getKatsys()))
                    .collect(Collectors.toList());
     }
 
@@ -90,7 +91,8 @@ public class BasebibliotekGenerator {
                                   boolean withStengtTil,
                                   boolean withPaddr,
                                   boolean withVaddr,
-                                  boolean withIsil) {
+                                  boolean withIsil,
+                                  String katsys) {
         var record = new Record();
         record.setRid(incrementCurrentRidAndReturnResult());
         record.setTstamp(randomLocalDate().toString());
@@ -117,10 +119,29 @@ public class BasebibliotekGenerator {
                 record.setIsilAgency(randomString());
             }
         }
-        if (!Objects.nonNull(specifiedNncipUri)) {
-            record.setEressurser(randomEressurser());
-        } else {
+        if (Objects.nonNull(specifiedNncipUri)) {
             record.setEressurser(generateEressurserWithSpecifiedNncipServer(specifiedNncipUri));
+        } else {
+            record.setEressurser(randomEressurser());
+        }
+        record.setKatsyst(katsys);
+        if (withPaddr) {
+            record.setPadr(randomString());
+        }
+        if (withPaddr) {
+            record.setPpostnr(randomString());
+        }
+        if (withPaddr) {
+            record.setPpoststed(randomString());
+        }
+        if (withVaddr) {
+            record.setVadr(randomString());
+        }
+        if (withVaddr) {
+            record.setVpostnr(randomString());
+        }
+        if (withVaddr) {
+            record.setVpoststed(randomString());
         }
         if (randomBoolean()) {
             record.setBibkode(randomString());
@@ -133,9 +154,6 @@ public class BasebibliotekGenerator {
         }
         if (randomBoolean()) {
             record.setLatLon(randomString());
-        }
-        if (randomBoolean()) {
-            record.setKatsyst(randomString());
         }
         if (randomBoolean()) {
             record.setSamkat(randomString());
@@ -164,24 +182,6 @@ public class BasebibliotekGenerator {
         }
         if (randomBoolean()) {
             record.setInstKort(randomString());
-        }
-        if (withPaddr) {
-            record.setPadr(randomString());
-        }
-        if (withPaddr) {
-            record.setPpostnr(randomString());
-        }
-        if (withPaddr) {
-            record.setPpoststed(randomString());
-        }
-        if (withVaddr) {
-            record.setVadr(randomString());
-        }
-        if (withVaddr) {
-            record.setVpostnr(randomString());
-        }
-        if (withVaddr) {
-            record.setVpoststed(randomString());
         }
         if (randomBoolean()) {
             record.setBesadr(randomString());

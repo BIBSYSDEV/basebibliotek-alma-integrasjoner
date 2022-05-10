@@ -11,9 +11,11 @@ public class RecordSpecification {
     private final boolean withPaddr;
     private final boolean withVaddr;
     private final boolean withIsil;
+    private final String katsys;
 
     public RecordSpecification(boolean withBibnr, boolean withLandkode, String nncipUri, boolean withStengtFra,
-                               boolean withStengtTil, boolean withPaddr, boolean withVaddr, boolean withIsil) {
+                               boolean withStengtTil, boolean withPaddr, boolean withVaddr, boolean withIsil,
+                               String katsys) {
         this.withBibnr = withBibnr;
         this.withLandkode = withLandkode;
         this.nncipUri = nncipUri;
@@ -22,6 +24,7 @@ public class RecordSpecification {
         this.withPaddr = withPaddr;
         this.withVaddr = withVaddr;
         this.withIsil = withIsil;
+        this.katsys = katsys;
     }
 
     public boolean getWithBibnr() {
@@ -54,5 +57,9 @@ public class RecordSpecification {
 
     public boolean getWithIsil() {
         return withIsil;
+    }
+
+    public String getKatsys() {
+        return katsys;
     }
 }

@@ -11,6 +11,7 @@ import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.nb.basebibliotek.generated.Record;
 import no.sikt.alma.generated.Partner;
 import no.sikt.alma.generated.PartnerDetails;
+import no.sikt.alma.generated.PartnerDetails.SystemType;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.StringUtils;
 import org.slf4j.Logger;
@@ -22,11 +23,15 @@ public class PartnerConverter {
     private static final String COULD_NOT_CONVERT_RECORD = "Could not convert record to partner, missing %s, record: "
                                                            + "%s";
     private static final int AVG_SUPPLY_TIME = 1;
-    public static final int DELIVERY_DELAY = 0;
-    public static final String LENDING_WORKFLOW = "Lending";
-    public static final boolean BORROWING_IS_SUPPORTED = true;
-    public static final String BORROWING_WORKFLOW = "Borrowing";
-    public static final boolean LENDING_IS_SUPPORTED = true;
+    private static final int DELIVERY_DELAY = 0;
+    private static final String LENDING_WORKFLOW = "Lending";
+    private static final boolean BORROWING_IS_SUPPORTED = true;
+    private static final String BORROWING_WORKFLOW = "Borrowing";
+    private static final boolean LENDING_IS_SUPPORTED = true;
+    private static final String ISIL_CODE_SEPARATOR = "-";
+    private static final String BIBSYS = "bibsys";
+    private static final String ALMA = "alma";
+    public static final String OTHER = "OTHER";
 
     @JacocoGenerated
     public PartnerConverter() {
@@ -70,8 +75,7 @@ public class PartnerConverter {
     }
 
     private static boolean satisfiesConstraints(Record record) {
-        return Objects.nonNull(record.getIsil())
-               || Objects.nonNull(record.getBibnr()) && Objects.nonNull(record.getLandkode());
+        return Objects.nonNull(record.getBibnr()) && Objects.nonNull(record.getLandkode());
     }
 
     private static PartnerDetails extractPartnerDetailsFromRecord(Record record) {
@@ -84,7 +88,39 @@ public class PartnerConverter {
         partnerDetails.setLendingSupported(LENDING_IS_SUPPORTED);
         partnerDetails.setBorrowingSupported(BORROWING_IS_SUPPORTED);
         partnerDetails.setBorrowingWorkflow(BORROWING_WORKFLOW);
+        partnerDetails.setHoldingCode(extractHoldingCodeIfAlmaORBibsysLibrary(record).orElse(null));
+        partnerDetails.setSystemType(extractSystemType(record));
         return partnerDetails;
+    }
+
+    private static SystemType extractSystemType(Record record) {
+        PartnerDetails.SystemType systemTypeValue = new PartnerDetails.SystemType();
+        systemTypeValue.setValue(isAlmaOrBibsysLibrary(record) ? ALMA.toUpperCase(Locale.ROOT) : OTHER);
+        systemTypeValue.setDesc(isAlmaOrBibsysLibrary(record) ? ALMA.toLowerCase(Locale.ROOT) : OTHER.toLowerCase(Locale.ROOT));
+        return systemTypeValue;
+    }
+
+
+
+    private static Optional<String> extractHoldingCodeIfAlmaORBibsysLibrary(Record record) {
+        return (isAlmaOrBibsysLibrary(record)) ? Optional.of(extractHoldingCode(record)) : Optional.empty();
+    }
+
+    private static boolean isAlmaOrBibsysLibrary(Record record) {
+        if (Objects.nonNull(record.getKatsyst())) {
+            return record.getKatsyst()
+                       .toLowerCase(Locale.ROOT)
+                       .contains(BIBSYS) ||
+                   record.getKatsyst()
+                       .toLowerCase(Locale.ROOT)
+                       .contains(ALMA);
+        } else {
+            return false;
+        }
+    }
+
+    private static String extractHoldingCode(Record record) {
+        return record.getLandkode().toUpperCase(Locale.ROOT) + record.getBibnr();
     }
 
     private static String extractName(Record record) {
@@ -96,6 +132,6 @@ public class PartnerConverter {
     private static String extractIsilCode(Record record) {
         return Objects.nonNull(record.getIsil())
                    ? record.getIsil()
-                   : record.getLandkode().toUpperCase(Locale.ROOT) + record.getBibnr();
+                   : record.getLandkode().toUpperCase(Locale.ROOT) + ISIL_CODE_SEPARATOR + record.getBibnr();
     }
 }

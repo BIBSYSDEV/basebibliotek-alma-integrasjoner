@@ -46,6 +46,8 @@ import nva.commons.logutils.LogUtils;
 import org.hamcrest.core.IsNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
@@ -62,6 +64,10 @@ public class ResourceSharingPartnerTest {
     private static final String BASEBIBLIOTEK_XML = "redacted_bb_full.xml";
 
     private static final String INVALID_BASEBIBLIOTEK_XML_STRING = "invalid";
+    public static final String ALMA = "alma";
+    public static final String BIBSYS = "bibsys";
+    public static final String TIDEMANN = "Tidemann";
+    public static final String OTHER = "other";
 
     private ResourceSharingPartnerHandler resourceSharingPartnerHandler;
     public static final Context CONTEXT = mock(Context.class);
@@ -113,7 +119,8 @@ public class ResourceSharingPartnerTest {
                                     randomBoolean(),
                                     withPaddr,
                                     withVaddr,
-                                    randomBoolean()));
+                                    randomBoolean(),
+                                    randomString()));
         var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
@@ -130,6 +137,7 @@ public class ResourceSharingPartnerTest {
         var withIsil = true;
         var appender = LogUtils.getTestingAppenderForRootLogger();
         var expectedLogMessage = "Could not convert record to partner, missing landkode bibNr, record";
+        //TODO: waiting for confirmation that libraries missing landkode should be ignored
         var shouldNotBeConvertedToPartner = new RecordSpecification(!withBibNr,
                                                                     !withLandkode,
                                                                     null,
@@ -137,15 +145,17 @@ public class ResourceSharingPartnerTest {
                                                                     randomBoolean(),
                                                                     randomBoolean(),
                                                                     randomBoolean(),
-                                                                    !withIsil);
-        var shouldUseIsilAsPartnerDetailsCode = new RecordSpecification(!withBibNr,
-                                                                        !withLandkode,
+                                                                    !withIsil,
+                                                                    randomString());
+        var shouldUseIsilAsPartnerDetailsCode = new RecordSpecification(withBibNr,
+                                                                        withLandkode,
                                                                         null,
                                                                         randomBoolean(),
                                                                         randomBoolean(),
                                                                         randomBoolean(),
                                                                         randomBoolean(),
-                                                                        withIsil);
+                                                                        withIsil,
+                                                                        randomString());
         var shouldCombineBibNrAndLandKodeAsPartnerDetailsCode = new RecordSpecification(withBibNr,
                                                                                         withLandkode,
                                                                                         null,
@@ -153,7 +163,8 @@ public class ResourceSharingPartnerTest {
                                                                                         randomBoolean(),
                                                                                         randomBoolean(),
                                                                                         randomBoolean(),
-                                                                                        !withIsil);
+                                                                                        !withIsil,
+                                                                                        randomString());
         var specifiedList = List.of(
             shouldUseIsilAsPartnerDetailsCode,
             shouldCombineBibNrAndLandKodeAsPartnerDetailsCode,
@@ -172,6 +183,7 @@ public class ResourceSharingPartnerTest {
         var recordWithoutIsilButContainingBibNrAndLandKode = basebibliotek.getRecord().get(1);
         var expectedCraftedPartnerCode =
             recordWithoutIsilButContainingBibNrAndLandKode.getLandkode().toUpperCase(Locale.ROOT)
+            + "-"
             + recordWithoutIsilButContainingBibNrAndLandKode.getBibnr();
         assertThat(partners.get(1).getPartnerDetails().getCode(),
                    is(equalTo(expectedCraftedPartnerCode)));
@@ -186,7 +198,8 @@ public class ResourceSharingPartnerTest {
                                     randomBoolean(),
                                     randomBoolean(),
                                     randomBoolean(),
-                                    randomBoolean()));
+                                    randomBoolean(),
+                                    randomString()));
         var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
@@ -199,13 +212,49 @@ public class ResourceSharingPartnerTest {
         var expectedLendingWorkflow = "Lending";
         var expectedBorrowingSupported = true;
         var expectedBorrowingWorkflow = "Borrowing";
-        assertThat(partners.get(0).getPartnerDetails().getName(), is(equalTo(basebibliotek.getRecord().get(0).getInst())));
+        assertThat(partners.get(0).getPartnerDetails().getName(),
+                   is(equalTo(basebibliotek.getRecord().get(0).getInst())));
         assertThat(partners.get(0).getPartnerDetails().getAvgSupplyTime(), is(equalTo(expectedAvgSupplyTime)));
         assertThat(partners.get(0).getPartnerDetails().getDeliveryDelay(), is(equalTo(expectedDeliveryDelay)));
         assertThat(partners.get(0).getPartnerDetails().isLendingSupported(), is(equalTo(expectedLendingSupported)));
         assertThat(partners.get(0).getPartnerDetails().getLendingWorkflow(), is(equalTo(expectedLendingWorkflow)));
         assertThat(partners.get(0).getPartnerDetails().isBorrowingSupported(), is(equalTo(expectedBorrowingSupported)));
         assertThat(partners.get(0).getPartnerDetails().getBorrowingWorkflow(), is(equalTo(expectedBorrowingWorkflow)));
+    }
+
+    @ParameterizedTest(name = "Should handle katsys codes differently")
+    @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
+    public void shouldExtractCertainDataIfAlmaOrBibsysLibrary(String katsys) throws IOException {
+        var withBibNr = true;
+        var withLandkode = true;
+        var specifiedList = List.of(new RecordSpecification(withBibNr,
+                                                            withLandkode,
+                                                            null,
+                                                            randomBoolean(),
+                                                            randomBoolean(),
+                                                            randomBoolean(),
+                                                            randomBoolean(),
+                                                            randomBoolean(),
+                                                            katsys));
+        var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+        var isAlmaOrBibsys = BIBSYS.equals(katsys) || ALMA.equals(katsys);
+        var expectedHoldingCode = isAlmaOrBibsys
+                                         ? basebibliotek.getRecord().get(0).getLandkode().toUpperCase(Locale.ROOT)
+                                           + basebibliotek.getRecord().get(0).getBibnr()
+                                         : null;
+        var expectedSystemTypeValueValue = isAlmaOrBibsys
+            ? ALMA.toUpperCase(Locale.ROOT) : OTHER.toUpperCase(Locale.ROOT);
+        var expectedSystemTypeValueDesc = isAlmaOrBibsys ? ALMA : OTHER;
+        var partners = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        assertThat(partners.get(0).getPartnerDetails().getHoldingCode(), is(equalTo(expectedHoldingCode)));
+        assertThat(partners.get(0).getPartnerDetails().getSystemType().getValue(), is(equalTo(expectedSystemTypeValueValue)));
+        assertThat(partners.get(0).getPartnerDetails().getSystemType().getDesc(),
+                   is(equalTo(expectedSystemTypeValueDesc)));
+        //TODO:LocateProfile in partnerDetails should be set when isAlmaOrBibsys, otherwise null. SMILE-1573
     }
 
     private void assertContactInfo(ContactInfo contactInfo, Record record) {
