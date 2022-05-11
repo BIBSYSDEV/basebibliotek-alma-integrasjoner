@@ -39,10 +39,10 @@ import no.sikt.alma.generated.Address;
 import no.sikt.alma.generated.ContactInfo;
 import no.sikt.alma.generated.Email;
 import no.sikt.alma.generated.Emails;
-import no.sikt.alma.generated.Partner;
 import no.sikt.alma.generated.Phones;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
+import nva.commons.core.Environment;
 import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
@@ -80,12 +80,14 @@ public class ResourceSharingPartnerTest {
 
     private FakeS3Client s3Client;
     private S3Driver s3Driver;
+    private Environment environment;
 
     @BeforeEach
     public void init() {
+        environment = mock(Environment.class);
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, "ignoredValue");
-        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, WireMocker.httpClient);
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(environment, s3Client, WireMocker.httpClient);
         WireMocker.startWiremockServer();
     }
 
@@ -94,10 +96,9 @@ public class ResourceSharingPartnerTest {
         var fullBaseBibliotekFile = IoUtils.stringFromResources(Path.of(BASEBIBLIOTEK_XML));
         var uri = s3Driver.insertFile(randomS3Path(), fullBaseBibliotekFile);
         var s3Event = createS3Event(uri);
-        List<Partner> partners = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
-        assertThat(partners, is(notNullValue()));
-        assertThat(partners, is(not(empty())));
-        assertThat(partners.get(0).getPartnerDetails().getCode(), is(not(emptyString())));
+        Integer response = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        assertThat(response, is(notNullValue()));
+        assertThat(response, is(1));
     }
 
     @Test
@@ -105,7 +106,8 @@ public class ResourceSharingPartnerTest {
         var s3Event = createS3Event(randomString());
         var expectedMessage = randomString();
         s3Client = new FakeS3ClientThrowingException(expectedMessage);
-        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, WireMocker.httpClient);
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(environment, s3Client,
+                                                                          WireMocker.httpClient);
         var appender = LogUtils.getTestingAppenderForRootLogger();
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
         assertThat(appender.getMessages(), containsString(expectedMessage));

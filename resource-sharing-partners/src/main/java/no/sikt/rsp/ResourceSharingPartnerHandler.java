@@ -5,13 +5,17 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.google.gson.Gson;
 import jakarta.xml.bind.JAXB;
+import java.io.IOException;
 import java.io.StringReader;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
 import java.util.List;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.sikt.alma.generated.Partner;
 import no.unit.nva.s3.S3Driver;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
@@ -27,17 +31,21 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
 
     public static final String S3_URI_TEMPLATE = "s3://%s/%s";
 
+    private final Environment environment;
     private final S3Client s3Client;
+    private final AlmaConnection almaConnection;
 
     private List<Partner> partners;
 
     @JacocoGenerated
     public ResourceSharingPartnerHandler() {
-        this(S3Driver.defaultS3Client().build(), HttpClient.newHttpClient());
+        this(new Environment(), S3Driver.defaultS3Client().build(), HttpClient.newHttpClient());
     }
 
-    public ResourceSharingPartnerHandler(S3Client s3Client, HttpClient httpClient) {
+    public ResourceSharingPartnerHandler(Environment environment, S3Client s3Client, HttpClient httpClient) {
+        this.environment = environment;
         this.s3Client = s3Client;
+        this.almaConnection = new AlmaConnection(environment.readEnv("ALMA_API_HOST"), httpClient);
     }
 
     @Override
@@ -45,11 +53,25 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
         logger.info(EVENT + gson.toJson(s3event));
         try {
             var file = readFile(s3event);
-            var baseibliotek = parseXmlFile(file);
-            partners = PartnerConverter.convertBasebibliotekToPartners(baseibliotek);
-            return partners.size();
+            var baseBibliotek = parseXmlFile(file);
+            partners = PartnerConverter.convertBasebibliotekToPartners(baseBibliotek);
+            int numberOfAlmaPartners = 0;
+            partners.forEach(partner -> checkInAlma(numberOfAlmaPartners,  partner.getPartnerDetails().getCode()));
+            return numberOfAlmaPartners;
         } catch (Exception exception) {
             throw logErrorAndThrowException(exception);
+        }
+    }
+
+    private void checkInAlma(int numberOfAlmaPartners, String code) {
+        try {
+            HttpResponse<String> httpResponse = almaConnection
+                .sendGet(code, environment.readEnv("ALMA_APIKEY"));
+            if (httpResponse.statusCode() <= HttpURLConnection.HTTP_MULT_CHOICE) {
+                numberOfAlmaPartners++;
+            }
+        } catch (IOException | InterruptedException e) {
+            logger.error(e.getMessage());
         }
     }
 
