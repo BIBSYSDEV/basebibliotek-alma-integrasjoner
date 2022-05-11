@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<BaseBibliotek export="2022-04-28 21:00:02" xmlns="http://nb.no/BaseBibliotek">
+  <record rid="1" tstamp="2022-01-17 13:41:33">
+    <bibnr>0030100</bibnr>
+    <isil>NO-0030100</isil>
+    <bibkode>NB/BRU</bibkode>
+    <bibltype>FAG</bibltype>
+    <aut>redacted</aut>
+    <lat_lon>59.914276,10.717350</lat_lon>
+    <katsyst>Alma</katsyst>
+    <samkat>Samper, Biblioteksøk</samkat>
+    <kommnr>0305</kommnr>
+    <overordnet>0030000</overordnet>
+    <inst>Nasjonalbiblioteket
+      Seksjon Publikumstjenesten, Veiledningen</inst>
+    <inst_eng>National Library of Norway
+      Interlibrary Loans</inst_eng>
+    <padr>Postboks 2674 Solli</padr>
+    <ppostnr>0203</ppostnr>
+    <ppoststed>OSLO</ppoststed>
+    <vadr>Observatoriegata 1B</vadr>
+    <vpostnr>0254</vpostnr>
+    <vpoststed>OSLO</vpoststed>
+    <besadr>Henrik Ibsens gate 110</besadr>
+    <landkode>NO</landkode>
+    <tlf>12 34 56 78</tlf>
+    <tlf_fj>12 34 56 78</tlf_fj>
+    <epost_adr>redacted@redacted.no</epost_adr>
+    <epost_best>redacted@redacted.no</epost_best>
+    <url_hjem>https://www.nb.no/</url_hjem>
+    <url_kat>http://ask.bibsys.no/ask/action/stdsearch</url_kat>
+    <andre_navn>Nasjonalbiblioteket avd. Oslo; Norsk Musikksamling og lydarkiv (1927-).
+      Norsk Filminstitutt (1955); Filmbiblioteket; Filmarkivet - Filmdokumentasjon;
+      Overført til Nasjonalbiblioteket - Seksjon Ny Film i 2008. Mediateket
+      Nasjonalbiblioteket, Seksjon Biblioteket, Utlånet</andre_navn>
+    <fakt_orgnr>976029100</fakt_orgnr>
+    <bibleder>redacted</bibleder>
+    <fj_leder>redacted</fj_leder>
+    <andre_koder>
+      <bibkode_alt>NB/INT</bibkode_alt>
+      <bibkode_alt>NBO/NMS</bibkode_alt>
+      <bibkode_alt>NBO/UT</bibkode_alt>
+      <bibkode_alt>NFILM</bibkode_alt>
+      <bibkode_gml>ga</bibkode_gml>
+      <bibkode_gml>gb</bibkode_gml>
+      <bibkode_gml>gm</bibkode_gml>
+      <bibkode_gml>gn</bibkode_gml>
+      <bibkode_gml>NA</bibkode_gml>
+      <bibkode_gml>NA/...</bibkode_gml>
+      <bibkode_gml>NA/A</bibkode_gml>
+      <bibkode_gml>NB/NBI</bibkode_gml>
+      <bibkode_gml>NB/NMS</bibkode_gml>
+      <bibkode_gml>NBARNBOK</bibkode_gml>
+      <bibkode_gml>NBO</bibkode_gml>
+      <bibkode_gml>NBO/FILM</bibkode_gml>
+      <bibkode_gml>NBO/MUS</bibkode_gml>
+      <bibkode_gml>NBO/NMS</bibkode_gml>
+      <bibkode_gml>NBS</bibkode_gml>
+      <bibkode_gml>NF</bibkode_gml>
+      <bibkode_gml>NFI</bibkode_gml>
+      <bibkode_gml>NFILM</bibkode_gml>
+      <bibkode_gml>NMS</bibkode_gml>
+      <bibkode_gml>NS</bibkode_gml>
+      <bibkode_gml>UBO/NA</bibkode_gml>
+      <bibkode_gml>UBO/NMS</bibkode_gml>
+      <bibkode_gml>yc</bibkode_gml>
+      <bibnr_gml>0030102</bibnr_gml>
+      <bibnr_gml>0030104</bibnr_gml>
+      <bibnr_gml>1030054</bibnr_gml>
+      <bibsys_avd>NB/BRU</bibsys_avd>
+      <bibsys_avd>NB/INT</bibsys_avd>
+      <bibsys_avd>NB/NBI</bibsys_avd>
+      <bibsys_bib>g</bibsys_bib>
+      <bibsys_utl>nbout</bibsys_utl>
+      <oclc_kode>NO1 NLNOR</oclc_kode>
+    </andre_koder>
+    <eressurser>
+      <nncip_uri>https://bibsys.alma.exlibrisgroup.com/view/NcipP2PServlet</nncip_uri>
+      <SRU>https://bibsys.alma.exlibrisgroup.com/view/sru/47BIBSYS_NB?version=1.2</SRU>
+      <z_info>http://www.bibsys.no/wp-content/uploads/2018/11/Bibliografiske_data_via_Z3950.pdf</z_info>
+      <z_target>bibsys.alma.exlibrisgroup.com:210/47BIBSYS_NB</z_target>
+    </eressurser>
+    <wressurser>
+      <link>
+        <url>http://www.facebook.com/nasjonalbiblioteket</url>
+      </link>
+    </wressurser>
+    <merknader>
+      <fjGen lang="en">Some restrictions on lending of Norwegian material</fjGen>
+      <fjGen lang="no">En del begrensninger på utlån/hjemlån av norsk materiale. Fjernlån bør fortrinnsvis bestilles fra Depotbiblioteket.</fjGen>
+      <fjMrk lang="en">Valid loancard of National library number is required. Rush orders are accepted without extra charges. Renewals and reservations may be arranged on one's own in Oria or by contacting the library.
+
+        Any loss of or damage to borrowed materials must be paid for in accordance with a rate set by the National Library. The amount is NOK 400. In the event of loss or damage to valuable materials, the size of the claim will be considered individually.</fjMrk>
+      <fjMrk lang="no">Det kreves lånekort eller nasjonalt biblioteknummer. Hastebestillinger ekspederes uten pristillegg. Fornyelse og reserveringer kan ordnes i Oria eller ved henvendelse til biblioteket.</fjMrk>
+      <fjSpes lang="en">Borrowing period: 28 days. </fjSpes>
+      <fjSpes lang="no">Lånefrist: 28 dager.
+
+        Tap og skade på lånt materiale skal erstattes av fast sats fastsatt av Nasjonalbiblioteket. Minimums erstatningsgebyr er beregnet til kr. 400. Ved tap av eller skade på spesielt verdifullt materiale vil størrelsen på erstatningskravet bli vurdert særskilt.</fjSpes>
+      <klass lang="no">DDK23</klass>
+      <klassNoter lang="no">Indekseres med systematiske kataloger etter eget system. For film dessuten en spesialvariant av UDK utviklet av FIAF.</klassNoter>
+      <kopMrk lang="no">Spesielle priser for lange eller tidkrevende kopier og for kopier som krever spesialutstyr. Giro: 7694 05 09706</kopMrk>
+      <omtale lang="en">The National Library holds - with some exceptions - all Norwegian publications, music publications and foreign secondary sources, considerable collections of foreign music, and printed music and film.
+      </omtale>
+      <omtale lang="no">Nasjonalbiblioteket skal i prinsippet ha alle norske publikasjoner, Norvegica extranea og utenlandsk støttelitteratur alle norske musikkutgivelser og store samlinger av utenlandske publikasjoner og musikalier og film.</omtale>
+      <spesSaml lang="no">Fotografier tilknyttet &lt;a href="http://www.nb.no/baser/nansen"&gt; Fridthjof Nansen&lt;/a&gt; og &lt;a href="http://www.nb.no/baser/amundsen"&gt; Roald Amundsen; &lt;/a&gt; Spirit of the Vikings - 403 radioprogram 1942-1947; &lt;a href="http://www.nb.no/gallerinor/"&gt; Galleri NOR - 70.000 digitaliserte fotografier; &lt;/a&gt; &lt;a href="http://www.nb.no/emigrasjon"&gt; Det løfterike landet- emigrasjon fra Norge til Amerika; &lt;/a&gt; Billedsamling, plakatsamling, Norsk krigstrykksamling, Norsk musikksamling, Teaterhistorisk samling, Holberg-, Ibsen- og Bjørnson-samlingen, Norsk-amerikansk samling, Kartsamlingen, Håndskriftsamlingen, Paleotypsamlingen, Småtrykksamlingen.  Libri rari, paleotyper, fotografier Depotbibliotek for publikasjoner fra: FIAF (International Federation of Film Archives)
+        Bøker/periodika utgitt på norsk eller samisk for barn og ungdom i Norge, samt norsk og internasjonal fag- og forskningslitteratur om barne- og ungdomslitteratur. Norsk oversatt  barne- og ungdomslitteratur. Mikrofilmkort. Klipparkiv.    </spesSaml>
+    </merknader>
+  </record>
+  <record rid="2" tstamp="2021-08-18 10:49:02">
+    <bibnr>0030101</bibnr>
+    <isil>NO-0030101</isil>
+    <bibkode>NB/INN</bibkode>
+    <bibltype>FAG</bibltype>
+    <aut>redacted</aut>
+    <lat_lon>59.913667,10.727689</lat_lon>
+    <katsyst>Alma</katsyst>
+    <samkat>Biblioteksøk</samkat>
+    <kommnr>0305</kommnr>
+    <overordnet>0030000</overordnet>
+    <inst>Nasjonalbiblioteket
+      Seksjon Biblioteket, Innlånet</inst>
+    <inst_eng>National Library of Norway
+      Interlibrary Loans / Borrowing Office</inst_eng>
+    <padr>Postboks 2674 Solli</padr>
+    <ppostnr>0203</ppostnr>
+    <ppoststed>OSLO</ppoststed>
+    <vadr>Observatoriegata 1B</vadr>
+    <vpostnr>0254</vpostnr>
+    <vpoststed>OSLO</vpoststed>
+    <besadr>Henrik Ibsens gate 110</besadr>
+    <landkode>NO</landkode>
+    <tlf>12 34 56 78</tlf>
+    <epost_adr>redacted@redacted.no</epost_adr>
+    <epost_best>redacted@redacted.no</epost_best>
+    <url_hjem>https://bibliotekutvikling.no/lan-fra-nasjonalbiblioteket/innlanstjenesten/</url_hjem>
+    <bibleder>redacted</bibleder>
+    <fj_leder>redacted</fj_leder>
+    <andre_koder>
+      <bibkode_gml>NBO/INN</bibkode_gml>
+      <bibnr_gml>6900120</bibnr_gml>
+      <oclc_kode>NO1</oclc_kode>
+    </andre_koder>
+    <eressurser>
+      <nncip_uri>https://bibsys.alma.exlibrisgroup.com/view/NcipP2PServlet</nncip_uri>
+      <SRU>https://bibsys.alma.exlibrisgroup.com/view/sru/47BIBSYS_NB?version=1.2</SRU>
+      <z_info>http://www.bibsys.no/wp-content/uploads/2018/11/Bibliografiske_data_via_Z3950.pdf</z_info>
+      <z_target>bibsys.alma.exlibrisgroup.com:210/47BIBSYS_NB</z_target>
+    </eressurser>
+    <wressurser>
+      <link>
+        <url>http://www.facebook.com/nasjonalbiblioteket</url>
+      </link>
+    </wressurser>
+    <merknader>
+      <fjGen lang="en">Loans sent outside the Nordic countries are billed.</fjGen>
+      <fjGen lang="no">Formidling av lån utenfor Norden faktureres.</fjGen>
+      <fjMrk lang="en">Loans from libraries outside the Nordic countries are always restricted to use in the borrowing libraries' reading room. National Norwegian Library Number is required for all interlending NOK 70,00 (EUR 9,00) is added for Rush service. Reservations and renewals depend on the owner library's lending policy Giro number: NO 40 7694 05 09706</fjMrk>
+      <fjMrk lang="no">Innlån fra bibliotek utenfor Norden er alltid lesesalslån. Lån fornyes ikke. Lånet må benyttes i biblioteket, og er ikke til hjemlån for bibliotekets sluttbruker.
+        Eierbiblioteket bestemmer hvor lang lånetiden er.
+        Det kreves Nasjonalt biblioteknummer. Giro nummer: 7694 05 09706</fjMrk>
+      <fjSpes lang="en">Deadline depends on the owner library's lending policy. Fee: NOK 100</fjSpes>
+      <fjSpes lang="no">Lånefrist o.l. er avhengig av eierbibliotekets betingelser. Gebyr: NOK 100,00 per enhet</fjSpes>
+      <klass lang="no">DDK23</klass>
+      <kopGeb lang="en">In exceptional cases copies may be delivered as e-mail attachments within copyright law</kopGeb>
+      <kopGeb lang="no">Kan unntaksvis sendes som e-postvedlegg innenfor rammen av opphavsrettslovgivningen</kopGeb>
+      <omtale lang="no">Formidlingstjeneste som hjelper norske bibliotek med råd og innlån fra utlandet.
+        Innad i Norden gir vi lokaliseringshjelp, og bibliotekene bestiller selv.
+        Fra bibliotek utenfor Norden bestiller vi lån, og skaffer artikkelkopier. Se sjekkliste på vår hjemmeside før bestilling sendes.</omtale>
+    </merknader>
+  </record>
+</BaseBibliotek>
