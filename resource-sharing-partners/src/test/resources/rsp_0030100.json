@@ -1,0 +1,159 @@
+{
+  "partner_details": {
+    "code": "NO-0030100",
+    "name": "Nasjonalbiblioteket - Seksjon Publikumstjenesten, Veiledningen",
+    "status": "ACTIVE",
+    "profile_details": {
+      "profile_type": "ISO",
+      "iso_details": {
+        "alternative_document_delivery": false,
+        "ill_server": "eu01-psb.alma.exlibrisgroup.com",
+        "ill_port": 9001,
+        "iso_symbol": "NO-0030100",
+        "request_expiry_type": {
+          "value": "NO_EXPIRY",
+          "desc": "No expiry"
+        },
+        "send_requester_information": false,
+        "shared_barcodes": true,
+        "ignore_shipping_cost_override": false
+      }
+    },
+    "system_type": {
+      "value": "ALMA",
+      "desc": "Alma"
+    },
+    "avg_supply_time": 0,
+    "delivery_delay": 0,
+    "currency": null,
+    "borrowing_supported": true,
+    "borrowing_workflow": "Borrowing",
+    "lending_supported": true,
+    "lending_workflow": "Lending",
+    "auto_cancel_supported": false,
+    "auto_claim_supported": false,
+    "locate_profile": {
+      "value": "LOCATE_NB",
+      "desc": "LOCATE_NB"
+    },
+    "institution_code": "47BIBSYS_NB",
+    "holding_code": "0030100"
+  },
+  "contact_info": {
+    "address": [
+      {
+        "line1": "Observatoriegata 1B",
+        "line2": null,
+        "line3": null,
+        "line4": null,
+        "line5": "NO-0030100",
+        "city": "OSLO",
+        "postal_code": "0254",
+        "country": {
+          "value": "NOR",
+          "desc": "Norway"
+        },
+        "start_date": "2022-01-18Z",
+        "address_type": [
+          "billing",
+          "shipping",
+          "claim",
+          "order",
+          "payment",
+          "returns"
+        ],
+        "preferred": false
+      },
+      {
+        "line1": "Postboks 2674 Solli",
+        "line2": null,
+        "line3": null,
+        "line4": null,
+        "line5": "NO-0030100",
+        "city": "OSLO",
+        "postal_code": "0203",
+        "country": {
+          "value": "NOR",
+          "desc": "Norway"
+        },
+        "start_date": "2022-01-18Z",
+        "address_type": [
+          "billing",
+          "claim",
+          "order",
+          "payment",
+          "returns",
+          "shipping"
+        ],
+        "preferred": false
+      },
+      {
+        "line1": "Postboks 2674 Solli ",
+        "line2": null,
+        "line3": null,
+        "line4": null,
+        "line5": null,
+        "city": null,
+        "country": null,
+        "start_date": "2015-07-10Z",
+        "address_type": [
+          "shipping"
+        ],
+        "preferred": true
+      }
+    ],
+    "phone": [
+      {
+        "phone_number": "23 27 60 00",
+        "phone_type": [
+          "claimPhone",
+          "orderPhone",
+          "paymentPhone",
+          "returnsPhone"
+        ],
+        "preferred": true,
+        "preferredSMS": null
+      }
+    ],
+    "email": [
+      {
+        "email_address": "veiledningen@nb.no",
+        "description": null,
+        "email_type": [
+          "claimMail",
+          "orderMail",
+          "paymentMail",
+          "queries",
+          "returnsMail"
+        ],
+        "preferred": false
+      },
+      {
+        "email_address": "fjernlaanet@nb.no",
+        "description": null,
+        "email_type": [
+          "claimMail",
+          "orderMail",
+          "paymentMail",
+          "queries",
+          "returnsMail"
+        ],
+        "preferred": false
+      },
+      {
+        "email_address": "utlaanet@nb.no",
+        "description": null,
+        "email_type": [
+          "claimMail",
+          "orderMail",
+          "paymentMail",
+          "queries",
+          "returnsMail"
+        ],
+        "preferred": true
+      }
+    ]
+  },
+  "note": [],
+  "link": null
+}

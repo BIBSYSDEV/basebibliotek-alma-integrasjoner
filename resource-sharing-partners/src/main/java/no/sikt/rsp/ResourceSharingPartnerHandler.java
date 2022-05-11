@@ -8,6 +8,7 @@ import com.google.gson.Gson;
 import jakarta.xml.bind.JAXB;
 import java.io.StringReader;
 import java.net.URI;
+import java.net.http.HttpClient;
 import java.util.List;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.sikt.alma.generated.Partner;
@@ -31,10 +32,10 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, Li
 
     @JacocoGenerated
     public ResourceSharingPartnerHandler() {
-        this(S3Driver.defaultS3Client().build());
+        this(S3Driver.defaultS3Client().build(), HttpClient.newHttpClient());
     }
 
-    public ResourceSharingPartnerHandler(S3Client s3Client) {
+    public ResourceSharingPartnerHandler(S3Client s3Client, HttpClient httpClient) {
         this.s3Client = s3Client;
     }
 
