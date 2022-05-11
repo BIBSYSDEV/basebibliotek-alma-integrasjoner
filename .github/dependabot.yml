@@ -20,3 +20,8 @@ updates:
     schedule:
       interval: 'daily'
     target-branch: 'develop'
+  - package-ecosystem: 'gradle'
+    directory: '/basebibliotek-fetch-cronjob'
+    schedule:
+      interval: 'daily'
+    target-branch: 'develop'
