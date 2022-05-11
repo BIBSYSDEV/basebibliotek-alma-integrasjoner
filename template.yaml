@@ -46,9 +46,6 @@ Resources:
       Environment:
         Variables:
           REPORT_BUCKET: !Ref ReportBucketName
-          BASEBIBLIOTEK_USERNAME: !Ref BasebibliotekUsername
-          BASEBIBLIOTEK_PASSWORD: !Ref BasebibliotekPassword
-          BASEBIBLIOTEK_URL: !Ref BasebibliotekUrl
           BASEBIBLIOTEK_XML_BUCKET: !Ref BasebibliotekXmlBucketName
       Events:
         BasebibliotekFileUpload:
