@@ -144,7 +144,8 @@ public class ResourceSharingPartnerTest {
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
-        var partners = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        var partners = resourceSharingPartnerHandler.getPartners();
         assertContactInfo(partners.get(0).getContactInfo(), basebibliotek.getRecord().get(0));
     }
 
@@ -155,7 +156,6 @@ public class ResourceSharingPartnerTest {
         var withIsil = true;
         var appender = LogUtils.getTestingAppenderForRootLogger();
         var expectedLogMessage = "Could not convert record to partner, missing landkode bibNr, record";
-        //TODO: waiting for confirmation that libraries missing landkode should be ignored
         var shouldNotBeConvertedToPartner = new RecordSpecification(!withBibNr,
                                                                     !withLandkode,
                                                                     null,
@@ -192,7 +192,8 @@ public class ResourceSharingPartnerTest {
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
-        var partners = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        var partners = resourceSharingPartnerHandler.getPartners();
         var recordWithIsil = basebibliotek.getRecord().get(0);
         assertThat(partners, hasSize(2));
         assertThat(appender.getMessages(), containsString(expectedLogMessage));
@@ -223,7 +224,8 @@ public class ResourceSharingPartnerTest {
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
-        var partners = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        var partners = resourceSharingPartnerHandler.getPartners();
 
         var expectedName = Objects.nonNull(basebibliotek.getRecord().get(0).getInst())
                                ? basebibliotek.getRecord().get(0).getInst().replaceAll("\n", " - ")
@@ -262,6 +264,8 @@ public class ResourceSharingPartnerTest {
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        var partners = resourceSharingPartnerHandler.getPartners();
         var isAlmaOrBibsys = BIBSYS.equals(katsys) || ALMA.equals(katsys);
         var expectedHoldingCode = isAlmaOrBibsys
                                       ? basebibliotek.getRecord().get(0).getLandkode().toUpperCase(Locale.ROOT)
@@ -270,7 +274,6 @@ public class ResourceSharingPartnerTest {
         var expectedSystemTypeValueValue = isAlmaOrBibsys
                                                ? ALMA.toUpperCase(Locale.ROOT) : OTHER.toUpperCase(Locale.ROOT);
         var expectedSystemTypeValueDesc = isAlmaOrBibsys ? ALMA : OTHER;
-        var partners = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         assertThat(partners.get(0).getPartnerDetails().getHoldingCode(), is(equalTo(expectedHoldingCode)));
         assertThat(partners.get(0).getPartnerDetails().getSystemType().getValue(),
                    is(equalTo(expectedSystemTypeValueValue)));

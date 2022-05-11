@@ -1,6 +1,5 @@
 package no.sikt.rsp;
 
-import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
@@ -19,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
 
-public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, List<Partner>> {
+public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, Integer> {
 
     private static final Logger logger = LoggerFactory.getLogger(ResourceSharingPartnerHandler.class);
     public static final int SINGLE_EXPECTED_RECORD = 0;
@@ -29,6 +28,8 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, Li
     public static final String S3_URI_TEMPLATE = "s3://%s/%s";
 
     private final S3Client s3Client;
+
+    private List<Partner> partners;
 
     @JacocoGenerated
     public ResourceSharingPartnerHandler() {
@@ -40,19 +41,25 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, Li
     }
 
     @Override
-    public List<Partner> handleRequest(S3Event s3event, Context context) {
+    public Integer handleRequest(S3Event s3event, Context context) {
         logger.info(EVENT + gson.toJson(s3event));
-        return attempt(() -> readFile(s3event))
-                   .map(this::parseXmlFile)
-                   .map(PartnerConverter::convertBasebibliotekToPartners)
-                   .orElseThrow(fail -> logErrorAndThrowException(fail.getException()));
+        try {
+            var file = readFile(s3event);
+            var baseibliotek = parseXmlFile(file);
+            partners = PartnerConverter.convertBasebibliotekToPartners(baseibliotek);
+            return partners.size();
+        } catch (Exception exception) {
+            throw logErrorAndThrowException(exception);
+        }
+    }
+
+    public List<Partner> getPartners() {
+        return partners;
     }
 
     private BaseBibliotek parseXmlFile(String file) {
         return JAXB.unmarshal(new StringReader(file), BaseBibliotek.class);
     }
-
-
 
     private RuntimeException logErrorAndThrowException(Exception exception) {
         logger.error(exception.getMessage());
