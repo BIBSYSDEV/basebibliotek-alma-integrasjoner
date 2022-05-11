@@ -138,7 +138,6 @@ public class ResourceSharingPartnerTest {
         var withIsil = true;
         var appender = LogUtils.getTestingAppenderForRootLogger();
         var expectedLogMessage = "Could not convert record to partner, missing landkode bibNr, record";
-        //TODO: waiting for confirmation that libraries missing landkode should be ignored
         var shouldNotBeConvertedToPartner = new RecordSpecification(!withBibNr,
                                                                     !withLandkode,
                                                                     null,

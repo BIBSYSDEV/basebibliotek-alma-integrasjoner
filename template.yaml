@@ -61,6 +61,20 @@ Resources:
                 Rules:
                   - Name: suffix
                     Value: '.xml'
+
+  BasebibliotekFetchCronjob:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: basebibliotek-fetch-cronjob
+      Handler: no.sikt.BasebibliotekFetchHandler::handleRequest
+      Role: !GetAtt BasebibliotekFetchCronjobRole.Arn
+      Environment:
+        Variables:
+          BASEBIBLIOTEK_USERNAME: !Ref BasebibliotekUsername
+          BASEBIBLIOTEK_PASSWORD: !Ref BasebibliotekPassword
+          BASEBIBLIOTEK_URL: !Ref BasebibliotekUrl
+          BASEBIBLIOTEK_XML_BUCKET: !Ref BasebibliotekXmlBucketName
+      Events:
         ScheduledUpdate:
           Type: Schedule
           Properties:
@@ -76,6 +90,18 @@ Resources:
             Principal:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
+
+  BasebibliotekFetchCronjobRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+
 
   DefaultLambdaPermissions:
     Type: AWS::IAM::Policy
