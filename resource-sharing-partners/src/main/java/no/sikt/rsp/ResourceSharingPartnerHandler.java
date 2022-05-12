@@ -1,5 +1,6 @@
 package no.sikt.rsp;
 
+import static java.lang.Math.toIntExact;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
@@ -38,12 +39,13 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
 
     @JacocoGenerated
     public ResourceSharingPartnerHandler() {
-        this(S3Driver.defaultS3Client().build(), HttpClient.newHttpClient());
+        this(S3Driver.defaultS3Client().build(), HttpClient.newHttpClient(),
+             UriWrapper.fromUri(new Environment().readEnv("ALMA_API_HOST")).getUri());
     }
 
-    public ResourceSharingPartnerHandler(S3Client s3Client, HttpClient httpClient) {
+    public ResourceSharingPartnerHandler(S3Client s3Client, HttpClient httpClient, URI almaApiHost) {
         this.s3Client = s3Client;
-        this.almaConnection = new AlmaConnection(httpClient);
+        this.almaConnection = new AlmaConnection(httpClient, almaApiHost);
     }
 
     @Override
@@ -53,24 +55,25 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
             var file = readFile(s3event);
             var baseBibliotek = parseXmlFile(file);
             partners = PartnerConverter.convertBasebibliotekToPartners(baseBibliotek);
-            int numberOfAlmaPartners = 0;
-            partners.forEach(partner -> checkInAlma(numberOfAlmaPartners,  partner.getPartnerDetails().getCode()));
-            return numberOfAlmaPartners;
+            return toIntExact(partners.stream()
+                .filter(partner -> isInAlma(partner.getPartnerDetails().getCode()))
+                .count());
         } catch (Exception exception) {
             throw logErrorAndThrowException(exception);
         }
     }
 
-    private void checkInAlma(int numberOfAlmaPartners, String code) {
+    private boolean isInAlma(String code) {
         try {
             HttpResponse<String> httpResponse = almaConnection
                 .sendGet(code);
             if (httpResponse.statusCode() <= HttpURLConnection.HTTP_MULT_CHOICE) {
-                numberOfAlmaPartners++;
+                return true;
             }
         } catch (IOException | InterruptedException e) {
             logger.error(e.getMessage());
         }
+        return false;
     }
 
     public List<Partner> getPartners() {

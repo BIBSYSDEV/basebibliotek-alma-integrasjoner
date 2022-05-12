@@ -9,6 +9,7 @@ import java.net.http.HttpResponse;
 //import javax.ws.rs.core.MediaType;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.paths.UriWrapper;
 
 public final class AlmaConnection {
 
@@ -17,16 +18,17 @@ public final class AlmaConnection {
     private static final  String SPACE_KEY = " ";
 
     private final HttpClient httpClient;
-    private final String almaApiHost;
+    private final URI almaApiHost;
 
     @JacocoGenerated
     public AlmaConnection() {
-        this(HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build());
+        this(HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build(),
+             UriWrapper.fromUri(new Environment().readEnv("ALMA_API_HOST")).getUri());
     }
 
-    public AlmaConnection(HttpClient httpClient){
+    public AlmaConnection(HttpClient httpClient, URI almaApiHost){
         this.httpClient = httpClient;
-        this.almaApiHost = new Environment().readEnv("ALMA_API_HOST");
+        this.almaApiHost = almaApiHost;
     }
 
     /**
@@ -42,7 +44,7 @@ public final class AlmaConnection {
         String alma_apikey = new Environment().readEnv("ALMA_APIKEY");
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
-                .uri(URI.create(almaApiHost + "/" + code))
+                .uri(UriWrapper.fromUri(almaApiHost + "/" + code).getUri())
                 .setHeader(AUTHORIZATION_KEY, APIKEY_KEY + SPACE_KEY + alma_apikey)
                 .build();
 

@@ -87,7 +87,8 @@ public class ResourceSharingPartnerTest {
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, "ignoredValue");
         WireMocker.startWiremockServer();
-        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, WireMocker.httpClient);
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, WireMocker.httpClient,
+                                                                          WireMocker.serverUri);
     }
 
     @Test
@@ -105,7 +106,8 @@ public class ResourceSharingPartnerTest {
         var s3Event = createS3Event(randomString());
         var expectedMessage = randomString();
         s3Client = new FakeS3ClientThrowingException(expectedMessage);
-        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, WireMocker.httpClient);
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, WireMocker.httpClient,
+                                                                          WireMocker.serverUri);
         var appender = LogUtils.getTestingAppenderForRootLogger();
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
         assertThat(appender.getMessages(), containsString(expectedMessage));
