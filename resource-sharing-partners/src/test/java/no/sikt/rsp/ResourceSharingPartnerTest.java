@@ -49,6 +49,7 @@ import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.hamcrest.core.IsNull;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -89,6 +90,11 @@ public class ResourceSharingPartnerTest {
         WireMocker.startWiremockServer();
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, WireMocker.httpClient,
                                                                           WireMocker.serverUri);
+    }
+
+    @AfterEach
+    public void tearDown() {
+        WireMocker.stopWiremockServer();
     }
 
     @Test
