@@ -29,7 +29,7 @@ public class WireMocker {
 
     private static void mockAlmaGetResponse() {
         String responseBody = IoUtils.stringFromResources(Path.of(EMPTY_STRING, "rsp_0030100.json"));
-        stubFor(get(urlPathEqualTo("/partners/NO-0030100")).willReturn(ok().withBody(responseBody)));
+        stubFor(get(urlPathEqualTo("/NO-0030100")).willReturn(ok().withBody(responseBody)));
     }
 
 

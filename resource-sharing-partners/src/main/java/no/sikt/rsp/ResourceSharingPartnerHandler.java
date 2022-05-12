@@ -31,7 +31,6 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
 
     public static final String S3_URI_TEMPLATE = "s3://%s/%s";
 
-    private final Environment environment;
     private final S3Client s3Client;
     private final AlmaConnection almaConnection;
 
@@ -39,13 +38,12 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
 
     @JacocoGenerated
     public ResourceSharingPartnerHandler() {
-        this(new Environment(), S3Driver.defaultS3Client().build(), HttpClient.newHttpClient());
+        this(S3Driver.defaultS3Client().build(), HttpClient.newHttpClient());
     }
 
-    public ResourceSharingPartnerHandler(Environment environment, S3Client s3Client, HttpClient httpClient) {
-        this.environment = environment;
+    public ResourceSharingPartnerHandler(S3Client s3Client, HttpClient httpClient) {
         this.s3Client = s3Client;
-        this.almaConnection = new AlmaConnection(environment.readEnv("ALMA_API_HOST"), httpClient);
+        this.almaConnection = new AlmaConnection(httpClient);
     }
 
     @Override
@@ -66,7 +64,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     private void checkInAlma(int numberOfAlmaPartners, String code) {
         try {
             HttpResponse<String> httpResponse = almaConnection
-                .sendGet(code, environment.readEnv("ALMA_APIKEY"));
+                .sendGet(code);
             if (httpResponse.statusCode() <= HttpURLConnection.HTTP_MULT_CHOICE) {
                 numberOfAlmaPartners++;
             }

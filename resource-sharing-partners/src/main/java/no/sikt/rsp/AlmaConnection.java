@@ -21,31 +21,28 @@ public final class AlmaConnection {
 
     @JacocoGenerated
     public AlmaConnection() {
-        this(new Environment().readEnv("ALMA_API_HOST"), HttpClient.newBuilder()
-            .version(HttpClient.Version.HTTP_2)
-            .build());
+        this(HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build());
     }
 
-    public AlmaConnection(String almaApiHost, HttpClient httpClient){
-        this.almaApiHost = almaApiHost;
+    public AlmaConnection(HttpClient httpClient){
         this.httpClient = httpClient;
+        this.almaApiHost = new Environment().readEnv("ALMA_API_HOST");
     }
 
     /**
      * Sends a get request to the Alma api.
      * @param code the code of the partner you want to retrieve
-     * @param alma_apikey the apiKey for Alma
      * @return the http-response in the shape of a String
      * @throws IOException When something goes wrong.
      * @throws InterruptedException When something goes wrong.
      */
     @JacocoGenerated
-    public HttpResponse<String> sendGet(String code, String alma_apikey)
+    public HttpResponse<String> sendGet(String code)
             throws IOException,  InterruptedException {
-
+        String alma_apikey = new Environment().readEnv("ALMA_APIKEY");
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
-                .uri(URI.create(almaApiHost + code))
+                .uri(URI.create(almaApiHost + "/" + code))
                 .setHeader(AUTHORIZATION_KEY, APIKEY_KEY + SPACE_KEY + alma_apikey)
                 .build();
 

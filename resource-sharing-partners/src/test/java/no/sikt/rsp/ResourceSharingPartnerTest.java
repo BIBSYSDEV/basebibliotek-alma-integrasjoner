@@ -68,6 +68,7 @@ public class ResourceSharingPartnerTest {
     public static final UserIdentityEntity EMPTY_USER_IDENTITY = null;
     public static final long SOME_FILE_SIZE = 100L;
     private static final String BASEBIBLIOTEK_XML = "redacted_bb_full.xml";
+    private static final String BASEBIBLIOTEK_0030100_XML = "bb_0030100.xml";
 
     private static final String INVALID_BASEBIBLIOTEK_XML_STRING = "invalid";
     public static final String ALMA = "alma";
@@ -80,21 +81,19 @@ public class ResourceSharingPartnerTest {
 
     private FakeS3Client s3Client;
     private S3Driver s3Driver;
-    private Environment environment;
 
     @BeforeEach
     public void init() {
-        environment = mock(Environment.class);
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, "ignoredValue");
-        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(environment, s3Client, WireMocker.httpClient);
         WireMocker.startWiremockServer();
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, WireMocker.httpClient);
     }
 
     @Test
     public void shouldBeAbleToReadRecordFromAlma() throws IOException {
-        var fullBaseBibliotekFile = IoUtils.stringFromResources(Path.of(BASEBIBLIOTEK_XML));
-        var uri = s3Driver.insertFile(randomS3Path(), fullBaseBibliotekFile);
+        var baseBibliotek0030100 = IoUtils.stringFromResources(Path.of(BASEBIBLIOTEK_0030100_XML));
+        var uri = s3Driver.insertFile(randomS3Path(), baseBibliotek0030100);
         var s3Event = createS3Event(uri);
         Integer response = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         assertThat(response, is(notNullValue()));
@@ -106,8 +105,7 @@ public class ResourceSharingPartnerTest {
         var s3Event = createS3Event(randomString());
         var expectedMessage = randomString();
         s3Client = new FakeS3ClientThrowingException(expectedMessage);
-        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(environment, s3Client,
-                                                                          WireMocker.httpClient);
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, WireMocker.httpClient);
         var appender = LogUtils.getTestingAppenderForRootLogger();
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
         assertThat(appender.getMessages(), containsString(expectedMessage));

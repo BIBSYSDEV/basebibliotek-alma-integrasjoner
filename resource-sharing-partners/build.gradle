@@ -125,6 +125,6 @@ jacocoTestCoverageVerification {
 }
 
 test {
-    environment "ALMA_API_HOST", "https://api-eu.hosted.exlibrisgroup.com/almaws/v1/partners/"
+    environment "ALMA_API_HOST", "https://localhost:63535"
     environment "ALMA_APIKEY", "apiKeyNZ"
 }
