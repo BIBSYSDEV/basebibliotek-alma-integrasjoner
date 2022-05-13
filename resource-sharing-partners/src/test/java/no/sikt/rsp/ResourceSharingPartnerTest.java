@@ -98,7 +98,7 @@ public class ResourceSharingPartnerTest {
     }
 
     @Test
-    public void shouldBeAbleToReadRecordFromAlma() throws IOException {
+    public void shouldBeAbleToReadAndPostRecordToAlma() throws IOException {
         var baseBibliotek0030100 = IoUtils.stringFromResources(Path.of(BASEBIBLIOTEK_0030100_XML));
         var uri = s3Driver.insertFile(randomS3Path(), baseBibliotek0030100);
         var s3Event = createS3Event(uri);

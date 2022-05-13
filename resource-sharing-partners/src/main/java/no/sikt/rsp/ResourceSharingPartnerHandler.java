@@ -56,24 +56,29 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
             var baseBibliotek = parseXmlFile(file);
             partners = PartnerConverter.convertBasebibliotekToPartners(baseBibliotek);
             return toIntExact(partners.stream()
-                .filter(partner -> isInAlma(partner.getPartnerDetails().getCode()))
+                .filter(this::sendToAlma)
                 .count());
         } catch (Exception exception) {
             throw logErrorAndThrowException(exception);
         }
     }
 
-    private boolean isInAlma(String code) {
+    private boolean sendToAlma(Partner partner) {
         try {
-            HttpResponse<String> httpResponse = almaConnection
-                .sendGet(code);
+            HttpResponse<String> httpResponse = almaConnection.sendGet(partner.getPartnerDetails().getCode());
+            logger.info(String.format("Read partner %s successfully.", partner.getPartnerDetails().getCode()));
             if (httpResponse.statusCode() <= HttpURLConnection.HTTP_MULT_CHOICE) {
-                return true;
+                almaConnection.sendPut(partner);
+                logger.info(String.format("Updated partner %s successfully.", partner.getPartnerDetails().getCode()));
+            } else {
+                almaConnection.sendPost(partner);
+                logger.info(String.format("Created partner %s successfully.", partner.getPartnerDetails().getCode()));
             }
         } catch (IOException | InterruptedException e) {
             logger.error(e.getMessage());
+            return false;
         }
-        return false;
+        return true;
     }
 
     public List<Partner> getPartners() {
