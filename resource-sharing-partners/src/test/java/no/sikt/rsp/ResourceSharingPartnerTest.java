@@ -279,36 +279,14 @@ public class ResourceSharingPartnerTest {
     }
 
     @ParameterizedTest(name = "Should handle katsys codes differently")
-    @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
-    public void shouldExtractPartnerDetailsProfileDataCorrectly(final String katsys) throws IOException {
-        final Record firstRecord = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys)
-                                       .withBibnr("bibnr1")
-                                       .withLandkode("landkode1")
-                                       .withEpostAdr("adr@example.com")
-                                       .withEressurser(new EressurserBuilder().build())
-                                       .build();
+    @ValueSource(strings = {ALMA, BIBSYS})
+    public void shouldExtractPartnerDetailsProfileDataIsoCorrectly(final String katsys) throws IOException {
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys)
+                                  .withBibnr("1")
+                                  .withLandkode("1")
+                                  .build();
 
-        final Record secondRecord = new RecordBuilder(BigInteger.valueOf(2), LocalDate.now(), katsys)
-                                        .withBibnr("bibnr2")
-                                        .withLandkode("landkode2")
-                                        .withEpostBest("best@example.com")
-                                        .withEressurser(
-                                            new EressurserBuilder().withNncipUri(NNCIP_SERVER).build())
-                                        .build();
-
-        final Record thirdRecord = new RecordBuilder(BigInteger.valueOf(3), LocalDate.now(), katsys)
-                                        .withBibnr("bibnr3")
-                                        .withLandkode("landkode3")
-                                        .build();
-
-        final Record fourthRecord = new RecordBuilder(BigInteger.valueOf(4), LocalDate.now(), katsys)
-                                       .withBibnr("bibnr4")
-                                       .withLandkode("landkode4")
-                                       .withEpostBest("invalid")
-                                       .withEpostAdr("invalid")
-                                       .build();
-
-        var basebibliotekGenerator = new BasebibliotekGenerator(firstRecord, secondRecord, thirdRecord, fourthRecord);
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
@@ -320,83 +298,232 @@ public class ResourceSharingPartnerTest {
 
         var partners = resourceSharingPartnerHandler.getPartners();
 
-        int partnerIdx = 0;
-        for (Partner partner : partners) {
-            boolean hasNncipUri = (partnerIdx == 1);
+        // we should have only ony partner from the one record we have:
+        Partner partner = partners.get(0);
 
-            final String expectedNncipDetailsEmail;
-            final String expectedEmailDetailsEmail;
-            switch (partnerIdx) {
-                case 0:
-                    // First record: only epostAdr is populated
-                    expectedNncipDetailsEmail = firstRecord.getEpostAdr();
-                    expectedEmailDetailsEmail = firstRecord.getEpostAdr();
-                    break;
-                case 1:
-                    // Second record: only epostBest is populated
-                    expectedNncipDetailsEmail = secondRecord.getEpostBest();
-                    expectedEmailDetailsEmail = secondRecord.getEpostBest();
-                    break;
-                default:
-                    // Third record: no email fields are populated:
-                    // Fourth record: invalid email address is populated in both email fields
-                    expectedNncipDetailsEmail = null;
-                    expectedEmailDetailsEmail = "";
-                    break;
-            }
-            assertPartnerDetailsProfileDetailsPopulatedCorrectly(katsys, hasNncipUri,
-                                                                 basebibliotek.getRecord().get(partnerIdx),
-                                                                 partner,
-                                                                 expectedNncipDetailsEmail,
-                                                                 expectedEmailDetailsEmail);
-            partnerIdx++;
-        }
+        assertIsoProfileDetailsPopulatedCorrectly(partner, record.getBibnr());
     }
 
-    private void assertPartnerDetailsProfileDetailsPopulatedCorrectly(final String katsys,
-                                                                      final boolean hasNncipUri,
-                                                                      final Record record,
-                                                                      final Partner partner,
-                                                                      final String expectedNncipDetailsEmail,
-                                                                      final String expectedEmailDetailsEmail) {
+    @Test
+    public void shouldExtractPartnerDetailsProfileDataNncipCorrectlyPreferringEmailBest() throws IOException {
+        final String emailBest = "best@example.com";
+        final String emailAdr = "adr@example.com";
 
-        ProfileType profileType = partner.getPartnerDetails().getProfileDetails().getProfileType();
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
+                                  .withBibnr("1")
+                                  .withLandkode("1")
+                                  .withEpostBest(emailBest)
+                                  .withEpostAdr(emailAdr)
+                                  .withEressurser(
+                                      new EressurserBuilder().withNncipUri(NNCIP_SERVER)
+                                          .build())
+                                  .build();
 
-        if (BIBSYS.equalsIgnoreCase(katsys) || ALMA.equalsIgnoreCase(katsys)) {
-            assertThat("Expecting profile type ISO when katsys is " + katsys, profileType, is(ProfileType.ISO));
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
 
-            IsoDetails details = partner.getPartnerDetails().getProfileDetails().getIsoDetails();
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
 
-            assertThat(details.getIllPort(), is(ILL_SERVER_PORT));
-            assertThat(details.getIsoSymbol(), is(record.getBibnr()));
-            assertThat(details.getIllServer(), is(ILL_SERVER_ENVIRONMENT_VALUE));
-            assertThat(details.isSharedBarcodes(), is(true));
-        } else if (hasNncipUri) {
-            // NCIPP2P
-            assertThat(
-                "Expecting profile type NCIP_P_2_P when nncipServer is present and katsys is " + katsys,
-                profileType, is(ProfileType.NCIP_P_2_P));
+        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
 
-            NcipP2PDetails details = partner.getPartnerDetails().getProfileDetails().getNcipP2PDetails();
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
-            assertThat(details.getRequestExpiryType().getDesc(), is("No expiry"));
-            assertThat(details.getRequestExpiryType().getValue(), is("NO_EXPIRY"));
-            assertThat(details.getIllServer(), is(NNCIP_SERVER));
-            assertThat(details.getPartnerSymbol(), is(record.getBibnr()));
-            assertThat(details.getGeneralUserIdType().getDesc(), is("barcode"));
-            assertThat(details.getGeneralUserIdType().getValue(), is("BARCODE"));
-            assertThat(details.getEmailAddress(), is(expectedNncipDetailsEmail));
-            assertThat(details.getResendingOverdueMessageInterval(),
-                       is(PartnerConverter.RESENDING_OVERDUE_MESSAGE_INTERVAL));
-        } else {
-            // EMAIL
-            assertThat("Expecting profile type EMAIL when nncipServer is not present and katsys is " + katsys,
-                       profileType, is(ProfileType.EMAIL));
+        var partners = resourceSharingPartnerHandler.getPartners();
 
-            EmailDetails details = partner.getPartnerDetails().getProfileDetails().getEmailDetails();
+        // we should have only ony partner from the one record we have:
+        Partner partner = partners.get(0);
 
-            assertThat(details.getEmail(), is(expectedEmailDetailsEmail));
-        }
+        assertNncipProfileDetailsPopulatedCorrectly(partner, record.getBibnr(), emailBest);
+    }
+
+    @Test
+    public void shouldExtractPartnerDetailsProfileDataNncipCorrectlyFallingBackToEpostAdrIfBestIsMissing()
+        throws IOException {
+        final String emailAdr = "adr@example.com";
+
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
+                                  .withBibnr("1")
+                                  .withLandkode("1")
+                                  .withEpostAdr(emailAdr)
+                                  .withEressurser(
+                                      new EressurserBuilder().withNncipUri(NNCIP_SERVER)
+                                          .build())
+                                  .build();
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
+
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+
+        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+
+        var partners = resourceSharingPartnerHandler.getPartners();
+
+        // we should have only ony partner from the one record we have:
+        Partner partner = partners.get(0);
+
+        assertNncipProfileDetailsPopulatedCorrectly(partner, record.getBibnr(), emailAdr);
+    }
+
+    @Test
+    public void shouldExtractPartnerDetailsProfileDataNncipCorrectlyIgnoringInvalidEmailAddresses() throws IOException {
+        final String email = "invalid";
+
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
+                                  .withBibnr("1")
+                                  .withLandkode("1")
+                                  .withEpostAdr(email)
+                                  .withEpostBest(email)
+                                  .withEressurser(
+                                      new EressurserBuilder().withNncipUri(NNCIP_SERVER)
+                                          .build())
+                                  .build();
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
+
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+
+        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+
+        var partners = resourceSharingPartnerHandler.getPartners();
+
+        // we should have only ony partner from the one record we have:
+        Partner partner = partners.get(0);
+
+        assertNncipProfileDetailsPopulatedCorrectly(partner, record.getBibnr(), null);
+    }
+
+    @Test
+    public void shouldExtractProfileDetailsEmailPreferringEmailBest() throws IOException {
+        final String emailBest = "best@example.com";
+        final String emailAdr = "adr@example.com";
+
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
+                                  .withBibnr("1")
+                                  .withLandkode("1")
+                                  .withEpostBest(emailBest)
+                                  .withEpostAdr(emailAdr)
+                                  .build();
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+
+        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+
+        var partners = resourceSharingPartnerHandler.getPartners();
+        // we should have only ony partner from the one record we have:
+        Partner partner = partners.get(0);
+
+        assertEmailProfileDetailsPopulatedCorrectly(partner, emailBest);
+    }
+
+    @Test
+    public void shouldExtractProfileDetailsEmailFallingBackToEpostAdrIfBestIsMissing() throws IOException {
+        final String email = "adr@example.com";
+
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
+                                  .withBibnr("1")
+                                  .withLandkode("1")
+                                  .withEpostAdr(email)
+                                  .build();
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+
+        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+
+        var partners = resourceSharingPartnerHandler.getPartners();
+        // we should have only ony partner from the one record we have:
+        Partner partner = partners.get(0);
+
+        assertEmailProfileDetailsPopulatedCorrectly(partner, email);
+    }
+
+    @Test
+    public void shouldExtractProfileDetailsEmailCorrectlyIgnoringInvalidEmailAddresses() throws IOException {
+        final String email = "invalid";
+
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
+                                  .withBibnr("1")
+                                  .withLandkode("1")
+                                  .withEpostBest(email)
+                                  .withEpostAdr(email)
+                                  .build();
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+
+        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+
+        var partners = resourceSharingPartnerHandler.getPartners();
+        // we should have only ony partner from the one record we have:
+        Partner partner = partners.get(0);
+
+        assertEmailProfileDetailsPopulatedCorrectly(partner, "");
+    }
+
+    private void assertIsoProfileDetailsPopulatedCorrectly(final Partner partner, final String bibnr) {
+
+        IsoDetails details = partner.getPartnerDetails().getProfileDetails().getIsoDetails();
+
+        assertThat(details.getIllPort(), is(ILL_SERVER_PORT));
+        assertThat(details.getIsoSymbol(), is(bibnr));
+        assertThat(details.getIllServer(), is(ILL_SERVER_ENVIRONMENT_VALUE));
+        assertThat(details.isSharedBarcodes(), is(true));
+    }
+
+    private void assertNncipProfileDetailsPopulatedCorrectly(Partner partner, String bibnr, String expectedEmail) {
+        final ProfileType profileType = partner.getPartnerDetails().getProfileDetails().getProfileType();
+
+        assertThat(profileType, is(ProfileType.NCIP_P_2_P));
+
+        final NcipP2PDetails details = partner.getPartnerDetails().getProfileDetails().getNcipP2PDetails();
+
+        assertThat(details.getRequestExpiryType().getDesc(), is("No expiry"));
+        assertThat(details.getRequestExpiryType().getValue(), is("NO_EXPIRY"));
+        assertThat(details.getIllServer(), is(NNCIP_SERVER));
+        assertThat(details.getPartnerSymbol(), is(bibnr));
+        assertThat(details.getGeneralUserIdType().getDesc(), is("barcode"));
+        assertThat(details.getGeneralUserIdType().getValue(), is("BARCODE"));
+        assertThat(details.getEmailAddress(), is(expectedEmail));
+        assertThat(details.getResendingOverdueMessageInterval(),
+                   is(PartnerConverter.RESENDING_OVERDUE_MESSAGE_INTERVAL));
+    }
+
+    private void assertEmailProfileDetailsPopulatedCorrectly(Partner partner, String expectedEmail) {
+        final ProfileType profileType = partner.getPartnerDetails().getProfileDetails().getProfileType();
+
+        assertThat(profileType, is(ProfileType.EMAIL));
+
+        final EmailDetails details = partner.getPartnerDetails().getProfileDetails().getEmailDetails();
+
+        assertThat(details.getEmail(), is(expectedEmail));
     }
 
     private void assertContactInfo(ContactInfo contactInfo, Record record) {

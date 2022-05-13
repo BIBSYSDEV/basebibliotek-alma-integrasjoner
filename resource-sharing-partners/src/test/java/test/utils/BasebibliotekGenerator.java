@@ -58,7 +58,7 @@ public class BasebibliotekGenerator {
     }
 
     public BasebibliotekGenerator(Record... records) {
-        this.currentRid = BigInteger.ONE;
+        this.currentRid = null; // not relevant as we do not call generateRecordsFromSpecificationList here
         this.records = Arrays.asList(records);
     }
 
