@@ -168,4 +168,75 @@
         Fra bibliotek utenfor Norden bestiller vi lån, og skaffer artikkelkopier. Se sjekkliste på vår hjemmeside før bestilling sendes.</omtale>
     </merknader>
   </record>
+  <record rid="17" tstamp="2021-07-29 20:30:01">
+    <isil>NO-1010601</isil>
+    <bibkode>HIØ/FRED</bibkode>
+    <bibltype>HØY</bibltype>
+    <aut>redacted</aut>
+    <lat_lon>59.213828,10.927867</lat_lon>
+    <katsyst>Alma</katsyst>
+    <samkat>Samper, Biblioteksøk</samkat>
+    <kommnr>3004</kommnr>
+    <inst>Høgskolen i Østfold
+      Biblioteket - Fredrikstad</inst>
+    <inst_eng>Østfold University College, The Library</inst_eng>
+    <padr>Postboks 700</padr>
+    <ppostnr>1757</ppostnr>
+    <ppoststed>HALDEN</ppoststed>
+    <vadr>Kobberslagerstredet 5</vadr>
+    <vpostnr>1671</vpostnr>
+    <vpoststed>KRÅKERØY</vpoststed>
+    <besadr>Kobberslagerstredet 5, Kråkerøy</besadr>
+    <landkode>NO</landkode>
+    <tlf>12 34 56 78</tlf>
+    <epost_adr>redacted@redacted.no</epost_adr>
+    <epost_best>redacted@redacted.no</epost_best>
+    <url_hjem>https://www.hiof.no/bibliotek/</url_hjem>
+    <url_kat>https://bibsys-almaprimo.hosted.exlibrisgroup.com/primo-explore/search?sortby=rank&amp;vid=HIO&amp;lang=no_NO</url_kat>
+    <andre_navn>Akademi for scenekunst, tidl. Norsk dukketeaterakademi; Akademi for figurteater
+      Avdeling for ingeniørfag; Østfold ingeniørhøgskole
+      Østfold sykepleierhøgskole
+      Østfold vernepleierhøgskole
+      Østfold fagskole</andre_navn>
+    <fakt_orgnr>971567376</fakt_orgnr>
+    <fakt_ref>Bibl. Fredrikstad</fakt_ref>
+    <bibleder>redacted</bibleder>
+    <fj_leder>redacted</fj_leder>
+    <andre_koder>
+      <bibkode_alt>HIØ/FIG</bibkode_alt>
+      <bibkode_alt>HIØ/NETT</bibkode_alt>
+      <bibkode_alt>HIØ/SARP</bibkode_alt>
+      <bibkode_gml>HIØ/FIG</bibkode_gml>
+      <bibkode_gml>HIØ/SARP</bibkode_gml>
+      <bibkode_gml>ØFFAGVG</bibkode_gml>
+      <bibkode_gml>ØIH</bibkode_gml>
+      <bibkode_gml>ØSTFING</bibkode_gml>
+      <bibkode_gml>ØSTFSP</bibkode_gml>
+      <bibkode_gml>ØSTFVP</bibkode_gml>
+      <bibnr_gml>1010501</bibnr_gml>
+      <bibnr_gml>1010602</bibnr_gml>
+      <bibnr_gml>3010505</bibnr_gml>
+      <bibsys_avd>HIØ/fig</bibsys_avd>
+      <bibsys_avd>HIØ/fred</bibsys_avd>
+      <bibsys_avd>HIØ/NETT</bibsys_avd>
+      <bibsys_bib>uc</bibsys_bib>
+      <bibsys_utl>hiø-fre</bibsys_utl>
+    </andre_koder>
+    <eressurser>
+      <nncip_uri>https://bibsys.alma.exlibrisgroup.com/view/NcipP2PServlet</nncip_uri>
+      <SRU>https://bibsys.alma.exlibrisgroup.com/view/sru/47BIBSYS_HIO?version=1.2</SRU>
+      <z_info>http://www.bibsys.no/wp-content/uploads/2018/11/Bibliografiske_data_via_Z3950.pdf</z_info>
+      <z_target>bibsys.alma.exlibrisgroup.com:210/47BIBSYS_HIO</z_target>
+    </eressurser>
+    <merknader>
+      <fjGen lang="en">Interlending of books. Copying services provided.</fjGen>
+      <fjGen lang="no">Fjernlån av bøker. Kopieringstjeneste.</fjGen>
+      <fjMrk lang="en">Rush orders, renewals and reservations are accepted.</fjMrk>
+      <fjMrk lang="no">Hastebestillinger, fornyelser</fjMrk>
+      <fjSpes lang="en">Loan period for books: 35 days. Serials, AV-media and recently aquired books are not for interlending. No charges.</fjSpes>
+      <fjSpes lang="no">Lånetid for bøker: 35 dager. Tidsskrifter fjernlånes ikke, og AV-medier vanligvis ikke. Ikke lånegebyr. Nyere bøker fjernlånes ikke.</fjSpes>
+      <kopGeb lang="en">Article copies may be delivered by mail, and in special cases within copyright law, as e-mail attachments, all without charges.</kopGeb>
+      <kopGeb lang="no">Kopier leveres med post og i spesielle tilfeller, innen rammen av opphavsrettslovginingen, kan de også leveres som e-postfiler. Ikke gebyr.</kopGeb>
+    </merknader>
+  </record>
 </BaseBibliotek>

@@ -42,6 +42,7 @@ dependencies {
     implementation group: 'com.github.bibsysdev', name: 'core', version: '1.24.7'
     implementation group: 'com.github.bibsysdev', name: 's3', version: '1.24.7'
     implementation group: 'com.github.bibsysdev', name: 'nva-language', version: '1.0'
+    implementation project(path: ":basebibliotek-generated", configuration: 'default')
 
     shadowJar {
         archiveClassifier.set('')

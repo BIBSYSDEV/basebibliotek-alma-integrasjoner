@@ -8,6 +8,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -25,6 +26,8 @@ import java.net.HttpURLConnection;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 import no.unit.nva.stubs.WiremockHttpClient;
 import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
@@ -62,7 +65,6 @@ public class BaseBibliotekFetchHandlerTest {
         appender = LogUtils.getTestingAppenderForRootLogger();
         s3Client = mock(S3Client.class);
         startWiremockServer();
-        HttpClient httpClient = WiremockHttpClient.create();
         Environment environment = mock(Environment.class);
         when(environment.readEnv(BasebibliotekFetchHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).thenReturn(
             "http://localhost:"
@@ -73,6 +75,7 @@ public class BaseBibliotekFetchHandlerTest {
         when(environment.readEnv(BasebibliotekFetchHandler.BASEBIBLIOTEK_PASSWORD_ENVIRONMENT_NAME)).thenReturn(
             "ignored");
         when(environment.readEnv(BasebibliotekFetchHandler.S3_BUCKET_ENVIRONMENT_NAME)).thenReturn(S3_BUCKET_NAME);
+        HttpClient httpClient = WiremockHttpClient.create();
         baseBibliotekFetchHandler = new BasebibliotekFetchHandler(s3Client, httpClient, environment);
     }
 
@@ -87,13 +90,34 @@ public class BaseBibliotekFetchHandlerTest {
 
         var expectedMessage =
             "could not connect to basebibliotek, Connection responded with status: " + HttpURLConnection.HTTP_FORBIDDEN;
-        mockedGetRequestWithSpecifiedStatusCode(HttpURLConnection.HTTP_FORBIDDEN);
+        mockedGetRequestWithSpecifiedStatusCode(HttpURLConnection.HTTP_FORBIDDEN, BIBLIOTEK_EKSPORT_BIBLEV_PATH);
         assertThrows(RuntimeException.class, () -> baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT));
         assertThat(appender.getMessages(), containsString(expectedMessage));
     }
 
     @Test
-    public void shouldConnectToBasebibliotek() {
+    public void shouldLogExceptionWhenBasebibliotekXmlGetRequestFails() {
+        var basebibliotekUrlsAsHtml = IoUtils.stringFromResources(
+            Path.of("basebibliotek-url.html"));
+        mockedGetRequestThatReturnsSpecifiedResponse(basebibliotekUrlsAsHtml);
+
+        var basebibliotekXML2 = IoUtils.stringFromResources(
+            Path.of(BASEBIBLIOTEK_REDACTED_INCREMENTAL_2_XML));
+        mockedGetRequestWithSpecifiedStatusCode(HttpURLConnection.HTTP_FORBIDDEN,
+                                                BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_04_27_XML);
+        mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_05_04_XML,
+                              basebibliotekXML2);
+
+        var scheduledEvent = new ScheduledEvent();
+        assertThrows(RuntimeException.class, () -> baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT));
+
+        var expectedMessage =
+            "could not GET " + BASEBIBLIOTEK_BB_2022_04_27_XML;
+        assertThat(appender.getMessages(), containsString(expectedMessage));
+    }
+
+    @Test
+    public void shouldCollectListOfBibnrAndUploadThemTos3() {
 
         var basebibliotekUrlsAsHtml = IoUtils.stringFromResources(
             Path.of("basebibliotek-url.html"));
@@ -107,7 +131,9 @@ public class BaseBibliotekFetchHandlerTest {
         mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_05_04_XML, basebibliotekXML2);
 
         var scheduledEvent = new ScheduledEvent();
-        baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT);
+        var expectedBibnr = Set.of("0030100", "0030101", "7049304", "0030103");
+        var listOfBibNr = baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT);
+        // assertThat(listOfBibNr, contain);
 
         //Verify that basebibliotek has been contacted.
         WireMock.verify(getRequestedFor(urlEqualTo(BIBLIOTEK_EKSPORT_BIBLEV_PATH)));
@@ -119,17 +145,11 @@ public class BaseBibliotekFetchHandlerTest {
                         getRequestedFor(urlEqualTo(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_FULL_XML)));
 
         //verify that the s3client has been called to putobjects:
+        var expectedUpload = "0030100\n0030101\n7049304\n0030103";
         Mockito
             .verify(this.s3Client)
-            .putObject(eq(generatePutObjectRequest(BASEBIBLIOTEK_BB_2022_04_27_XML)),
-                       argThat(new RequestBodyMatches(RequestBody.fromString(basebibliotekXML1))));
-        Mockito
-            .verify(this.s3Client).putObject(eq(generatePutObjectRequest(BASEBIBLIOTEK_BB_2022_05_04_XML)),
-                                             argThat(
-                                                 new RequestBodyMatches(RequestBody.fromString(basebibliotekXML2))));
-        Mockito
-            .verify(this.s3Client, never()).putObject(eq(generatePutObjectRequest(BASEBIBLIOTEK_BB_FULL_XML)),
-                                                      any(RequestBody.class));
+            .putObject(any(PutObjectRequest.class),
+                       argThat(new RequestBodyMatches(RequestBody.fromString(expectedUpload))));
     }
 
     @Test
@@ -154,6 +174,24 @@ public class BaseBibliotekFetchHandlerTest {
         assertThat(appender.getMessages(), containsString(expectedMessage));
     }
 
+    @Test
+    public void shouldLogRecordsThatAreMissingBibNr() {
+        var basebibliotekUrlsAsHtml = IoUtils.stringFromResources(
+            Path.of("basebibliotek-url.html"));
+        mockedGetRequestThatReturnsSpecifiedResponse(basebibliotekUrlsAsHtml);
+
+        var basebibliotekXML1 = IoUtils.stringFromResources(
+            Path.of(BASEBIBLIOTEK_REDACTED_INCREMENTAL_1_XML));
+        var basebibliotekXML3 = IoUtils.stringFromResources(
+            Path.of("basebibliotek_redacted_incremental_3.xml"));
+        mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_04_27_XML, basebibliotekXML1);
+        mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_05_04_XML, basebibliotekXML3);
+        var scheduledEvent = new ScheduledEvent();
+        baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT);
+        var expectedMessage = "Record with missing bibnr";
+        assertThat(appender.getMessages(), containsString(expectedMessage));
+    }
+
     private PutObjectRequest generatePutObjectRequest(String key) {
         return PutObjectRequest.builder()
                    .bucket(S3_BUCKET_NAME)
@@ -174,12 +212,12 @@ public class BaseBibliotekFetchHandlerTest {
                                     .withBody(response)));
     }
 
-    private void mockedGetRequestWithSpecifiedStatusCode(int statusCode) {
-        stubFor(get(urlEqualTo(BIBLIOTEK_EKSPORT_BIBLEV_PATH))
+    private void mockedGetRequestWithSpecifiedStatusCode(int statusCode, String path) {
+        stubFor(get(urlEqualTo(path))
                     .willReturn(aResponse()
                                     .withHeader(CONTENT_TYPE, "text/html")
                                     .withStatus(statusCode)
-                                    .withBody("fdgfg")));
+                                    .withBody("")));
     }
 
     private void mockedWiremockStubFor(String urlEqualTo, String body) {
@@ -193,6 +231,8 @@ public class BaseBibliotekFetchHandlerTest {
     class RequestBodyMatches implements ArgumentMatcher<RequestBody> {
 
         private final RequestBody left;
+        String leftContent = "";
+        String rightContent = "";
 
         public RequestBodyMatches(RequestBody left) {
             this.left = left;
@@ -202,12 +242,16 @@ public class BaseBibliotekFetchHandlerTest {
         public boolean matches(RequestBody right) {
             try (var rightStream = right.contentStreamProvider().newStream();
                 var leftStream = left.contentStreamProvider().newStream()) {
-                var rightContent = Arrays.toString(rightStream.readAllBytes());
-                var leftContent = Arrays.toString(leftStream.readAllBytes());
+                rightContent = new String(rightStream.readAllBytes());
+                leftContent = new String(leftStream.readAllBytes());
                 return rightContent.equals(leftContent);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+        }
+
+        public String toString() {
+            return "Request body matcher. Expected content: " + leftContent + ", received:" + rightContent;
         }
     }
 }
