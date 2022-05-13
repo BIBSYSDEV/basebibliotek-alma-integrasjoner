@@ -12,6 +12,7 @@ import jakarta.xml.bind.JAXBElement;
 import java.io.StringWriter;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -52,8 +53,13 @@ public class BasebibliotekGenerator {
     private final Collection<? extends Record> records;
 
     public BasebibliotekGenerator(List<RecordSpecification> specificationList) {
-        currentRid = BigInteger.ONE;
-        records = generateRecordsFromSpecificationList(specificationList);
+        this.currentRid = BigInteger.ONE;
+        this.records = generateRecordsFromSpecificationList(specificationList);
+    }
+
+    public BasebibliotekGenerator(Record... records) {
+        this.currentRid = BigInteger.ONE;
+        this.records = Arrays.asList(records);
     }
 
     private Collection<? extends Record> generateRecordsFromSpecificationList(
@@ -68,7 +74,8 @@ public class BasebibliotekGenerator {
                                                                recordsSpecification.getWithPaddr(),
                                                                recordsSpecification.getWithVaddr(),
                                                                recordsSpecification.getWithIsil(),
-                                                               recordsSpecification.getKatsys()))
+                                                               recordsSpecification.getKatsys(),
+                                                               recordsSpecification.getEressursExcludes()))
                    .collect(Collectors.toList());
     }
 
@@ -92,7 +99,8 @@ public class BasebibliotekGenerator {
                                   boolean withPaddr,
                                   boolean withVaddr,
                                   boolean withIsil,
-                                  String katsys) {
+                                  String katsys,
+                                  List<String> eressursExcludes) {
         var record = new Record();
         record.setRid(incrementCurrentRidAndReturnResult());
         record.setTstamp(randomLocalDate().toString());
@@ -122,7 +130,7 @@ public class BasebibliotekGenerator {
         if (Objects.nonNull(specifiedNncipUri)) {
             record.setEressurser(generateEressurserWithSpecifiedNncipServer(specifiedNncipUri));
         } else {
-            record.setEressurser(randomEressurser());
+            record.setEressurser(randomEressurser(eressursExcludes));
         }
         record.setKatsyst(katsys);
         if (withPaddr) {
@@ -309,17 +317,21 @@ public class BasebibliotekGenerator {
         return link;
     }
 
-    private static Eressurser randomEressurser() {
+    private static Eressurser randomEressurser(List<String> eressursExcludes) {
         var eressurser = new Eressurser();
-        eressurser.getOAIOrSRUOrArielIp().addAll(randomOaiOrSruOrArielIps());
+        eressurser.getOAIOrSRUOrArielIp().addAll(randomOaiOrSruOrArielIps(eressursExcludes));
         return eressurser;
     }
 
-    private static Collection<? extends JAXBElement<String>> randomOaiOrSruOrArielIps() {
+    private static Collection<? extends JAXBElement<String>> randomOaiOrSruOrArielIps(List<String> eressursExcludes) {
         var maxNumberOfOaiOrSruOrArielIps = 10;
-        return IntStream.range(0, randomInteger(maxNumberOfOaiOrSruOrArielIps) + 1).boxed().map(
-            BasebibliotekGenerator::randomOaiOrSruOrArielIp).collect(
-            Collectors.toList());
+        return IntStream.range(0, randomInteger(maxNumberOfOaiOrSruOrArielIps) + 1)
+                   .boxed()
+                   .map(
+                       BasebibliotekGenerator::randomOaiOrSruOrArielIp)
+                   .filter(p -> !eressursExcludes.contains(p.getName().getLocalPart()))
+                   .collect(
+                       Collectors.toList());
     }
 
     private static JAXBElement<String> randomOaiOrSruOrArielIp(int index) {

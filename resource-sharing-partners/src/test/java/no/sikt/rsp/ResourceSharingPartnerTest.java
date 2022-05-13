@@ -11,6 +11,7 @@ import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.RequestParametersEntity;
@@ -21,23 +22,28 @@ import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotificatio
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.S3ObjectEntity;
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.UserIdentityEntity;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.URI;
 import java.nio.file.Path;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import javax.xml.datatype.XMLGregorianCalendar;
 import no.nb.basebibliotek.generated.Record;
 import no.sikt.alma.generated.Address;
 import no.sikt.alma.generated.ContactInfo;
 import no.sikt.alma.generated.Email;
+import no.sikt.alma.generated.EmailDetails;
 import no.sikt.alma.generated.Emails;
+import no.sikt.alma.generated.IsoDetails;
+import no.sikt.alma.generated.NcipP2PDetails;
+import no.sikt.alma.generated.Partner;
 import no.sikt.alma.generated.Phones;
+import no.sikt.alma.generated.ProfileType;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
+import nva.commons.core.Environment;
 import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
@@ -52,12 +58,13 @@ import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import test.utils.BasebibliotekGenerator;
+import test.utils.EressurserBuilder;
+import test.utils.RecordBuilder;
 import test.utils.RecordSpecification;
 
 public class ResourceSharingPartnerTest {
 
     public static final RequestParametersEntity EMPTY_REQUEST_PARAMETERS = null;
-    private static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
     public static final ResponseElementsEntity EMPTY_RESPONSE_ELEMENTS = null;
     public static final UserIdentityEntity EMPTY_USER_IDENTITY = null;
     public static final long SOME_FILE_SIZE = 100L;
@@ -69,17 +76,24 @@ public class ResourceSharingPartnerTest {
     public static final String TIDEMANN = "Tidemann";
     public static final String OTHER = "other";
 
+    private static final String ILL_SERVER_ENVIRONMENT_NAME = "ILL_SERVER";
+    private static final String ILL_SERVER_ENVIRONMENT_VALUE = "eu01.alma.exlibrisgroup.com";
+    public static final int ILL_SERVER_PORT = 9001;
+
+    private static final String NNCIP_SERVER = "http://nncipuri.org";
     private ResourceSharingPartnerHandler resourceSharingPartnerHandler;
     public static final Context CONTEXT = mock(Context.class);
 
     private FakeS3Client s3Client;
     private S3Driver s3Driver;
 
+    private final Environment mockedEnvironment = mock(Environment.class);
+
     @BeforeEach
     public void init() {
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, "ignoredValue");
-        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client);
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
     }
 
     @Test
@@ -87,7 +101,7 @@ public class ResourceSharingPartnerTest {
         var s3Event = createS3Event(randomString());
         var expectedMessage = randomString();
         s3Client = new FakeS3ClientThrowingException(expectedMessage);
-        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client);
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
         var appender = LogUtils.getTestingAppenderForRootLogger();
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
         assertThat(appender.getMessages(), containsString(expectedMessage));
@@ -234,7 +248,7 @@ public class ResourceSharingPartnerTest {
         var withLandkode = true;
         var specifiedList = List.of(new RecordSpecification(withBibNr,
                                                             withLandkode,
-                                                            null,
+                                                            "http://nncip.edu",
                                                             randomBoolean(),
                                                             randomBoolean(),
                                                             randomBoolean(),
@@ -262,6 +276,127 @@ public class ResourceSharingPartnerTest {
         assertThat(partners.get(0).getPartnerDetails().getSystemType().getDesc(),
                    is(equalTo(expectedSystemTypeValueDesc)));
         //TODO:LocateProfile in partnerDetails should be set when isAlmaOrBibsys, otherwise null. SMILE-1573
+    }
+
+    @ParameterizedTest(name = "Should handle katsys codes differently")
+    @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
+    public void shouldExtractPartnerDetailsProfileDataCorrectly(final String katsys) throws IOException {
+        final Record firstRecord = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys)
+                                       .withBibnr("bibnr1")
+                                       .withLandkode("landkode1")
+                                       .withEpostAdr("adr@example.com")
+                                       .withEressurser(new EressurserBuilder().build())
+                                       .build();
+
+        final Record secondRecord = new RecordBuilder(BigInteger.valueOf(2), LocalDate.now(), katsys)
+                                        .withBibnr("bibnr2")
+                                        .withLandkode("landkode2")
+                                        .withEpostBest("best@example.com")
+                                        .withEressurser(
+                                            new EressurserBuilder().withNncipUri(NNCIP_SERVER).build())
+                                        .build();
+
+        final Record thirdRecord = new RecordBuilder(BigInteger.valueOf(3), LocalDate.now(), katsys)
+                                        .withBibnr("bibnr3")
+                                        .withLandkode("landkode3")
+                                        .build();
+
+        final Record fourthRecord = new RecordBuilder(BigInteger.valueOf(4), LocalDate.now(), katsys)
+                                       .withBibnr("bibnr4")
+                                       .withLandkode("landkode4")
+                                       .withEpostBest("invalid")
+                                       .withEpostAdr("invalid")
+                                       .build();
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(firstRecord, secondRecord, thirdRecord, fourthRecord);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+
+        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+
+        var partners = resourceSharingPartnerHandler.getPartners();
+
+        int partnerIdx = 0;
+        for (Partner partner : partners) {
+            boolean hasNncipUri = (partnerIdx == 1);
+
+            final String expectedNncipDetailsEmail;
+            final String expectedEmailDetailsEmail;
+            switch (partnerIdx) {
+                case 0:
+                    // First record: only epostAdr is populated
+                    expectedNncipDetailsEmail = firstRecord.getEpostAdr();
+                    expectedEmailDetailsEmail = firstRecord.getEpostAdr();
+                    break;
+                case 1:
+                    // Second record: only epostBest is populated
+                    expectedNncipDetailsEmail = secondRecord.getEpostBest();
+                    expectedEmailDetailsEmail = secondRecord.getEpostBest();
+                    break;
+                default:
+                    // Third record: no email fields are populated:
+                    // Fourth record: invalid email address is populated in both email fields
+                    expectedNncipDetailsEmail = null;
+                    expectedEmailDetailsEmail = "";
+                    break;
+            }
+            assertPartnerDetailsProfileDetailsPopulatedCorrectly(katsys, hasNncipUri,
+                                                                 basebibliotek.getRecord().get(partnerIdx),
+                                                                 partner,
+                                                                 expectedNncipDetailsEmail,
+                                                                 expectedEmailDetailsEmail);
+            partnerIdx++;
+        }
+    }
+
+    private void assertPartnerDetailsProfileDetailsPopulatedCorrectly(final String katsys,
+                                                                      final boolean hasNncipUri,
+                                                                      final Record record,
+                                                                      final Partner partner,
+                                                                      final String expectedNncipDetailsEmail,
+                                                                      final String expectedEmailDetailsEmail) {
+
+        ProfileType profileType = partner.getPartnerDetails().getProfileDetails().getProfileType();
+
+        if (BIBSYS.equalsIgnoreCase(katsys) || ALMA.equalsIgnoreCase(katsys)) {
+            assertThat("Expecting profile type ISO when katsys is " + katsys, profileType, is(ProfileType.ISO));
+
+            IsoDetails details = partner.getPartnerDetails().getProfileDetails().getIsoDetails();
+
+            assertThat(details.getIllPort(), is(ILL_SERVER_PORT));
+            assertThat(details.getIsoSymbol(), is(record.getBibnr()));
+            assertThat(details.getIllServer(), is(ILL_SERVER_ENVIRONMENT_VALUE));
+            assertThat(details.isSharedBarcodes(), is(true));
+        } else if (hasNncipUri) {
+            // NCIPP2P
+            assertThat(
+                "Expecting profile type NCIP_P_2_P when nncipServer is present and katsys is " + katsys,
+                profileType, is(ProfileType.NCIP_P_2_P));
+
+            NcipP2PDetails details = partner.getPartnerDetails().getProfileDetails().getNcipP2PDetails();
+
+            assertThat(details.getRequestExpiryType().getDesc(), is("No expiry"));
+            assertThat(details.getRequestExpiryType().getValue(), is("NO_EXPIRY"));
+            assertThat(details.getIllServer(), is(NNCIP_SERVER));
+            assertThat(details.getPartnerSymbol(), is(record.getBibnr()));
+            assertThat(details.getGeneralUserIdType().getDesc(), is("barcode"));
+            assertThat(details.getGeneralUserIdType().getValue(), is("BARCODE"));
+            assertThat(details.getEmailAddress(), is(expectedNncipDetailsEmail));
+            assertThat(details.getResendingOverdueMessageInterval(),
+                       is(PartnerConverter.RESENDING_OVERDUE_MESSAGE_INTERVAL));
+        } else {
+            // EMAIL
+            assertThat("Expecting profile type EMAIL when nncipServer is not present and katsys is " + katsys,
+                       profileType, is(ProfileType.EMAIL));
+
+            EmailDetails details = partner.getPartnerDetails().getProfileDetails().getEmailDetails();
+
+            assertThat(details.getEmail(), is(expectedEmailDetailsEmail));
+        }
     }
 
     private void assertContactInfo(ContactInfo contactInfo, Record record) {
@@ -408,12 +543,6 @@ public class ResourceSharingPartnerTest {
 
     private String randomDate() {
         return Instant.now().toString();
-    }
-
-    private String createDateString(XMLGregorianCalendar xmlGregorianCalendar) {
-        synchronized (dateFormat) {
-            return dateFormat.format(xmlGregorianCalendar.toGregorianCalendar().getTime());
-        }
     }
 
     private static class FakeS3ClientThrowingException extends FakeS3Client {

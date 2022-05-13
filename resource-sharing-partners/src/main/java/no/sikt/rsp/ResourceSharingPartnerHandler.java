@@ -11,6 +11,7 @@ import java.util.List;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.sikt.alma.generated.Partner;
 import no.unit.nva.s3.S3Driver;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
@@ -25,27 +26,34 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     private final transient Gson gson = new Gson();
 
     public static final String S3_URI_TEMPLATE = "s3://%s/%s";
+    public static final String ILL_SERVER_ENV_NAME = "ILL_SERVER";
 
     private final S3Client s3Client;
 
     private List<Partner> partners;
 
+    private final Environment environment;
+
     @JacocoGenerated
     public ResourceSharingPartnerHandler() {
-        this(S3Driver.defaultS3Client().build());
+        this(S3Driver.defaultS3Client().build(), new Environment());
     }
 
-    public ResourceSharingPartnerHandler(S3Client s3Client) {
+    public ResourceSharingPartnerHandler(S3Client s3Client, Environment environment) {
         this.s3Client = s3Client;
+        this.environment = environment;
     }
 
     @Override
     public Integer handleRequest(S3Event s3event, Context context) {
         logger.info(EVENT + gson.toJson(s3event));
+
+        String illServer = environment.readEnv(ILL_SERVER_ENV_NAME);
+
         try {
             var file = readFile(s3event);
             var baseibliotek = parseXmlFile(file);
-            partners = PartnerConverter.convertBasebibliotekToPartners(baseibliotek);
+            partners = PartnerConverter.convertBasebibliotekToPartners(illServer, baseibliotek);
             return partners.size();
         } catch (Exception exception) {
             throw logErrorAndThrowException(exception);
