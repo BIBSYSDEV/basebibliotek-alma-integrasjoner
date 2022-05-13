@@ -23,6 +23,7 @@ public final class AlmaConnection {
 
     private final HttpClient httpClient;
     private final URI almaApiHost;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @JacocoGenerated
     public AlmaConnection() {
@@ -30,7 +31,7 @@ public final class AlmaConnection {
              UriWrapper.fromUri(new Environment().readEnv("ALMA_API_HOST")).getUri());
     }
 
-    public AlmaConnection(HttpClient httpClient, URI almaApiHost){
+    public AlmaConnection(HttpClient httpClient, URI almaApiHost) {
         this.httpClient = httpClient;
         this.almaApiHost = almaApiHost;
     }
@@ -57,7 +58,6 @@ public final class AlmaConnection {
 
     /**
      * Sends a put request to the Alma api.
-     * @param code the identifier of a partner to update
      * @param partner the partner to update
      * @return the Http-response in the form of a String
      * @throws IOException When something goes wrong.
@@ -67,7 +67,7 @@ public final class AlmaConnection {
     public HttpResponse<String> sendPut(Partner partner) throws IOException, InterruptedException {
         String almaApikey = new Environment().readEnv(ALMA_APIKEY);
         HttpRequest request = HttpRequest.newBuilder()
-                .PUT(HttpRequest.BodyPublishers.ofString(new ObjectMapper().writeValueAsString(partner)))
+                .PUT(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(partner)))
                 .uri(UriWrapper.fromUri(almaApiHost + SLASH + partner.getPartnerDetails().getCode()).getUri())
                 .setHeader(AUTHORIZATION_KEY, APIKEY_KEY + SPACE_KEY + almaApikey)
                 .header(CONTENT_TYPE_KEY, APPLICATION_JSON)
@@ -78,7 +78,6 @@ public final class AlmaConnection {
 
     /**
      * Sends a post request to the Alma api.
-     * @param code the identifier of a partner to create
      * @param partner the partner to create
      * @return the Http-response in the form of a String
      * @throws IOException When something goes wrong.
@@ -88,7 +87,7 @@ public final class AlmaConnection {
     public HttpResponse<String> sendPost(Partner partner) throws IOException, InterruptedException {
         String almaApikey = new Environment().readEnv(ALMA_APIKEY);
         HttpRequest request = HttpRequest.newBuilder()
-                .POST(HttpRequest.BodyPublishers.ofString(new ObjectMapper().writeValueAsString(partner)))
+                .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(partner)))
                 .uri(UriWrapper.fromUri(almaApiHost + SLASH + partner.getPartnerDetails().getCode()).getUri())
                 .setHeader(AUTHORIZATION_KEY, APIKEY_KEY + SPACE_KEY + almaApikey)
                 .header(CONTENT_TYPE_KEY, APPLICATION_JSON)
