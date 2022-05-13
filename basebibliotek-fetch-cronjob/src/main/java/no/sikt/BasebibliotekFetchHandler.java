@@ -46,6 +46,9 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
     private static final String PATH_DELIMITER = "/";
     private static final String COULD_NOT_UPLOAD_FILE_TO_S_3_ERROR_MESSAGE = "Could not upload file to s3";
     private static final String AUTHORIZATION = "Authorization";
+    private static final String DD_MM_YYYY_PATTERN = "dd-MM-yyyy";
+    private static final String TXT = ".txt";
+    private static final String COULD_NOT_GET_ERROR_MESSAGE = "could not GET ";
 
     private final S3Client s3Client;
     private final HttpClient httpClient;
@@ -159,8 +162,8 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
 
     private PutObjectRequest createPutObjectRequest() {
         Date date = new Date();
-        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy", Locale.ROOT);
-        String filename = formatter.format(date) + ".txt";
+        SimpleDateFormat formatter = new SimpleDateFormat(DD_MM_YYYY_PATTERN, Locale.ROOT);
+        String filename = formatter.format(date) + TXT;
         return PutObjectRequest.builder()
                    .bucket(s3BasebibliotekXmlBucket)
                    .key(filename)
@@ -178,7 +181,8 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
             () -> getBasebibliotekData(UriWrapper.fromUri(basebibliotekUri + PATH_DELIMITER + filename).getUri()))
                    .map(this::getBodyFromResponse)
                    .orElseThrow(
-                       fail -> logExpectionAndThrowRuntimeError(fail.getException(), "could not GET " + filename));
+                       fail -> logExpectionAndThrowRuntimeError(fail.getException(), COULD_NOT_GET_ERROR_MESSAGE
+                                                                                     + filename));
     }
 
     private String getBodyFromResponse(HttpResponse<String> response) {

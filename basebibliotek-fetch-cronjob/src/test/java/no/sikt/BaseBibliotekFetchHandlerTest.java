@@ -9,6 +9,8 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -131,9 +133,10 @@ public class BaseBibliotekFetchHandlerTest {
         mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_05_04_XML, basebibliotekXML2);
 
         var scheduledEvent = new ScheduledEvent();
-        var expectedBibnr = Set.of("0030100", "0030101", "7049304", "0030103");
+        var expectedBibnrs = Set.of("0030100", "0030101", "7049304", "0030103");
         var listOfBibNr = baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT);
-        // assertThat(listOfBibNr, contain);
+        assertThat(listOfBibNr, hasSize(expectedBibnrs.size()));
+        expectedBibnrs.forEach(expectedBibnr  -> assertThat(listOfBibNr, hasItem(expectedBibnr)));
 
         //Verify that basebibliotek has been contacted.
         WireMock.verify(getRequestedFor(urlEqualTo(BIBLIOTEK_EKSPORT_BIBLEV_PATH)));
