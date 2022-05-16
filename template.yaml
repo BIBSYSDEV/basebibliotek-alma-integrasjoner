@@ -22,6 +22,9 @@ Parameters:
   BasebibliotekUrl:
     Type: String
     Default: 'https://www.nb.no/baser/bibliotek/eksport/biblev/'
+  IllServerUri:
+    Type: String
+    Default: 'eu01.alma.exlibrisgroup.com'
 
 Globals:
   Function:
@@ -47,6 +50,7 @@ Resources:
         Variables:
           REPORT_BUCKET: !Ref ReportBucketName
           BASEBIBLIOTEK_XML_BUCKET: !Ref BasebibliotekXmlBucketName
+          ILL_SERVER: !Ref IllServerUri
       Events:
         BasebibliotekFileUpload:
           Type: S3

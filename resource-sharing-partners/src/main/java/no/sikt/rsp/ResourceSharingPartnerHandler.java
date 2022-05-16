@@ -31,33 +31,40 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     private final transient Gson gson = new Gson();
 
     public static final String S3_URI_TEMPLATE = "s3://%s/%s";
+    public static final String ILL_SERVER_ENV_NAME = "ILL_SERVER";
 
     private final S3Client s3Client;
     private final AlmaConnection almaConnection;
 
     private List<Partner> partners;
 
+    private final Environment environment;
+
     @JacocoGenerated
     public ResourceSharingPartnerHandler() {
-        this(S3Driver.defaultS3Client().build(), HttpClient.newHttpClient(),
+        this(S3Driver.defaultS3Client().build(), new Environment(), HttpClient.newHttpClient(),
              UriWrapper.fromUri(new Environment().readEnv("ALMA_API_HOST")).getUri());
     }
 
-    public ResourceSharingPartnerHandler(S3Client s3Client, HttpClient httpClient, URI almaApiHost) {
+    public ResourceSharingPartnerHandler(S3Client s3Client, Environment environment, HttpClient httpClient, URI almaApiHost) {
         this.s3Client = s3Client;
         this.almaConnection = new AlmaConnection(httpClient, almaApiHost);
+        this.environment = environment;
     }
 
     @Override
     public Integer handleRequest(S3Event s3event, Context context) {
         logger.info(EVENT + gson.toJson(s3event));
+
+        String illServer = environment.readEnv(ILL_SERVER_ENV_NAME);
+
         try {
             var file = readFile(s3event);
-            var baseBibliotek = parseXmlFile(file);
-            partners = PartnerConverter.convertBasebibliotekToPartners(baseBibliotek);
+            var baseibliotek = parseXmlFile(file);
+            partners = PartnerConverter.convertBasebibliotekToPartners(illServer, baseibliotek);
             return toIntExact(partners.stream()
-                .filter(this::sendToAlma)
-                .count());
+                    .filter(this::sendToAlma)
+                    .count());
         } catch (Exception exception) {
             throw logErrorAndThrowException(exception);
         }
