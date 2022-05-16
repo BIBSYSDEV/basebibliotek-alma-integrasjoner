@@ -19,7 +19,7 @@ public final class AlmaConnection {
     public static final String CONTENT_TYPE_KEY = "Content-Type";
     public static final String APPLICATION_JSON = "application/json";
     public static final String ALMA_APIKEY = "ALMA_APIKEY";
-    public static final String SLASH = "/";
+    public static final String ALMA_API_HOST = "ALMA_API_HOST";
 
     private final HttpClient httpClient;
     private final URI almaApiHost;
@@ -28,7 +28,7 @@ public final class AlmaConnection {
     @JacocoGenerated
     public AlmaConnection() {
         this(HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build(),
-             UriWrapper.fromUri(new Environment().readEnv("ALMA_API_HOST")).getUri());
+             UriWrapper.fromUri(new Environment().readEnv(ALMA_API_HOST)).getUri());
     }
 
     public AlmaConnection(HttpClient httpClient, URI almaApiHost) {
@@ -43,13 +43,12 @@ public final class AlmaConnection {
      * @throws IOException When something goes wrong.
      * @throws InterruptedException When something goes wrong.
      */
-    @JacocoGenerated
     public HttpResponse<String> sendGet(String code)
             throws IOException,  InterruptedException {
         String almaApikey = new Environment().readEnv(ALMA_APIKEY);
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
-                .uri(UriWrapper.fromUri(almaApiHost + SLASH + code).getUri())
+                .uri(UriWrapper.fromUri(almaApiHost).addChild(code).getUri())
                 .setHeader(AUTHORIZATION_KEY, APIKEY_KEY + SPACE_KEY + almaApikey)
                 .build();
 
@@ -63,12 +62,11 @@ public final class AlmaConnection {
      * @throws IOException When something goes wrong.
      * @throws InterruptedException When something goes wrong.
      */
-    @JacocoGenerated
     public HttpResponse<String> sendPut(Partner partner) throws IOException, InterruptedException {
         String almaApikey = new Environment().readEnv(ALMA_APIKEY);
         HttpRequest request = HttpRequest.newBuilder()
                 .PUT(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(partner)))
-                .uri(UriWrapper.fromUri(almaApiHost + SLASH + partner.getPartnerDetails().getCode()).getUri())
+                .uri(UriWrapper.fromUri(almaApiHost).addChild(partner.getPartnerDetails().getCode()).getUri())
                 .setHeader(AUTHORIZATION_KEY, APIKEY_KEY + SPACE_KEY + almaApikey)
                 .header(CONTENT_TYPE_KEY, APPLICATION_JSON)
                 .build();
@@ -83,12 +81,11 @@ public final class AlmaConnection {
      * @throws IOException When something goes wrong.
      * @throws InterruptedException When something goes wrong.
      */
-    @JacocoGenerated
     public HttpResponse<String> sendPost(Partner partner) throws IOException, InterruptedException {
         String almaApikey = new Environment().readEnv(ALMA_APIKEY);
         HttpRequest request = HttpRequest.newBuilder()
                 .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(partner)))
-                .uri(UriWrapper.fromUri(almaApiHost + SLASH + partner.getPartnerDetails().getCode()).getUri())
+                .uri(UriWrapper.fromUri(almaApiHost).addChild(partner.getPartnerDetails().getCode()).getUri())
                 .setHeader(AUTHORIZATION_KEY, APIKEY_KEY + SPACE_KEY + almaApikey)
                 .header(CONTENT_TYPE_KEY, APPLICATION_JSON)
                 .build();
