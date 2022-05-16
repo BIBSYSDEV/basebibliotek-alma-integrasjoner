@@ -168,7 +168,7 @@ public class PartnerConverter {
             return Optional.empty();
         } else {
             return record.getEressurser().getOAIOrSRUOrArielIp().stream()
-                       .filter(element -> element.getName().getLocalPart().equals("nncip_uri"))
+                       .filter(element -> "nncip_uri".equals(element.getName().getLocalPart()))
                        .map(JAXBElement::getValue)
                        .findFirst();
         }

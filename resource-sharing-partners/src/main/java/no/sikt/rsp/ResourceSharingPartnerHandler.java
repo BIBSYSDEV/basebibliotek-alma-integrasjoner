@@ -28,6 +28,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     private static final Logger logger = LoggerFactory.getLogger(ResourceSharingPartnerHandler.class);
     public static final int SINGLE_EXPECTED_RECORD = 0;
     private static final String EVENT = "event";
+    public static final String ALMA_API_HOST = "ALMA_API_HOST";
     private final transient Gson gson = new Gson();
 
     public static final String S3_URI_TEMPLATE = "s3://%s/%s";
@@ -42,14 +43,14 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
 
     @JacocoGenerated
     public ResourceSharingPartnerHandler() {
-        this(S3Driver.defaultS3Client().build(), new Environment(), HttpClient.newHttpClient(),
-             UriWrapper.fromUri(new Environment().readEnv("ALMA_API_HOST")).getUri());
+        this(S3Driver.defaultS3Client().build(), new Environment(), HttpClient.newHttpClient());
     }
 
-    public ResourceSharingPartnerHandler(S3Client s3Client, Environment environment, HttpClient httpClient, URI almaApiHost) {
+    public ResourceSharingPartnerHandler(S3Client s3Client, Environment environment, HttpClient httpClient) {
         this.s3Client = s3Client;
-        this.almaConnection = new AlmaConnection(httpClient, almaApiHost);
         this.environment = environment;
+        this.almaConnection = new AlmaConnection(httpClient,
+                UriWrapper.fromUri(environment.readEnv(ALMA_API_HOST)).getUri());
     }
 
     @Override
