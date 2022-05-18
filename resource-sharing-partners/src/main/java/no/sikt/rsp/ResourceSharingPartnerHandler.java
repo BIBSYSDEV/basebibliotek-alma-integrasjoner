@@ -1,12 +1,17 @@
 package no.sikt.rsp;
 
+import static java.lang.Math.toIntExact;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.google.gson.Gson;
 import jakarta.xml.bind.JAXB;
+import java.io.IOException;
 import java.io.StringReader;
+import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
 import java.util.List;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.sikt.alma.generated.Partner;
@@ -23,12 +28,14 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     private static final Logger logger = LoggerFactory.getLogger(ResourceSharingPartnerHandler.class);
     public static final int SINGLE_EXPECTED_RECORD = 0;
     private static final String EVENT = "event";
+    public static final String ALMA_API_HOST = "ALMA_API_HOST";
     private final transient Gson gson = new Gson();
 
     public static final String S3_URI_TEMPLATE = "s3://%s/%s";
     public static final String ILL_SERVER_ENV_NAME = "ILL_SERVER";
 
     private final S3Client s3Client;
+    private final AlmaConnection almaConnection;
 
     private List<Partner> partners;
 
@@ -36,12 +43,14 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
 
     @JacocoGenerated
     public ResourceSharingPartnerHandler() {
-        this(S3Driver.defaultS3Client().build(), new Environment());
+        this(S3Driver.defaultS3Client().build(), new Environment(), HttpClient.newHttpClient());
     }
 
-    public ResourceSharingPartnerHandler(S3Client s3Client, Environment environment) {
+    public ResourceSharingPartnerHandler(S3Client s3Client, Environment environment, HttpClient httpClient) {
         this.s3Client = s3Client;
         this.environment = environment;
+        this.almaConnection = new AlmaConnection(httpClient,
+                UriWrapper.fromUri(environment.readEnv(ALMA_API_HOST)).getUri());
     }
 
     @Override
@@ -54,10 +63,30 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
             var file = readFile(s3event);
             var baseibliotek = parseXmlFile(file);
             partners = PartnerConverter.convertBasebibliotekToPartners(illServer, baseibliotek);
-            return partners.size();
+            return toIntExact(partners.stream()
+                    .filter(this::sendToAlma)
+                    .count());
         } catch (Exception exception) {
             throw logErrorAndThrowException(exception);
         }
+    }
+
+    private boolean sendToAlma(Partner partner) {
+        try {
+            HttpResponse<String> httpResponse = almaConnection.sendGet(partner.getPartnerDetails().getCode());
+            logger.info(String.format("Read partner %s successfully.", partner.getPartnerDetails().getCode()));
+            if (httpResponse.statusCode() <= HttpURLConnection.HTTP_MULT_CHOICE) {
+                almaConnection.sendPut(partner);
+                logger.info(String.format("Updated partner %s successfully.", partner.getPartnerDetails().getCode()));
+            } else {
+                almaConnection.sendPost(partner);
+                logger.info(String.format("Created partner %s successfully.", partner.getPartnerDetails().getCode()));
+            }
+        } catch (IOException | InterruptedException e) {
+            logger.error(e.getMessage());
+            return false;
+        }
+        return true;
     }
 
     public List<Partner> getPartners() {

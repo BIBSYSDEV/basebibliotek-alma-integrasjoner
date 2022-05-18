@@ -3,9 +3,13 @@ package no.sikt.rsp;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -50,6 +54,7 @@ import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.hamcrest.core.IsNull;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -61,6 +66,7 @@ import test.utils.BasebibliotekGenerator;
 import test.utils.EressurserBuilder;
 import test.utils.RecordBuilder;
 import test.utils.RecordSpecification;
+import test.utils.WireMocker;
 
 public class ResourceSharingPartnerTest {
 
@@ -69,6 +75,7 @@ public class ResourceSharingPartnerTest {
     public static final UserIdentityEntity EMPTY_USER_IDENTITY = null;
     public static final long SOME_FILE_SIZE = 100L;
     private static final String BASEBIBLIOTEK_XML = "redacted_bb_full.xml";
+    private static final String BASEBIBLIOTEK_0030100_XML = "bb_0030100.xml";
 
     private static final String INVALID_BASEBIBLIOTEK_XML_STRING = "invalid";
     public static final String ALMA = "alma";
@@ -93,7 +100,26 @@ public class ResourceSharingPartnerTest {
     public void init() {
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, "ignoredValue");
-        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
+        WireMocker.startWiremockServer();
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_API_HOST))
+                .thenReturn(UriWrapper.fromUri(WireMocker.serverUri).toString());
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment,
+                WireMocker.httpClient);
+    }
+
+    @AfterEach
+    public void tearDown() {
+        WireMocker.stopWiremockServer();
+    }
+
+    @Test
+    public void shouldBeAbleToReadAndPostRecordToAlma() throws IOException {
+        var baseBibliotek0030100 = IoUtils.stringFromResources(Path.of(BASEBIBLIOTEK_0030100_XML));
+        var uri = s3Driver.insertFile(randomS3Path(), baseBibliotek0030100);
+        var s3Event = createS3Event(uri);
+        Integer response = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        assertThat(response, is(notNullValue()));
+        assertThat(response, is(1));
     }
 
     @Test
@@ -101,7 +127,8 @@ public class ResourceSharingPartnerTest {
         var s3Event = createS3Event(randomString());
         var expectedMessage = randomString();
         s3Client = new FakeS3ClientThrowingException(expectedMessage);
-        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment,
+                WireMocker.httpClient);
         var appender = LogUtils.getTestingAppenderForRootLogger();
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
         assertThat(appender.getMessages(), containsString(expectedMessage));
