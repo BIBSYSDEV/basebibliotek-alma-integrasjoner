@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -31,6 +32,7 @@ import no.nb.basebibliotek.generated.Link;
 import no.nb.basebibliotek.generated.Record;
 import no.nb.basebibliotek.generated.UregistrerteFilialer;
 import no.nb.basebibliotek.generated.Wressurser;
+import nva.commons.core.StringUtils;
 
 public class BasebibliotekGenerator {
 
@@ -44,8 +46,6 @@ public class BasebibliotekGenerator {
     private static final String OAI_FIELD_NAME = "OAI";
     private static final String NNCIP_URI_FIELD_NAME = "nncip_uri";
     private static final String IO_WS_FIELD_NAME = "io_ws";
-    private static final String INACTIVE_U = "U";
-    private static final String INACTIVE_X = "X";
     public static final String HTTP_NB_NO_BASE_BIBLIOTEK_NAME_SPACE = "http://nb.no/BaseBibliotek";
 
     private BigInteger currentRid;
@@ -75,7 +75,8 @@ public class BasebibliotekGenerator {
                                                                recordsSpecification.getWithVaddr(),
                                                                recordsSpecification.getWithIsil(),
                                                                recordsSpecification.getKatsys(),
-                                                               recordsSpecification.getEressursExcludes()))
+                                                               recordsSpecification.getEressursExcludes(),
+                                                               recordsSpecification.getStengt()))
                    .collect(Collectors.toList());
     }
 
@@ -100,7 +101,8 @@ public class BasebibliotekGenerator {
                                   boolean withVaddr,
                                   boolean withIsil,
                                   String katsys,
-                                  List<String> eressursExcludes) {
+                                  List<String> eressursExcludes,
+                                  String stengt) {
         var record = new Record();
         record.setRid(incrementCurrentRidAndReturnResult());
         record.setTstamp(randomLocalDate().toString());
@@ -110,8 +112,9 @@ public class BasebibliotekGenerator {
         if (shouldHaveBibNr) {
             record.setBibnr(randomString());
         }
-        var start = randomInstant();
-        var end = randomInstant(start);
+        var day = 1000 * 60 * 60 *24;
+        var start = Instant.now().toEpochMilli() - day;
+        var end = Instant.now().toEpochMilli() + day;
         if (withStengtFra) {
             record.setStengtFra(getGregorianDate(start));
         }
@@ -151,6 +154,7 @@ public class BasebibliotekGenerator {
         if (withVaddr) {
             record.setVpoststed(randomString());
         }
+        record.setStengt(stengt);
         if (randomBoolean()) {
             record.setBibkode(randomString());
         }
@@ -166,10 +170,6 @@ public class BasebibliotekGenerator {
         if (randomBoolean()) {
             record.setSamkat(randomString());
         }
-        if (randomBoolean()) {
-            record.setStengt(generateSetStengtStatus());
-        }
-
         if (randomBoolean()) {
             record.setKommnr(randomString());
         }
@@ -379,13 +379,9 @@ public class BasebibliotekGenerator {
         return new JAXBElement<>(new QName(HTTP_NB_NO_BASE_BIBLIOTEK_NAME_SPACE, type), String.class, value);
     }
 
-    private static String generateSetStengtStatus() {
-        return randomBoolean() ? INACTIVE_U : INACTIVE_X;
-    }
-
-    private static XMLGregorianCalendar getGregorianDate(Instant instantAfter) {
+    private static XMLGregorianCalendar getGregorianDate(long epochMilli) {
         var calendar = (GregorianCalendar) GregorianCalendar.getInstance(TimeZone.getDefault());
-        calendar.setTimeInMillis(instantAfter.toEpochMilli());
+        calendar.setTimeInMillis(epochMilli);
         return attempt(() -> DatatypeFactory.newInstance().newXMLGregorianCalendar(calendar)).orElseThrow();
     }
 
