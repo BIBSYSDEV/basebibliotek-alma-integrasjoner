@@ -4,6 +4,7 @@ import jakarta.xml.bind.JAXB;
 import jakarta.xml.bind.JAXBElement;
 
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -32,6 +33,8 @@ public class PartnerConverter {
     private static final String EMAIL_PATTERN = ".+@.+";
     private static final String COULD_NOT_CONVERT_RECORD = "Could not convert record to partner, missing %s, record: "
                                                            + "%s";
+    private static final String ALMA_CODE_NOT_RESOLVABLE_MESSAGE = "Could not convert record due to alma code not "
+                                                                   + "resolvable: {}";
     private static final int AVG_SUPPLY_TIME = 1;
     private static final int DELIVERY_DELAY = 0;
     private static final String LENDING_WORKFLOW = "Lending";
@@ -92,7 +95,37 @@ public class PartnerConverter {
     }
 
     private boolean satisfiesConstraints(Record record) {
-        return Objects.nonNull(record.getBibnr()) && Objects.nonNull(record.getLandkode());
+        List<String> missingFields = findMissingRequiredFields(record);
+        if (!missingFields.isEmpty()) {
+            logger.warn(String.format(COULD_NOT_CONVERT_RECORD, missingFields, toXml(record)));
+        }
+
+        return missingFields.isEmpty() && almaCodeResolvable(record);
+    }
+
+    List<String> findMissingRequiredFields(Record record) {
+        final List<String> missingFields = new ArrayList<>();
+
+        if (StringUtils.isEmpty(record.getBibnr())) {
+            missingFields.add("bibnr");
+        }
+        if (StringUtils.isEmpty(record.getLandkode())) {
+            missingFields.add("landkode");
+        }
+
+        return missingFields;
+    }
+
+    private boolean almaCodeResolvable(Record record) {
+        if (isAlmaOrBibsysLibrary(record) && StringUtils.isNotEmpty(record.getBibnr())) {
+            boolean almaCodeResolvable = almaCodeProvider.getAlmaCode(record.getBibnr()).isPresent();
+            if (!almaCodeResolvable) {
+                logger.warn(ALMA_CODE_NOT_RESOLVABLE_MESSAGE, toXml(record));
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private PartnerDetails extractPartnerDetailsFromRecord(Record record) {

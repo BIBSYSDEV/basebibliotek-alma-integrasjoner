@@ -1,22 +1,38 @@
 package no.sikt.rsp;
 
 import com.google.gson.Gson;
-import nva.commons.core.JacocoGenerated;
-import nva.commons.core.StringUtils;
-
+import com.google.gson.JsonSyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import nva.commons.core.JacocoGenerated;
+import nva.commons.core.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AlmaCodeProvider {
+    private static final Logger logger = LoggerFactory.getLogger(AlmaCodeProvider.class);
+
     private final Map<String, String> libraryNoToAlmaCodeMap = new HashMap<>();
 
     public AlmaCodeProvider(final String jsonConfig) {
         if (StringUtils.isNotEmpty(jsonConfig)) {
             final Gson gson = new Gson();
-            ConfigEntry[] configEntries = gson.fromJson(jsonConfig, ConfigEntry[].class);
-            Arrays.stream(configEntries).forEach(configEntry -> libraryNoToAlmaCodeMap.put(configEntry.libraryNo, configEntry.almaCode));
+            try {
+                ConfigEntry[] configEntries = gson.fromJson(jsonConfig, ConfigEntry[].class);
+                if (configEntries != null) {
+                    Arrays.stream(configEntries)
+                        .filter(configEntry -> StringUtils.isNotEmpty(configEntry.libraryNo) && StringUtils.isNotEmpty(
+                            configEntry.almaCode))
+                        .forEach(
+                            configEntry -> libraryNoToAlmaCodeMap.put(configEntry.libraryNo, configEntry.almaCode));
+                } else {
+                    logger.error("No alma code mapping table configured (null or empty)!");
+                }
+            } catch (JsonSyntaxException e) {
+                logger.error("Alma code mapping table configuration is invalid!", e);
+            }
         }
     }
 
@@ -30,16 +46,12 @@ public class AlmaCodeProvider {
     }
 
     private static class ConfigEntry {
-        private String libraryNo;
-        private String almaCode;
+        private final String libraryNo;
+        private final String almaCode;
 
         @JacocoGenerated
-        public void setLibraryNo(String libraryNo) {
+        private ConfigEntry(String libraryNo, String almaCode) {
             this.libraryNo = libraryNo;
-        }
-
-        @JacocoGenerated
-        public void setAlmaCode(String almaCode) {
             this.almaCode = almaCode;
         }
     }

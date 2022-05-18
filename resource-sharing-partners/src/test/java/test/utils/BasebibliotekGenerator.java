@@ -66,7 +66,7 @@ public class BasebibliotekGenerator {
         List<RecordSpecification> specificationList) {
         return specificationList
                    .stream()
-                   .map(recordsSpecification -> generateRecord(recordsSpecification.getWithBibnr(),
+                   .map(recordsSpecification -> generateRecord(recordsSpecification.getBibnr(),
                                                                recordsSpecification.getWithLandkode(),
                                                                recordsSpecification.getNncipUri(),
                                                                recordsSpecification.getWithStengtFra(),
@@ -91,7 +91,7 @@ public class BasebibliotekGenerator {
         return xmlWriter.toString();
     }
 
-    private Record generateRecord(boolean shouldHaveBibNr,
+    private Record generateRecord(String bibnr,
                                   boolean shouldHaveLandkode,
                                   String specifiedNncipUri,
                                   boolean withStengtFra,
@@ -104,12 +104,9 @@ public class BasebibliotekGenerator {
         var record = new Record();
         record.setRid(incrementCurrentRidAndReturnResult());
         record.setTstamp(randomLocalDate().toString());
+        record.setBibnr(bibnr);
 
         //optional fields:
-
-        if (shouldHaveBibNr) {
-            record.setBibnr(randomString());
-        }
         var start = randomInstant();
         var end = randomInstant(start);
         if (withStengtFra) {

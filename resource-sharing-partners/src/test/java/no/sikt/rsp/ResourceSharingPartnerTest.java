@@ -12,7 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.RequestParametersEntity;
@@ -22,7 +21,6 @@ import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotificatio
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.S3EventNotificationRecord;
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.S3ObjectEntity;
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.UserIdentityEntity;
-
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
@@ -32,7 +30,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
 import no.nb.basebibliotek.generated.Record;
 import no.sikt.alma.generated.Address;
 import no.sikt.alma.generated.ContactInfo;
@@ -81,8 +78,11 @@ public class ResourceSharingPartnerTest {
 
     private static final String ILL_SERVER_ENVIRONMENT_VALUE = "eu01.alma.exlibrisgroup.com";
     public static final int ILL_SERVER_PORT = 9001;
-    private static final String ALMA_CODE_LOOKUP_TABLE_ENVIRONMENT_VALUE = "[{\"libraryNo\": \"10101010\", "
-                                                                           + "\"almaCode\": \"20202020\"}]";
+    private static final String BIBNR_RESOLVABLE_TO_ALMA_CODE = "10101010";
+    private static final String RESOLVED_ALMA_CODE = "ALMA_CODE";
+    private static final String ALMA_CODE_LOOKUP_TABLE_ENVIRONMENT_VALUE =
+        "[{\"libraryNo\": \"" + BIBNR_RESOLVABLE_TO_ALMA_CODE + "\", "
+        + "\"almaCode\": \"" + RESOLVED_ALMA_CODE + "\"}]";
 
     private static final String NNCIP_SERVER = "http://nncipuri.org";
     private ResourceSharingPartnerHandler resourceSharingPartnerHandler;
@@ -131,7 +131,7 @@ public class ResourceSharingPartnerTest {
         var withPaddr = true;
         var withVaddr = true;
         var specifiedList = List.of(
-            new RecordSpecification(true,
+            new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE,
                                     true,
                                     null, randomBoolean(),
                                     randomBoolean(),
@@ -151,12 +151,11 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldRecordHandleIsilBibNrAndLandKode() throws IOException {
-        var withBibNr = true;
         var withLandkode = true;
         var withIsil = true;
         var appender = LogUtils.getTestingAppenderForRootLogger();
         var expectedLogMessage = "Could not convert record to partner, missing landkode bibNr, record";
-        var shouldNotBeConvertedToPartner = new RecordSpecification(!withBibNr,
+        var shouldNotBeConvertedToPartner = new RecordSpecification(null,
                                                                     !withLandkode,
                                                                     null,
                                                                     randomBoolean(),
@@ -165,7 +164,7 @@ public class ResourceSharingPartnerTest {
                                                                     randomBoolean(),
                                                                     !withIsil,
                                                                     randomString());
-        var shouldUseIsilAsPartnerDetailsCode = new RecordSpecification(withBibNr,
+        var shouldUseIsilAsPartnerDetailsCode = new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE,
                                                                         withLandkode,
                                                                         null,
                                                                         randomBoolean(),
@@ -174,7 +173,7 @@ public class ResourceSharingPartnerTest {
                                                                         randomBoolean(),
                                                                         withIsil,
                                                                         randomString());
-        var shouldCombineBibNrAndLandKodeAsPartnerDetailsCode = new RecordSpecification(withBibNr,
+        var shouldCombineBibNrAndLandKodeAsPartnerDetailsCode = new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE,
                                                                                         withLandkode,
                                                                                         null,
                                                                                         randomBoolean(),
@@ -211,7 +210,7 @@ public class ResourceSharingPartnerTest {
     @Test
     void shouldExtractBasicPartnerDetailsCorrectly() throws IOException {
         var specifiedList = List.of(
-            new RecordSpecification(true,
+            new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE,
                                     true,
                                     null, randomBoolean(),
                                     randomBoolean(),
@@ -248,9 +247,8 @@ public class ResourceSharingPartnerTest {
     @ParameterizedTest(name = "Should handle katsys codes differently")
     @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
     public void shouldExtractCertainDataIfAlmaOrBibsysLibrary(String katsys) throws IOException {
-        var withBibNr = true;
         var withLandkode = true;
-        var specifiedList = List.of(new RecordSpecification(withBibNr,
+        var specifiedList = List.of(new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE,
                                                             withLandkode,
                                                             "http://nncip.edu",
                                                             randomBoolean(),
@@ -264,6 +262,10 @@ public class ResourceSharingPartnerTest {
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
+
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_CODE_LOOKUP_TABLE_ENV_NAME))
+            .thenReturn(ALMA_CODE_LOOKUP_TABLE_ENVIRONMENT_VALUE);
+
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var partners = resourceSharingPartnerHandler.getPartners();
         var isAlmaOrBibsys = BIBSYS.equals(katsys) || ALMA.equals(katsys);
@@ -274,6 +276,8 @@ public class ResourceSharingPartnerTest {
         var expectedSystemTypeValueValue = isAlmaOrBibsys
                                                ? ALMA.toUpperCase(Locale.ROOT) : OTHER.toUpperCase(Locale.ROOT);
         var expectedSystemTypeValueDesc = isAlmaOrBibsys ? ALMA : OTHER;
+
+        assertThat("Expected one mapped partner for katsyst " + katsys, partners, hasSize(1));
         assertThat(partners.get(0).getPartnerDetails().getHoldingCode(), is(equalTo(expectedHoldingCode)));
         assertThat(partners.get(0).getPartnerDetails().getSystemType().getValue(),
                    is(equalTo(expectedSystemTypeValueValue)));
@@ -286,7 +290,7 @@ public class ResourceSharingPartnerTest {
     @ValueSource(strings = {ALMA, BIBSYS})
     public void shouldExtractPartnerDetailsProfileDataIsoCorrectly(final String katsys) throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys)
-                                  .withBibnr("1")
+                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
                                   .withLandkode("1")
                                   .build();
 
@@ -298,6 +302,8 @@ public class ResourceSharingPartnerTest {
 
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
             ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_CODE_LOOKUP_TABLE_ENV_NAME))
+            .thenReturn(ALMA_CODE_LOOKUP_TABLE_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -503,7 +509,7 @@ public class ResourceSharingPartnerTest {
     @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
     public void shouldExtractAlmaCodeInPartnerDetailsCorrectly(final String katsys) throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys)
-                                  .withBibnr("10101010")
+                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
                                   .withLandkode("1")
                                   .build();
 
@@ -527,11 +533,86 @@ public class ResourceSharingPartnerTest {
 
         final String expectedInstitutionCode;
         if (ALMA.equals(katsys) || BIBSYS.equals(katsys)) {
-            expectedInstitutionCode = "20202020";
+            expectedInstitutionCode = RESOLVED_ALMA_CODE;
         } else {
             expectedInstitutionCode = "";
         }
         assertThat(partner.getPartnerDetails().getInstitutionCode(), is(expectedInstitutionCode));
+    }
+
+    @Test
+    public void shouldNotConvertPartnerWhenAlmaCodeLookupTableIsEmpty() throws IOException {
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), ALMA)
+                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+                                  .withLandkode("1")
+                                  .build();
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
+            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_CODE_LOOKUP_TABLE_ENV_NAME))
+            .thenReturn("");
+
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+
+        var partners = resourceSharingPartnerHandler.getPartners();
+
+        assertThat(partners, hasSize(0));
+    }
+
+    @Test
+    public void shouldNotConvertPartnerWhenAlmaCodeLookupTableIsMalformedJson() throws IOException {
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), ALMA)
+                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+                                  .withLandkode("1")
+                                  .build();
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
+            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_CODE_LOOKUP_TABLE_ENV_NAME))
+            .thenReturn("[}");
+
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+
+        var partners = resourceSharingPartnerHandler.getPartners();
+
+        assertThat(partners, hasSize(0));
+    }
+
+    @Test
+    public void shouldNotConvertPartnerWhenAlmaCodeLookupTableIsMissing() throws IOException {
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), ALMA)
+                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+                                  .withLandkode("1")
+                                  .build();
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
+            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_CODE_LOOKUP_TABLE_ENV_NAME))
+            .thenReturn(null);
+
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+
+        var partners = resourceSharingPartnerHandler.getPartners();
+
+        assertThat(partners, hasSize(0));
     }
 
     private void assertIsoProfileDetailsPopulatedCorrectly(final Partner partner, final String bibnr) {
