@@ -42,6 +42,7 @@ public class PartnerConverter {
     private static final String ALMA = "alma";
     public static final String OTHER = "OTHER";
     public static final int RESENDING_OVERDUE_MESSAGE_INTERVAL = 7;
+    public static final String NNCIP_URI = "nncip_uri";
 
     @JacocoGenerated
     public PartnerConverter() {
@@ -168,7 +169,7 @@ public class PartnerConverter {
             return Optional.empty();
         } else {
             return record.getEressurser().getOAIOrSRUOrArielIp().stream()
-                       .filter(element -> "nncip_uri".equals(element.getName().getLocalPart()))
+                       .filter(element -> NNCIP_URI.equals(element.getName().getLocalPart()))
                        .map(JAXBElement::getValue)
                        .findFirst();
         }
