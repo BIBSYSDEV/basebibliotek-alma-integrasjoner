@@ -69,9 +69,8 @@ public class BaseBibliotekFetchHandlerTest {
         startWiremockServer();
         Environment environment = mock(Environment.class);
         when(environment.readEnv(BasebibliotekFetchHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).thenReturn(
-            "http://localhost:"
-            + httpServer.port()
-            + "/bibliotek/eksport/biblev");
+            httpServer.baseUrl()
+            + BIBLIOTEK_EKSPORT_BIBLEV_PATH);
         when(environment.readEnv(BasebibliotekFetchHandler.BASEBIBLILOTEK_USERNAME_ENVIRONMENT_NAME)).thenReturn(
             "ignored");
         when(environment.readEnv(BasebibliotekFetchHandler.BASEBIBLIOTEK_PASSWORD_ENVIRONMENT_NAME)).thenReturn(
@@ -193,13 +192,6 @@ public class BaseBibliotekFetchHandlerTest {
         baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT);
         var expectedMessage = "Record with missing bibnr";
         assertThat(appender.getMessages(), containsString(expectedMessage));
-    }
-
-    private PutObjectRequest generatePutObjectRequest(String key) {
-        return PutObjectRequest.builder()
-                   .bucket(S3_BUCKET_NAME)
-                   .key(key)
-                   .build();
     }
 
     private void startWiremockServer() {

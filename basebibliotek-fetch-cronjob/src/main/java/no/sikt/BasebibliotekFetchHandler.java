@@ -43,7 +43,6 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
     private static final String FILENAME_REGEX = ".*?\">(bb-.*?.xml)</a>.*";
     private static final String BASIC_AUTHORIZATION = "Basic %s";
     private static final String USERNAME_PASSWORD_DELIMITER = ":";
-    private static final String PATH_DELIMITER = "/";
     private static final String COULD_NOT_UPLOAD_FILE_TO_S_3_ERROR_MESSAGE = "Could not upload file to s3";
     private static final String AUTHORIZATION = "Authorization";
     private static final String DD_MM_YYYY_PATTERN = "dd-MM-yyyy";
@@ -120,7 +119,7 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
     }
 
     private Optional<String> logRecordWithMissingBibnr(Record record) {
-        logger.info("Record with missing bibnr" + getRecordXmlAsString(record));
+        logger.info("Record with missing bibnr " + getRecordXmlAsString(record));
         return Optional.empty();
     }
 
@@ -178,7 +177,7 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
 
     private String getBasebibliotekXmlAsString(String filename) {
         return attempt(
-            () -> getBasebibliotekData(UriWrapper.fromUri(basebibliotekUri + PATH_DELIMITER + filename).getUri()))
+            () -> getBasebibliotekData(UriWrapper.fromUri(basebibliotekUri).addChild(filename).getUri()))
                    .map(this::getBodyFromResponse)
                    .orElseThrow(
                        fail -> logExpectionAndThrowRuntimeError(fail.getException(), COULD_NOT_GET_ERROR_MESSAGE
