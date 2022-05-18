@@ -16,6 +16,7 @@ import no.sikt.alma.generated.Emails;
 import no.sikt.alma.generated.Phone;
 import no.sikt.alma.generated.Phone.PhoneTypes;
 import no.sikt.alma.generated.Phones;
+import nva.commons.core.JacocoGenerated;
 import nva.commons.core.StringUtils;
 
 public final class ContactInfoConverter {
@@ -28,7 +29,7 @@ public final class ContactInfoConverter {
                                                               "shipping");
     private static final List<String> EMAIL_TYPES = List.of("claimMail", "orderMail", "paymentMail", "queries",
                                                             "returnsMail");
-
+    @JacocoGenerated
     private ContactInfoConverter() {
     }
 

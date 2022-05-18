@@ -27,6 +27,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
 
     public static final String S3_URI_TEMPLATE = "s3://%s/%s";
     public static final String ILL_SERVER_ENV_NAME = "ILL_SERVER";
+    public static final String ALMA_CODE_LOOKUP_TABLE_ENV_NAME = "ALMA_CODE_LOOKUP_TABLE";
 
     private final S3Client s3Client;
 
@@ -49,11 +50,13 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
         logger.info(EVENT + gson.toJson(s3event));
 
         String illServer = environment.readEnv(ILL_SERVER_ENV_NAME);
-
+        String almaCodeLookupTable = environment.readEnv(ALMA_CODE_LOOKUP_TABLE_ENV_NAME);
+        AlmaCodeProvider almaCodeProvider = new AlmaCodeProvider(almaCodeLookupTable);
         try {
             var file = readFile(s3event);
             var baseibliotek = parseXmlFile(file);
-            partners = PartnerConverter.convertBasebibliotekToPartners(illServer, baseibliotek);
+            PartnerConverter partnerConverter = new PartnerConverter(almaCodeProvider, illServer, baseibliotek);
+            partners = partnerConverter.toPartners();
             return partners.size();
         } catch (Exception exception) {
             throw logErrorAndThrowException(exception);

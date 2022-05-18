@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.RequestParametersEntity;
@@ -21,6 +22,7 @@ import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotificatio
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.S3EventNotificationRecord;
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.S3ObjectEntity;
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.UserIdentityEntity;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
@@ -30,6 +32,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+
 import no.nb.basebibliotek.generated.Record;
 import no.sikt.alma.generated.Address;
 import no.sikt.alma.generated.ContactInfo;
@@ -76,9 +79,10 @@ public class ResourceSharingPartnerTest {
     public static final String TIDEMANN = "Tidemann";
     public static final String OTHER = "other";
 
-    private static final String ILL_SERVER_ENVIRONMENT_NAME = "ILL_SERVER";
     private static final String ILL_SERVER_ENVIRONMENT_VALUE = "eu01.alma.exlibrisgroup.com";
     public static final int ILL_SERVER_PORT = 9001;
+    private static final String ALMA_CODE_LOOKUP_TABLE_ENVIRONMENT_VALUE = "[{\"libraryNo\": \"10101010\", "
+                                                                           + "\"almaCode\": \"20202020\"}]";
 
     private static final String NNCIP_SERVER = "http://nncipuri.org";
     private ResourceSharingPartnerHandler resourceSharingPartnerHandler;
@@ -292,7 +296,8 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
 
-        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -326,7 +331,8 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
 
-        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -359,7 +365,8 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
 
-        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -392,7 +399,8 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
 
-        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -422,7 +430,8 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
 
-        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -449,7 +458,8 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
 
-        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -477,7 +487,8 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
 
-        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -486,6 +497,41 @@ public class ResourceSharingPartnerTest {
         Partner partner = partners.get(0);
 
         assertEmailProfileDetailsPopulatedCorrectly(partner, "");
+    }
+
+    @ParameterizedTest(name = "Should handle katsys codes differently")
+    @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
+    public void shouldExtractAlmaCodeInPartnerDetailsCorrectly(final String katsys) throws IOException {
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys)
+                                  .withBibnr("10101010")
+                                  .withLandkode("1")
+                                  .build();
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
+            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_CODE_LOOKUP_TABLE_ENV_NAME))
+            .thenReturn(ALMA_CODE_LOOKUP_TABLE_ENVIRONMENT_VALUE);
+
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+
+        var partners = resourceSharingPartnerHandler.getPartners();
+
+        // we should have only ony partner from the one record we have:
+        Partner partner = partners.get(0);
+
+        final String expectedInstitutionCode;
+        if (ALMA.equals(katsys) || BIBSYS.equals(katsys)) {
+            expectedInstitutionCode = "20202020";
+        } else {
+            expectedInstitutionCode = "";
+        }
+        assertThat(partner.getPartnerDetails().getInstitutionCode(), is(expectedInstitutionCode));
     }
 
     private void assertIsoProfileDetailsPopulatedCorrectly(final Partner partner, final String bibnr) {

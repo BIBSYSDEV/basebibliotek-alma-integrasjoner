@@ -25,6 +25,9 @@ Parameters:
   IllServerUri:
     Type: String
     Default: 'eu01.alma.exlibrisgroup.com'
+  AlmaLookupTable:
+    Type: String
+    Default: '[{\"libraryNo\": \"10101010\", \"almaCode\": \"20202020\"}]'
 
 Globals:
   Function:
@@ -51,6 +54,7 @@ Resources:
           REPORT_BUCKET: !Ref ReportBucketName
           BASEBIBLIOTEK_XML_BUCKET: !Ref BasebibliotekXmlBucketName
           ILL_SERVER: !Ref IllServerUri
+          ALMA_CODE_LOOKUP_TABLE: !Ref AlmaLookupTable
       Events:
         BasebibliotekFileUpload:
           Type: S3

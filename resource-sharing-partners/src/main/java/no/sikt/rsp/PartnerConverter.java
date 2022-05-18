@@ -2,12 +2,14 @@ package no.sikt.rsp;
 
 import jakarta.xml.bind.JAXB;
 import jakarta.xml.bind.JAXBElement;
+
 import java.io.StringWriter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.nb.basebibliotek.generated.Record;
 import no.sikt.alma.generated.EmailDetails;
@@ -20,7 +22,6 @@ import no.sikt.alma.generated.PartnerDetails.SystemType;
 import no.sikt.alma.generated.ProfileDetails;
 import no.sikt.alma.generated.ProfileType;
 import no.sikt.alma.generated.RequestExpiryType;
-import nva.commons.core.JacocoGenerated;
 import nva.commons.core.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,52 +44,58 @@ public class PartnerConverter {
     public static final String OTHER = "OTHER";
     public static final int RESENDING_OVERDUE_MESSAGE_INTERVAL = 7;
 
-    @JacocoGenerated
-    public PartnerConverter() {
+    private final AlmaCodeProvider almaCodeProvider;
+    private final String interLibraryLoadServer;
+    private final BaseBibliotek baseBibliotek;
 
+    public PartnerConverter(AlmaCodeProvider almaCodeProvider, String interLibraryLoadServer,
+                            BaseBibliotek baseBibliotek) {
+        this.almaCodeProvider = almaCodeProvider;
+        this.interLibraryLoadServer = interLibraryLoadServer;
+        this.baseBibliotek = baseBibliotek;
     }
 
-    public static List<Partner> convertBasebibliotekToPartners(String illServer, BaseBibliotek baseBibliotek) {
+    public List<Partner> toPartners() {
         return baseBibliotek
                    .getRecord()
                    .stream()
-                   .map(record -> convertRecordToPartnerOptional(illServer, record))
+                   .map(this::convertRecordToPartnerOptional)
                    .flatMap(Optional::stream)
                    .collect(Collectors.toList());
     }
 
-    private static String toXml(Record record) {
+    private String toXml(Record record) {
         StringWriter xmlWriter = new StringWriter();
         JAXB.marshal(record, xmlWriter);
         return xmlWriter.toString();
     }
 
-    private static Optional<Partner> convertRecordToPartnerOptional(String illServer, Record record) {
+    private Optional<Partner> convertRecordToPartnerOptional(Record record) {
         return satisfiesConstraints(record)
-                   ? Optional.of(convertRecordToPartner(illServer, record))
+                   ? Optional.of(convertRecordToPartner(record))
                    : returnEmptyAndLogProblem(record);
     }
 
-    private static Partner convertRecordToPartner(String illServer, Record record) {
+    private Partner convertRecordToPartner(Record record) {
         var partner = new Partner();
-        partner.setPartnerDetails(extractPartnerDetailsFromRecord(illServer, record));
+        partner.setPartnerDetails(extractPartnerDetailsFromRecord(record));
         partner.setContactInfo(ContactInfoConverter.extractContactInfoFromRecord(record));
         return partner;
     }
 
-    private static Optional<Partner> returnEmptyAndLogProblem(Record record) {
+    private Optional<Partner> returnEmptyAndLogProblem(Record record) {
         var missingParameters = (Objects.nonNull(record.getLandkode()) ? StringUtils.EMPTY_STRING : "landkode")
                                 + " "
                                 + ((Objects.nonNull(record.getBibnr()) ? StringUtils.EMPTY_STRING : "bibNr"));
-        logger.info(String.format(COULD_NOT_CONVERT_RECORD, missingParameters, PartnerConverter.toXml(record)));
+        logger.info(String.format(COULD_NOT_CONVERT_RECORD, missingParameters, toXml(record)));
         return Optional.empty();
     }
 
-    private static boolean satisfiesConstraints(Record record) {
+    private boolean satisfiesConstraints(Record record) {
         return Objects.nonNull(record.getBibnr()) && Objects.nonNull(record.getLandkode());
     }
 
-    private static PartnerDetails extractPartnerDetailsFromRecord(String illServer, Record record) {
+    private PartnerDetails extractPartnerDetailsFromRecord(Record record) {
         var partnerDetails = new PartnerDetails();
         partnerDetails.setCode(extractIsilCode(record));
         partnerDetails.setName(extractName(record));
@@ -101,12 +108,18 @@ public class PartnerConverter {
         partnerDetails.setHoldingCode(extractHoldingCodeIfAlmaOrBibsysLibrary(record).orElse(null));
         partnerDetails.setSystemType(extractSystemType(record));
 
-        partnerDetails.setProfileDetails(extractProfileDetails(illServer, record));
+        if (isAlmaOrBibsysLibrary(record)) {
+            partnerDetails.setInstitutionCode(almaCodeProvider.getAlmaCode(record.getBibnr()).orElse(""));
+        } else {
+            partnerDetails.setInstitutionCode("");
+        }
+
+        partnerDetails.setProfileDetails(extractProfileDetails(record));
 
         return partnerDetails;
     }
 
-    private static ProfileDetails extractProfileDetails(String illServer, Record record) {
+    private ProfileDetails extractProfileDetails(Record record) {
         ProfileDetails details = new ProfileDetails();
 
         Optional<String> nncipUri = extractNncipUri(record);
@@ -118,7 +131,7 @@ public class PartnerConverter {
 
             final IsoDetails isoDetails = new IsoDetails();
             isoDetails.setIllPort(9001);
-            isoDetails.setIllServer(illServer);
+            isoDetails.setIllServer(interLibraryLoadServer);
             isoDetails.setIsoSymbol(record.getBibnr());
             isoDetails.setSharedBarcodes(true);
 
@@ -153,7 +166,7 @@ public class PartnerConverter {
         return details;
     }
 
-    private static Optional<String> extractEmail(Record record) {
+    private Optional<String> extractEmail(Record record) {
         if (StringUtils.isNotEmpty(record.getEpostBest()) && record.getEpostBest().matches(EMAIL_PATTERN)) {
             return Optional.of(record.getEpostBest());
         } else if (StringUtils.isNotEmpty(record.getEpostAdr()) && record.getEpostAdr().matches(EMAIL_PATTERN)) {
@@ -163,7 +176,7 @@ public class PartnerConverter {
         }
     }
 
-    private static Optional<String> extractNncipUri(Record record) {
+    private Optional<String> extractNncipUri(Record record) {
         if (record.getEressurser() == null) {
             return Optional.empty();
         } else {
@@ -174,7 +187,7 @@ public class PartnerConverter {
         }
     }
 
-    private static SystemType extractSystemType(Record record) {
+    private SystemType extractSystemType(Record record) {
         PartnerDetails.SystemType systemTypeValue = new PartnerDetails.SystemType();
         systemTypeValue.setValue(isAlmaOrBibsysLibrary(record)
                                      ? ALMA.toUpperCase(Locale.ROOT)
@@ -186,11 +199,11 @@ public class PartnerConverter {
         return systemTypeValue;
     }
 
-    private static Optional<String> extractHoldingCodeIfAlmaOrBibsysLibrary(Record record) {
+    private Optional<String> extractHoldingCodeIfAlmaOrBibsysLibrary(Record record) {
         return isAlmaOrBibsysLibrary(record) ? Optional.of(extractHoldingCode(record)) : Optional.empty();
     }
 
-    private static boolean isAlmaOrBibsysLibrary(Record record) {
+    private boolean isAlmaOrBibsysLibrary(Record record) {
         if (Objects.nonNull(record.getKatsyst())) {
             return record.getKatsyst()
                        .toLowerCase(Locale.ROOT)
@@ -203,17 +216,17 @@ public class PartnerConverter {
         }
     }
 
-    private static String extractHoldingCode(Record record) {
+    private String extractHoldingCode(Record record) {
         return record.getLandkode().toUpperCase(Locale.ROOT) + record.getBibnr();
     }
 
-    private static String extractName(Record record) {
+    private String extractName(Record record) {
         return Objects.nonNull(record.getInst())
                    ? record.getInst().replaceAll("\n", " - ")
                    : StringUtils.EMPTY_STRING;
     }
 
-    private static String extractIsilCode(Record record) {
+    private String extractIsilCode(Record record) {
         return Objects.nonNull(record.getIsil())
                    ? record.getIsil()
                    : record.getLandkode().toUpperCase(Locale.ROOT) + ISIL_CODE_SEPARATOR + record.getBibnr();
