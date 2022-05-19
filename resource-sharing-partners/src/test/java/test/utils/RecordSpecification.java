@@ -1,5 +1,8 @@
 package test.utils;
 
+import java.util.Collections;
+import java.util.List;
+
 public class RecordSpecification {
 
     private final boolean withBibnr;
@@ -13,9 +16,11 @@ public class RecordSpecification {
     private final boolean withIsil;
     private final String katsys;
 
+    private final List<String> eressursExcludes;
+
     public RecordSpecification(boolean withBibnr, boolean withLandkode, String nncipUri, boolean withStengtFra,
                                boolean withStengtTil, boolean withPaddr, boolean withVaddr, boolean withIsil,
-                               String katsys) {
+                               String katsys, List<String> eressursExcludes) {
         this.withBibnr = withBibnr;
         this.withLandkode = withLandkode;
         this.nncipUri = nncipUri;
@@ -25,6 +30,14 @@ public class RecordSpecification {
         this.withVaddr = withVaddr;
         this.withIsil = withIsil;
         this.katsys = katsys;
+        this.eressursExcludes = eressursExcludes;
+    }
+
+    public RecordSpecification(boolean withBibnr, boolean withLandkode, String nncipUri, boolean withStengtFra,
+                               boolean withStengtTil, boolean withPaddr, boolean withVaddr, boolean withIsil,
+                               String katsys) {
+        this(withBibnr, withLandkode, nncipUri, withStengtFra, withStengtTil, withPaddr, withVaddr, withIsil, katsys,
+             Collections.emptyList());
     }
 
     public boolean getWithBibnr() {
@@ -61,5 +74,9 @@ public class RecordSpecification {
 
     public String getKatsys() {
         return katsys;
+    }
+
+    public List<String> getEressursExcludes() {
+        return eressursExcludes;
     }
 }
