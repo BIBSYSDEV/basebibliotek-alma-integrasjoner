@@ -1,7 +1,6 @@
 package test.utils;
 
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
-import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -17,7 +16,6 @@ import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -32,7 +30,6 @@ import no.nb.basebibliotek.generated.Link;
 import no.nb.basebibliotek.generated.Record;
 import no.nb.basebibliotek.generated.UregistrerteFilialer;
 import no.nb.basebibliotek.generated.Wressurser;
-import nva.commons.core.StringUtils;
 
 public class BasebibliotekGenerator {
 
@@ -47,6 +44,7 @@ public class BasebibliotekGenerator {
     private static final String NNCIP_URI_FIELD_NAME = "nncip_uri";
     private static final String IO_WS_FIELD_NAME = "io_ws";
     public static final String HTTP_NB_NO_BASE_BIBLIOTEK_NAME_SPACE = "http://nb.no/BaseBibliotek";
+    private static final int DAY_IN_MILLI_SECONDS = 1000 * 60 * 60 *24;
 
     private BigInteger currentRid;
 
@@ -112,9 +110,8 @@ public class BasebibliotekGenerator {
         if (shouldHaveBibNr) {
             record.setBibnr(randomString());
         }
-        var day = 1000 * 60 * 60 *24;
-        var start = Instant.now().toEpochMilli() - day;
-        var end = Instant.now().toEpochMilli() + day;
+        var start = Instant.now().toEpochMilli() - DAY_IN_MILLI_SECONDS;
+        var end = Instant.now().toEpochMilli() + DAY_IN_MILLI_SECONDS;
         if (withStengtFra) {
             record.setStengtFra(getGregorianDate(start));
         }
