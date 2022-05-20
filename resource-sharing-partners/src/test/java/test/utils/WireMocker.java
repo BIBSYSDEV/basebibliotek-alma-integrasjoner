@@ -10,6 +10,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
+import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.unit.nva.stubs.WiremockHttpClient;
 import nva.commons.core.ioutils.IoUtils;
 
@@ -33,6 +34,11 @@ public class WireMocker {
 
     private static void mockAlmaGetResponse() {
         String responseBody = IoUtils.stringFromResources(Path.of(EMPTY_STRING, "rsp_0030100.json"));
+        stubFor(get(urlPathMatching("/[A-Z]{2}-[0-9]{7}")).willReturn(ok().withBody(responseBody)));
+    }
+
+    public static void mockBasebibliotekXml(BaseBibliotek basebibliotek) {
+        String responseBody = BasebibliotekGenerator.toXml(basebibliotek);
         stubFor(get(urlPathMatching("/[A-Z]{2}-[0-9]{7}")).willReturn(ok().withBody(responseBody)));
     }
 
