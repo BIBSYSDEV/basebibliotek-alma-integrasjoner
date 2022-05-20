@@ -228,31 +228,27 @@ public class PartnerConverter {
     }
 
     private static Status extractStatus(Record record) {
-        Status almaStatus;
-        if (TEMPORARILY_CLOSED.equalsIgnoreCase(
-            StringUtils.isNotEmpty(record.getStengt())
-                ? record.getStengt()
-                : StringUtils.EMPTY_STRING)) {
-            almaStatus = Status.INACTIVE;
-        } else if (PERMANENTLY_CLOSED.equalsIgnoreCase(
-            StringUtils.isNotEmpty(record.getStengt())
-                ? record.getStengt()
-                : StringUtils.EMPTY_STRING)) {
-            almaStatus = Status.INACTIVE;
-        } else if (!isDateInTheFuture(record.getStengtFra())
-                   && isDateInTheFuture(record.getStengtTil())) {
-            almaStatus = Status.INACTIVE;
-        } else if (!isDateInTheFuture(record.getStengtFra())
-                   && Objects.isNull(record.getStengtTil())) {
-            almaStatus = Status.INACTIVE;
-        } else if (Objects.isNull(record.getStengtFra())
-                   && Objects.nonNull(record.getStengtTil())
-                   && isDateInTheFuture(record.getStengtTil())) {
-            almaStatus = Status.INACTIVE;
-        } else {
-            almaStatus = Status.ACTIVE;
-        }
-        return almaStatus;
+        return hasTemporaryOrPermanentlyClosedStatus(record)
+               || currentDateIsInStengtInterval(record)
+                   ? Status.INACTIVE
+                   : Status.ACTIVE;
+    }
+
+    private static boolean currentDateIsInStengtInterval(Record record) {
+        var stengFraIsInTheFuture = isDateInTheFuture(record.getStengtFra());
+        var stengTilIsIntheFuture = isDateInTheFuture(record.getStengtTil());
+        var stengFraIsNotSet = Objects.isNull(record.getStengtFra());
+        var stengTilisNotSet = Objects.isNull(record.getStengtTil());
+        return !stengFraIsInTheFuture && stengTilIsIntheFuture
+               || !stengFraIsInTheFuture && stengTilisNotSet
+               || stengFraIsNotSet && !stengTilisNotSet && stengTilIsIntheFuture;
+    }
+
+    private static boolean hasTemporaryOrPermanentlyClosedStatus(Record record) {
+        var stengtStatus = StringUtils.isNotEmpty(record.getStengt())
+                               ? record.getStengt()
+                               : StringUtils.EMPTY_STRING;
+        return TEMPORARILY_CLOSED.equalsIgnoreCase(stengtStatus) || PERMANENTLY_CLOSED.equalsIgnoreCase(stengtStatus);
     }
 
     private static boolean isDateInTheFuture(XMLGregorianCalendar date) {
