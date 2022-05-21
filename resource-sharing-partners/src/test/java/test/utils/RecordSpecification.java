@@ -15,12 +15,13 @@ public class RecordSpecification {
     private final boolean withVaddr;
     private final boolean withIsil;
     private final String katsys;
+    private final String stengt;
 
     private final List<String> eressursExcludes;
 
     public RecordSpecification(boolean withBibnr, boolean withLandkode, String nncipUri, boolean withStengtFra,
                                boolean withStengtTil, boolean withPaddr, boolean withVaddr, boolean withIsil,
-                               String katsys, List<String> eressursExcludes) {
+                               String katsys, List<String> eressursExcludes, String stengt) {
         this.withBibnr = withBibnr;
         this.withLandkode = withLandkode;
         this.nncipUri = nncipUri;
@@ -31,13 +32,14 @@ public class RecordSpecification {
         this.withIsil = withIsil;
         this.katsys = katsys;
         this.eressursExcludes = eressursExcludes;
+        this.stengt = stengt;
     }
 
     public RecordSpecification(boolean withBibnr, boolean withLandkode, String nncipUri, boolean withStengtFra,
                                boolean withStengtTil, boolean withPaddr, boolean withVaddr, boolean withIsil,
                                String katsys) {
         this(withBibnr, withLandkode, nncipUri, withStengtFra, withStengtTil, withPaddr, withVaddr, withIsil, katsys,
-             Collections.emptyList());
+             Collections.emptyList(), null);
     }
 
     public boolean getWithBibnr() {
@@ -78,5 +80,9 @@ public class RecordSpecification {
 
     public List<String> getEressursExcludes() {
         return eressursExcludes;
+    }
+
+    public String getStengt() {
+        return stengt;
     }
 }
