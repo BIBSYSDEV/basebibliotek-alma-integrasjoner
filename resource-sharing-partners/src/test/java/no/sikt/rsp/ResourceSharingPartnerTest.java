@@ -28,9 +28,12 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Stream;
 import no.nb.basebibliotek.generated.Record;
 import no.sikt.alma.generated.Address;
 import no.sikt.alma.generated.ContactInfo;
@@ -42,6 +45,7 @@ import no.sikt.alma.generated.NcipP2PDetails;
 import no.sikt.alma.generated.Partner;
 import no.sikt.alma.generated.Phones;
 import no.sikt.alma.generated.ProfileType;
+import no.sikt.alma.generated.Status;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
@@ -55,6 +59,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -99,9 +105,9 @@ public class ResourceSharingPartnerTest {
         s3Driver = new S3Driver(s3Client, "ignoredValue");
         WireMocker.startWiremockServer();
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_API_HOST))
-                .thenReturn(UriWrapper.fromUri(WireMocker.serverUri).toString());
+            .thenReturn(UriWrapper.fromUri(WireMocker.serverUri).toString());
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment,
-                WireMocker.httpClient);
+                                                                          WireMocker.httpClient);
     }
 
     @AfterEach
@@ -125,7 +131,7 @@ public class ResourceSharingPartnerTest {
         var expectedMessage = randomString();
         s3Client = new FakeS3ClientThrowingException(expectedMessage);
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment,
-                WireMocker.httpClient);
+                                                                          WireMocker.httpClient);
         var appender = LogUtils.getTestingAppenderForRootLogger();
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
         assertThat(appender.getMessages(), containsString(expectedMessage));
@@ -510,6 +516,43 @@ public class ResourceSharingPartnerTest {
         Partner partner = partners.get(0);
 
         assertEmailProfileDetailsPopulatedCorrectly(partner, "");
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideStengtArguments")
+    public void shouldCalculateStengtStatusCorrectly(String stengt, boolean withStengtFra, boolean withStengTil,
+                                                     Status expectedStatus) throws IOException {
+        var specifiedList = List.of(
+            new RecordSpecification(true,
+                                    true,
+                                    null,
+                                    withStengtFra,
+                                    withStengTil,
+                                    randomBoolean(),
+                                    randomBoolean(),
+                                    randomBoolean(),
+                                    randomString(),
+                                    Collections.emptyList(),
+                                    stengt));
+        var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        var partners = resourceSharingPartnerHandler.getPartners();
+        assertThat(partners.get(0).getPartnerDetails().getStatus(), is(equalTo(expectedStatus)));
+    }
+
+    private static Stream<Arguments> provideStengtArguments() {
+        return Stream.of(
+            Arguments.of("U", false, false, Status.INACTIVE),
+            Arguments.of("X", false, false, Status.INACTIVE),
+            Arguments.of(null, true, false, Status.INACTIVE),
+            Arguments.of(null, false, true, Status.INACTIVE),
+            Arguments.of(null, true, true, Status.INACTIVE),
+            Arguments.of(null, false, false, Status.ACTIVE)
+        );
     }
 
     private void assertIsoProfileDetailsPopulatedCorrectly(final Partner partner, final String bibnr) {
