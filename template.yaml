@@ -6,6 +6,10 @@ Description: >
   Sample SAM Template for AWS
 
 Parameters:
+  SharedConfigBucketName:
+    Type: String
+    Default: 'shared-config-bucket'
+    Description: 'Bucket name for shared, persistent configuration files. Created manually before deploying pipeline.'
   BasebibliotekXmlBucketName:
     Type: String
     Default: "basebibliotek-xml-file"
@@ -25,9 +29,6 @@ Parameters:
   IllServerUri:
     Type: String
     Default: 'eu01.alma.exlibrisgroup.com'
-  AlmaLookupTable:
-    Type: String
-    Default: '[{\"libraryNo\": \"10101010\", \"almaCode\": \"20202020\"}]'
 
 Globals:
   Function:
@@ -53,6 +54,7 @@ Resources:
         Variables:
           REPORT_BUCKET: !Ref ReportBucketName
           BASEBIBLIOTEK_XML_BUCKET: !Ref BasebibliotekXmlBucketName
+          SHARED_CONFIG_BUCKET: !Ref SharedConfigBucketName
           ILL_SERVER: !Ref IllServerUri
           ALMA_CODE_LOOKUP_TABLE: !Ref AlmaLookupTable
       Events:
@@ -95,6 +97,9 @@ Resources:
             Principal:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
+          - Effect: Allow
+            Action: 's3:GetObject'
+            Resource: !Sub "arn:aws:s3:::${SharedConfigBucketName}/*"
 
   BasebibliotekFetchCronjobRole:
     Type: AWS::IAM::Role

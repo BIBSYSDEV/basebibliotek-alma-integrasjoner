@@ -29,6 +29,7 @@ public final class ContactInfoConverter {
                                                               "shipping");
     private static final List<String> EMAIL_TYPES = List.of("claimMail", "orderMail", "paymentMail", "queries",
                                                             "returnsMail");
+
     @JacocoGenerated
     private ContactInfoConverter() {
     }

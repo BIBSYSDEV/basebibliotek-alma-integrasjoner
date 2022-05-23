@@ -18,6 +18,7 @@ import no.sikt.alma.generated.Partner;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +34,8 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
 
     public static final String S3_URI_TEMPLATE = "s3://%s/%s";
     public static final String ILL_SERVER_ENV_NAME = "ILL_SERVER";
-    public static final String ALMA_CODE_LOOKUP_TABLE_ENV_NAME = "ALMA_CODE_LOOKUP_TABLE";
+    public static final String SHARED_CONFIG_BUCKET_NAME_ENV_NAME = "SHARED_CONFIG_BUCKET";
+    public static final String INST_REG_CONFIG_FILE_PATH = "inst-reg.json";
 
     private final S3Client s3Client;
     private final AlmaConnection almaConnection;
@@ -59,11 +61,15 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
         logger.info(EVENT + gson.toJson(s3event));
 
         String illServer = environment.readEnv(ILL_SERVER_ENV_NAME);
-        String almaCodeLookupTable = environment.readEnv(ALMA_CODE_LOOKUP_TABLE_ENV_NAME);
-        AlmaCodeProvider almaCodeProvider = new AlmaCodeProvider(almaCodeLookupTable);
+        String sharedConfigBucketName = environment.readEnv(SHARED_CONFIG_BUCKET_NAME_ENV_NAME);
+        S3Driver driver = new S3Driver(s3Client, sharedConfigBucketName);
+        UnixPath configFilePath = UnixPath.fromString(String.format(S3_URI_TEMPLATE, sharedConfigBucketName,
+                                                    INST_REG_CONFIG_FILE_PATH));
         try {
             var file = readFile(s3event);
             var baseibliotek = parseXmlFile(file);
+            final String instRegAsJson = driver.getFile(configFilePath);
+            AlmaCodeProvider almaCodeProvider = new AlmaCodeProvider(instRegAsJson);
             PartnerConverter partnerConverter = new PartnerConverter(almaCodeProvider, illServer, baseibliotek);
             partners = partnerConverter.toPartners();
             return toIntExact(partners.stream()

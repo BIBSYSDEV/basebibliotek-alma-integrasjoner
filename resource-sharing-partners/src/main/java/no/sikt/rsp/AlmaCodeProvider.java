@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class AlmaCodeProvider {
+
     private static final Logger logger = LoggerFactory.getLogger(AlmaCodeProvider.class);
 
     private final Map<String, String> libraryNoToAlmaCodeMap = new HashMap<>();
@@ -24,9 +25,10 @@ public class AlmaCodeProvider {
                 if (configEntries != null) {
                     Arrays.stream(configEntries)
                         .filter(configEntry -> StringUtils.isNotEmpty(configEntry.libraryNo) && StringUtils.isNotEmpty(
-                            configEntry.almaCode))
+                            configEntry.almaInstitutionCode))
                         .forEach(
-                            configEntry -> libraryNoToAlmaCodeMap.put(configEntry.libraryNo, configEntry.almaCode));
+                            configEntry -> libraryNoToAlmaCodeMap.put(configEntry.libraryNo,
+                                                                      configEntry.almaInstitutionCode));
                 } else {
                     logger.error("No alma code mapping table configured (null or empty)!");
                 }
@@ -46,13 +48,14 @@ public class AlmaCodeProvider {
     }
 
     private static class ConfigEntry {
+
         private final String libraryNo;
-        private final String almaCode;
+        private final String almaInstitutionCode;
 
         @JacocoGenerated
-        private ConfigEntry(String libraryNo, String almaCode) {
+        private ConfigEntry(String libraryNo, String almaInstitutionCode) {
             this.libraryNo = libraryNo;
-            this.almaCode = almaCode;
+            this.almaInstitutionCode = almaInstitutionCode;
         }
     }
 }
