@@ -1,5 +1,6 @@
 package test.utils;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.forbidden;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
@@ -37,9 +38,12 @@ public class WireMocker {
         stubFor(get(urlPathMatching("/[A-Z]{2}-[0-9]{7}")).willReturn(ok().withBody(responseBody)));
     }
 
-    public static void mockBasebibliotekXml(BaseBibliotek basebibliotek) {
-        String responseBody = BasebibliotekGenerator.toXml(basebibliotek);
-        stubFor(get(urlPathMatching("/[A-Z]{2}-[0-9]{7}")).willReturn(ok().withBody(responseBody)));
+    public static void mockBasebibliotekXml(String basebibliotek, String bibNr) {
+        stubFor(get(urlPathMatching("/bibliotek/eksport/biblev/" + bibNr)).willReturn(ok().withBody(basebibliotek)));
+    }
+
+    public static void mockBassebibliotekFailure(String bibNr) {
+        stubFor(get(urlPathMatching("/bibliotek/eksport/biblev/" + bibNr)).willReturn(forbidden()));
     }
 
 

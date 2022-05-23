@@ -86,9 +86,7 @@ public class PartnerConverter {
     }
 
     private static Optional<Partner> returnEmptyAndLogProblem(Record record) {
-        var missingParameters = (Objects.nonNull(record.getLandkode()) ? StringUtils.EMPTY_STRING : "landkode")
-                                + " "
-                                + ((Objects.nonNull(record.getBibnr()) ? StringUtils.EMPTY_STRING : "bibNr"));
+        var missingParameters = Objects.nonNull(record.getLandkode()) ? StringUtils.EMPTY_STRING : "landkode";
         logger.info(String.format(COULD_NOT_CONVERT_RECORD, missingParameters, PartnerConverter.toXml(record)));
         return Optional.empty();
     }
