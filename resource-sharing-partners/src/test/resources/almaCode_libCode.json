@@ -1,0 +1,972 @@
+[
+  {
+    "almaCode": "AMH",
+    "libCode": "1030701"
+  },
+  {
+    "almaCode": "AMH",
+    "libCode": "7034295"
+  },
+  {
+    "almaCode": "MIGRDIR",
+    "libCode": "1030510"
+  },
+  {
+    "almaCode": "UNIS",
+    "libCode": "1211100"
+  },
+  {
+    "almaCode": "FFI_BIBL",
+    "libCode": "1023102"
+  },
+  {
+    "almaCode": "NBI",
+    "libCode": "1032311"
+  },
+  {
+    "almaCode": "NBI",
+    "libCode": "1160127"
+  },
+  {
+    "almaCode": "NBI",
+    "libCode": "1032314"
+  },
+  {
+    "almaCode": "IFE",
+    "libCode": "1023101"
+  },
+  {
+    "almaCode": "NMH",
+    "libCode": "1030209"
+  },
+  {
+    "almaCode": "NIFU",
+    "libCode": "1030211"
+  },
+  {
+    "almaCode": "BRC",
+    "libCode": "1120122"
+  },
+  {
+    "almaCode": "NPOLAR",
+    "libCode": "1190206"
+  },
+  {
+    "almaCode": "SIRUS",
+    "libCode": "1030061"
+  },
+  {
+    "almaCode": "SIRUS",
+    "libCode": "1030323"
+  },
+  {
+    "almaCode": "BUSKSYK",
+    "libCode": "1021912"
+  },
+  {
+    "almaCode": "BUSKSYK",
+    "libCode": "1060209"
+  },
+  {
+    "almaCode": "MOLDESYK",
+    "libCode": "1150209"
+  },
+  {
+    "almaCode": "SSHF",
+    "libCode": "1090609"
+  },
+  {
+    "almaCode": "SSHF",
+    "libCode": "1100109"
+  },
+  {
+    "almaCode": "BREDK",
+    "libCode": "1032003"
+  },
+  {
+    "almaCode": "BREDK",
+    "libCode": "1032401"
+  },
+  {
+    "almaCode": "BREDK",
+    "libCode": "1120138"
+  },
+  {
+    "almaCode": "BREDK",
+    "libCode": "1160130"
+  },
+  {
+    "almaCode": "BREDK",
+    "libCode": "1100108"
+  },
+  {
+    "almaCode": "OSTFSYK",
+    "libCode": "1010609"
+  },
+  {
+    "almaCode": "AHUS",
+    "libCode": "1023001"
+  },
+  {
+    "almaCode": "DIASYK",
+    "libCode": "1032312"
+  },
+  {
+    "almaCode": "TELSYK",
+    "libCode": "1080608"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160103"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160104"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160114"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160101"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160110"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160106"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160105"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160109"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160139"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160112"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160133"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "5160102"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160113"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160108"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1150401"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1050201"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160123"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160124"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160125"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160128"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160136"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "ntnufelles"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "libCode": "1160111"
+  },
+  {
+    "almaCode": "UBTO",
+    "libCode": "1190201"
+  },
+  {
+    "almaCode": "UBTO",
+    "libCode": "1190203"
+  },
+  {
+    "almaCode": "UBTO",
+    "libCode": "1190204"
+  },
+  {
+    "almaCode": "UBTO",
+    "libCode": "1190209"
+  },
+  {
+    "almaCode": "UBTO",
+    "libCode": "1190213"
+  },
+  {
+    "almaCode": "UBTO",
+    "libCode": "1201201"
+  },
+  {
+    "almaCode": "UBTO",
+    "libCode": "1190211"
+  },
+  {
+    "almaCode": "UBTO",
+    "libCode": "1190212"
+  },
+  {
+    "almaCode": "UBTO",
+    "libCode": "1200401"
+  },
+  {
+    "almaCode": "UBTO",
+    "libCode": "1190208"
+  },
+  {
+    "almaCode": "UBTO",
+    "libCode": "1180501"
+  },
+  {
+    "almaCode": "UBTO",
+    "libCode": "1190101"
+  },
+  {
+    "almaCode": "UBB",
+    "libCode": "1120104"
+  },
+  {
+    "almaCode": "UBB",
+    "libCode": "1120100"
+  },
+  {
+    "almaCode": "UBB",
+    "libCode": "1120108"
+  },
+  {
+    "almaCode": "UBB",
+    "libCode": "1120107"
+  },
+  {
+    "almaCode": "UBB",
+    "libCode": "1120103"
+  },
+  {
+    "almaCode": "UBB",
+    "libCode": "1120106"
+  },
+  {
+    "almaCode": "UBB",
+    "libCode": "1120101"
+  },
+  {
+    "almaCode": "UBB",
+    "libCode": "1120119"
+  },
+  {
+    "almaCode": "UBB",
+    "libCode": "1120109"
+  },
+  {
+    "almaCode": "UBB",
+    "libCode": "1120130"
+  },
+  {
+    "almaCode": "UBB",
+    "libCode": "UBBFELLES"
+  },
+  {
+    "almaCode": "NB",
+    "libCode": "0030100"
+  },
+  {
+    "almaCode": "NB",
+    "libCode": "0030101"
+  },
+  {
+    "almaCode": "NB",
+    "libCode": "0183300"
+  },
+  {
+    "almaCode": "NB",
+    "libCode": "0183304"
+  },
+  {
+    "almaCode": "NB",
+    "libCode": "0183334"
+  },
+  {
+    "almaCode": "NB",
+    "libCode": "0183305"
+  },
+  {
+    "almaCode": "NB",
+    "libCode": "0183306"
+  },
+  {
+    "almaCode": "NB",
+    "libCode": "NBIBIB"
+  },
+  {
+    "almaCode": "NHHB",
+    "libCode": "1120125"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030305"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030010"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030303"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030011"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030301"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030310"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030317"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030500"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030000"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030004"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030001"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030006"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030015"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030003"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030005"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030009"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1032300"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1032500"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030307"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1032304"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030338"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030002"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030048"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030300"
+  },
+  {
+    "almaCode": "UBO",
+    "libCode": "1030012"
+  },
+  {
+    "unitid": 1180,
+    "almaCode": "NIH",
+    "libCode": "1032201"
+  },
+  {
+    "unitid": 1182,
+    "almaCode": "BI",
+    "libCode": "1032105"
+  },
+  {
+    "unitid": 1182,
+    "almaCode": "BI",
+    "libCode": "1160102"
+  },
+  {
+    "unitid": 1182,
+    "almaCode": "BI",
+    "libCode": "1120146"
+  },
+  {
+    "unitid": 1182,
+    "almaCode": "BI",
+    "libCode": "1110202"
+  },
+  {
+    "unitid": 1182,
+    "almaCode": "BI",
+    "libCode": "1100110"
+  },
+  {
+    "almaCode": "NMBU",
+    "libCode": "1021402"
+  },
+  {
+    "almaCode": "NMBU",
+    "libCode": "1030308"
+  },
+  {
+    "almaCode": "NMBU",
+    "libCode": "1021401"
+  },
+  {
+    "almaCode": "NMBU",
+    "libCode": "1021405"
+  },
+  {
+    "almaCode": "NMBU",
+    "libCode": "1021400"
+  },
+  {
+    "almaCode": "NMBU",
+    "libCode": "NMBU"
+  },
+  {
+    "almaCode": "LOVISHS",
+    "libCode": "1030327"
+  },
+  {
+    "almaCode": "RBUP_OS",
+    "libCode": "1032104"
+  },
+  {
+    "almaCode": "AHO",
+    "libCode": "1030042"
+  },
+  {
+    "almaCode": "KT",
+    "libCode": "1120142"
+  },
+  {
+    "almaCode": "FORBRUK",
+    "libCode": "1030404"
+  },
+  {
+    "almaCode": "JUSDEP",
+    "libCode": "1030026"
+  },
+  {
+    "almaCode": "JBV",
+    "libCode": "1030049"
+  },
+  {
+    "almaCode": "ERFKOMP",
+    "libCode": "1080607"
+  },
+  {
+    "almaCode": "VEGDIR",
+    "libCode": "1031404"
+  },
+  {
+    "almaCode": "NOBEL",
+    "libCode": "1030101"
+  },
+  {
+    "almaCode": "HIT",
+    "libCode": "1080501"
+  },
+  {
+    "almaCode": "HIT",
+    "libCode": "1082101"
+  },
+  {
+    "almaCode": "HIT",
+    "libCode": "1080701"
+  },
+  {
+    "almaCode": "HIT",
+    "libCode": "1083401"
+  },
+  {
+    "almaCode": "HIT",
+    "libCode": "1060401"
+  },
+  {
+    "almaCode": "HIT",
+    "libCode": "1060201"
+  },
+  {
+    "almaCode": "HIT",
+    "libCode": "1060501"
+  },
+  {
+    "almaCode": "HIT",
+    "libCode": "1070101"
+  },
+  {
+    "almaCode": "HIO",
+    "libCode": "1010101"
+  },
+  {
+    "almaCode": "HIO",
+    "libCode": "1010601"
+  },
+  {
+    "almaCode": "UBIN",
+    "libCode": "1180401"
+  },
+  {
+    "almaCode": "UBIN",
+    "libCode": "1183301"
+  },
+  {
+    "almaCode": "UBIN",
+    "libCode": "1186601"
+  },
+  {
+    "almaCode": "UBIN",
+    "libCode": "1171801"
+  },
+  {
+    "almaCode": "UBIN",
+    "libCode": "1170201"
+  },
+  {
+    "almaCode": "UBIN",
+    "libCode": "1170301"
+  },
+  {
+    "almaCode": "UBIN",
+    "libCode": "1171400"
+  },
+  {
+    "almaCode": "UBIN",
+    "libCode": "1182801"
+  },
+  {
+    "almaCode": "DMMH",
+    "libCode": "1160119"
+  },
+  {
+    "almaCode": "UBA",
+    "libCode": "1090401"
+  },
+  {
+    "almaCode": "UBA",
+    "libCode": "1100101"
+  },
+  {
+    "almaCode": "HIM",
+    "libCode": "1150200"
+  },
+  {
+    "almaCode": "HIM",
+    "libCode": "1150201"
+  },
+  {
+    "almaCode": "HH",
+    "libCode": "1050101"
+  },
+  {
+    "almaCode": "HH",
+    "libCode": "1042901"
+  },
+  {
+    "almaCode": "HH",
+    "libCode": "1040302"
+  },
+  {
+    "almaCode": "HH",
+    "libCode": "1042701"
+  },
+  {
+    "almaCode": "HH",
+    "libCode": "1043001"
+  },
+  {
+    "almaCode": "UBIS",
+    "libCode": "1080507"
+  },
+  {
+    "almaCode": "UBIS",
+    "libCode": "1110314"
+  },
+  {
+    "almaCode": "UBIS",
+    "libCode": "1110301"
+  },
+  {
+    "almaCode": "UBIS",
+    "libCode": "1110303"
+  },
+  {
+    "almaCode": "UBIS",
+    "libCode": "1110309"
+  },
+  {
+    "almaCode": "UBIS",
+    "libCode": "1110307"
+  },
+  {
+    "almaCode": "HVO",
+    "libCode": "1151901"
+  },
+  {
+    "almaCode": "NLA",
+    "libCode": "1030518"
+  },
+  {
+    "almaCode": "NLA",
+    "libCode": "1120134"
+  },
+  {
+    "almaCode": "NLA",
+    "libCode": "1120135"
+  },
+  {
+    "almaCode": "DEPSS",
+    "libCode": "1030020"
+  },
+  {
+    "almaCode": "DIAKON",
+    "libCode": "1120132"
+  },
+  {
+    "almaCode": "DIAKON",
+    "libCode": "1120117"
+  },
+  {
+    "almaCode": "DIAKON",
+    "libCode": "1030208"
+  },
+  {
+    "almaCode": "DIAKON",
+    "libCode": "1111901"
+  },
+  {
+    "almaCode": "DIAKON",
+    "libCode": "1032313"
+  },
+  {
+    "almaCode": "DIAKON",
+    "libCode": "1110308"
+  },
+  {
+    "almaCode": "FISKDIR",
+    "libCode": "1120124"
+  },
+  {
+    "almaCode": "NINA_DN",
+    "libCode": "1160121"
+  },
+  {
+    "almaCode": "NOFIMA",
+    "libCode": "1021404"
+  },
+  {
+    "almaCode": "NOFIMA",
+    "libCode": "5120101"
+  },
+  {
+    "almaCode": "NOFIMA",
+    "libCode": "1110317"
+  },
+  {
+    "almaCode": "NOFIMA",
+    "libCode": "1190214"
+  },
+  {
+    "almaCode": "SSB",
+    "libCode": "1030063"
+  },
+  {
+    "almaCode": "MF",
+    "libCode": "1030201"
+  },
+  {
+    "almaCode": "NBANK",
+    "libCode": "1030052"
+  },
+  {
+    "almaCode": "KRUS",
+    "libCode": "1023111"
+  },
+  {
+    "almaCode": "GRANDE",
+    "libCode": "1030110"
+  },
+  {
+    "almaCode": "NISK",
+    "libCode": "1021409"
+  },
+  {
+    "almaCode": "NISK",
+    "libCode": "1021403"
+  },
+  {
+    "almaCode": "MAIHAUG",
+    "libCode": "1050102"
+  },
+  {
+    "almaCode": "SAMBIB",
+    "libCode": "1202100"
+  },
+  {
+    "almaCode": "SAMBIB",
+    "libCode": "1202103"
+  },
+  {
+    "almaCode": "RIKSANT",
+    "libCode": "1030060"
+  },
+  {
+    "almaCode": "AASENTUN",
+    "libCode": "1152001"
+  },
+  {
+    "almaCode": "FOLKEMUS",
+    "libCode": "1030105"
+  },
+  {
+    "almaCode": "TEKNMUS",
+    "libCode": "1032204"
+  },
+  {
+    "almaCode": "STAVMUS",
+    "libCode": "1110306"
+  },
+  {
+    "almaCode": "NOM",
+    "libCode": "1110315"
+  },
+  {
+    "almaCode": "SKOFIMUS",
+    "libCode": "1042300"
+  },
+  {
+    "almaCode": "NILU",
+    "libCode": "1023104"
+  },
+  {
+    "almaCode": "STORTING",
+    "libCode": "1030040"
+  },
+  {
+    "almaCode": "HIB",
+    "libCode": "1110601"
+  },
+  {
+    "almaCode": "HIB",
+    "libCode": "1122101"
+  },
+  {
+    "almaCode": "HIB",
+    "libCode": "1120118"
+  },
+  {
+    "almaCode": "HIB",
+    "libCode": "1120111"
+  },
+  {
+    "almaCode": "HIB",
+    "libCode": "1144500"
+  },
+  {
+    "almaCode": "HIB",
+    "libCode": "1142001"
+  },
+  {
+    "almaCode": "HIB",
+    "libCode": "1143202"
+  },
+  {
+    "almaCode": "FHS",
+    "libCode": "1030045"
+  },
+  {
+    "almaCode": "FHS",
+    "libCode": "1120127"
+  },
+  {
+    "almaCode": "FHS",
+    "libCode": "1160117"
+  },
+  {
+    "almaCode": "FHS",
+    "libCode": "1032009"
+  },
+  {
+    "almaCode": "MH",
+    "libCode": "1120148"
+  },
+  {
+    "almaCode": "MH",
+    "libCode": "1030348"
+  },
+  {
+    "almaCode": "MH",
+    "libCode": "1030517"
+  },
+  {
+    "almaCode": "MH",
+    "libCode": "1030502"
+  },
+  {
+    "almaCode": "MH",
+    "libCode": "1160148"
+  },
+  {
+    "almaCode": "HIOA",
+    "libCode": "1030341"
+  },
+  {
+    "almaCode": "HIOA",
+    "libCode": "1030326"
+  },
+  {
+    "almaCode": "HIOA",
+    "libCode": "1021932"
+  },
+  {
+    "almaCode": "HIOA",
+    "libCode": "1030415"
+  },
+  {
+    "almaCode": "HIOA",
+    "libCode": "1030344"
+  },
+  {
+    "almaCode": "HIOA",
+    "libCode": "1023105"
+  },
+  {
+    "almaCode": "POLITIHS",
+    "libCode": "1030217"
+  },
+  {
+    "almaCode": "SAMALL",
+    "libCode": "1201101"
+  },
+  {
+    "almaCode": "KHIO",
+    "libCode": "1030506"
+  },
+  {
+    "almaCode": "SIHF",
+    "libCode": "1041701"
+  },
+  {
+    "almaCode": "GLOMDAL",
+    "libCode": "1042707"
+  },
+  {
+    "almaCode": "GLOMDAL",
+    "libCode": "1042708"
+  },
+  {
+    "almaCode": "GLOMDAL",
+    "libCode": "1040310"
+  },
+  {
+    "almaCode": "GLOMDAL",
+    "libCode": "5983520"
+  },
+  {
+    "almaCode": "GLOMDAL",
+    "libCode": "1043702"
+  },
+  {
+    "almaCode": "GLOMDAL",
+    "libCode": "1042801"
+  },
+  {
+    "almaCode": "GLOMDAL",
+    "libCode": "1040202"
+  },
+  {
+    "almaCode": "GLOMDAL",
+    "libCode": "1041502"
+  },
+  {
+    "almaCode": "GLOMDAL",
+    "libCode": "1040311"
+  },
+  {
+    "almaCode": "GLOMDAL",
+    "libCode": "1041703"
+  },
+  {
+    "almaCode": "NM",
+    "libCode": "1030051"
+  },
+  {
+    "almaCode": "NORCE",
+    "libCode": "9460100"
+  },
+  {
+    "almaCode": "NAV",
+    "libCode": "1030405"
+  },
+  {
+    "almaCode": "STAMI",
+    "libCode": "1030218"
+  }
+]
