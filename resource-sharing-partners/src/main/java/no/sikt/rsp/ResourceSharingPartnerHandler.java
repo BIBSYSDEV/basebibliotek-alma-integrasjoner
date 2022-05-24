@@ -83,8 +83,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
                 logger.info(String.format("Created partner %s successfully.", partner.getPartnerDetails().getCode()));
             }
         } catch (IOException | InterruptedException e) {
-            logger.error(e.getMessage());
-            return false;
+            throw logErrorAndThrowException(e);
         }
         return true;
     }
