@@ -1,14 +1,16 @@
 package no.sikt.rsp;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.StringContains.containsString;
@@ -35,7 +37,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Stream;
 import no.nb.basebibliotek.generated.Record;
 import no.sikt.alma.generated.Address;
@@ -82,6 +83,7 @@ public class ResourceSharingPartnerTest {
     public static final long SOME_FILE_SIZE = 100L;
     private static final String BASEBIBLIOTEK_XML = "redacted_bb_full.xml";
     private static final String BASEBIBLIOTEK_0030100_XML = "bb_0030100.xml";
+    private static final String NO_0030100_ID = "NO-0030100";
 
     private static final String INVALID_BASEBIBLIOTEK_XML_STRING = "invalid";
     public static final String ALMA = "alma";
@@ -123,7 +125,11 @@ public class ResourceSharingPartnerTest {
         var baseBibliotek0030100 = IoUtils.stringFromResources(Path.of(BASEBIBLIOTEK_0030100_XML));
         var uri = s3Driver.insertFile(randomS3Path(), baseBibliotek0030100);
         var s3Event = createS3Event(uri);
+        WireMocker.mockAlmaGetResponseNotFound();
+        WireMocker.mockAlmaPostResponse();
         Integer response = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        verify(getRequestedFor(urlPathMatching(WireMocker.URL_PATH_PARTNER + NO_0030100_ID)));
+        verify(postRequestedFor(urlPathMatching(WireMocker.URL_PATH_PARTNER + NO_0030100_ID)));
         assertThat(response, is(notNullValue()));
         assertThat(response, is(1));
     }
@@ -133,7 +139,11 @@ public class ResourceSharingPartnerTest {
         var baseBibliotek0030100 = IoUtils.stringFromResources(Path.of(BASEBIBLIOTEK_0030100_XML));
         var uri = s3Driver.insertFile(randomS3Path(), baseBibliotek0030100);
         var s3Event = createS3Event(uri);
+        WireMocker.mockAlmaGetResponse();
+        WireMocker.mockAlmaPutResponse();
         Integer response = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        verify(getRequestedFor(urlPathMatching(WireMocker.URL_PATH_PARTNER + NO_0030100_ID)));
+        verify(putRequestedFor(urlPathMatching(WireMocker.URL_PATH_PARTNER + NO_0030100_ID)));
         assertThat(response, is(notNullValue()));
         assertThat(response, is(1));
     }
