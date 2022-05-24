@@ -1,12 +1,13 @@
 package no.sikt.rsp;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import nva.commons.core.JacocoGenerated;
+import no.sikt.rsp.json.AnnotatedDeserializer;
 import nva.commons.core.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,47 +16,42 @@ public class AlmaCodeProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(AlmaCodeProvider.class);
 
-    private final Map<String, String> libraryNoToAlmaCodeMap = new HashMap<>();
+    static final String EMPTY_MAPPING_TABLE_MESSAGE = "Alma code mapping table is empty.";
+    static final String INVALID_JSON_MESSAGE = "Alma code mapping JSON is invalid.";
+
+    private final Map<String, String> libCodeToAlmaCodeMap = new HashMap<>();
 
     public AlmaCodeProvider(final String jsonConfig) {
         if (StringUtils.isNotEmpty(jsonConfig)) {
-            final Gson gson = new Gson();
+            Gson gson =
+                new GsonBuilder()
+                    .registerTypeAdapter(LibCodeToAlmaCodeEntry.class, new AnnotatedDeserializer<>())
+                    .create();
             try {
-                ConfigEntry[] configEntries = gson.fromJson(jsonConfig, ConfigEntry[].class);
-                if (configEntries != null) {
-                    Arrays.stream(configEntries)
-                        .filter(configEntry -> StringUtils.isNotEmpty(configEntry.libraryNo) && StringUtils.isNotEmpty(
-                            configEntry.almaInstitutionCode))
-                        .forEach(
-                            configEntry -> libraryNoToAlmaCodeMap.put(configEntry.libraryNo,
-                                                                      configEntry.almaInstitutionCode));
+                LibCodeToAlmaCodeEntry[] entries = gson.fromJson(jsonConfig, LibCodeToAlmaCodeEntry[].class);
+                if (entries != null) {
+                    Arrays.stream(entries)
+                        .forEach(entry -> libCodeToAlmaCodeMap.put(entry.getLibCode(), entry.getAlmaCode()));
                 } else {
-                    logger.error("No alma code mapping table configured (null or empty)!");
+                    logger.error(EMPTY_MAPPING_TABLE_MESSAGE);
+                    throw new RuntimeException(EMPTY_MAPPING_TABLE_MESSAGE);
                 }
             } catch (JsonSyntaxException e) {
-                logger.error("Alma code mapping table configuration is invalid!", e);
+                logger.error(INVALID_JSON_MESSAGE, e);
+                throw new RuntimeException(INVALID_JSON_MESSAGE, e);
             }
+        } else {
+            logger.error(EMPTY_MAPPING_TABLE_MESSAGE);
+            throw new RuntimeException(EMPTY_MAPPING_TABLE_MESSAGE);
         }
     }
 
     public Optional<String> getAlmaCode(final String libraryNo) {
-        final String almaCode = libraryNoToAlmaCodeMap.get(libraryNo);
+        final String almaCode = libCodeToAlmaCodeMap.get(libraryNo);
         if (almaCode == null) {
             return Optional.empty();
         } else {
             return Optional.of(almaCode);
-        }
-    }
-
-    private static class ConfigEntry {
-
-        private final String libraryNo;
-        private final String almaInstitutionCode;
-
-        @JacocoGenerated
-        private ConfigEntry(String libraryNo, String almaInstitutionCode) {
-            this.libraryNo = libraryNo;
-            this.almaInstitutionCode = almaInstitutionCode;
         }
     }
 }
