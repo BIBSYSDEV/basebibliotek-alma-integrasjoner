@@ -33,6 +33,9 @@ Parameters:
   IllServerUri:
     Type: String
     Default: 'eu01.alma.exlibrisgroup.com'
+  AlmaApiHost:
+    Type: String
+    Default: 'https://api-eu.hosted.exlibrisgroup.com/almaws/v1/'
 
 Globals:
   Function:
@@ -57,11 +60,13 @@ Resources:
       Environment:
         Variables:
           REPORT_BUCKET: !Ref ReportBucketName
-          BASEBIBLIOTEK_XML_BUCKET: !Ref BasebibliotekXmlBucketName
+          BASEBIBLIOTEK_XML_BUCKET: !Ref BasebibliotekXmlBucket
           SHARED_CONFIG_BUCKET: !Ref SharedConfigBucketName
           LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH: !Ref LibCodeToAlmaCodeFilePath
           ILL_SERVER: !Ref IllServerUri
           ALMA_CODE_LOOKUP_TABLE: !Ref AlmaLookupTable
+          ALMA_API_HOST: !Ref AlmaApiHost
+          ALMA_APIKEY: '{{resolve:secretsmanager:ALMA_APIKEY:SecretString:ALMA_APIKEY}}'
       Events:
         BasebibliotekFileUpload:
           Type: S3
@@ -85,7 +90,7 @@ Resources:
           BASEBIBLIOTEK_USERNAME: !Ref BasebibliotekUsername
           BASEBIBLIOTEK_PASSWORD: !Ref BasebibliotekPassword
           BASEBIBLIOTEK_URL: !Ref BasebibliotekUrl
-          BASEBIBLIOTEK_XML_BUCKET: !Ref BasebibliotekXmlBucketName
+          BASEBIBLIOTEK_XML_BUCKET:  !Ref BasebibliotekXmlBucket
       Events:
         ScheduledUpdate:
           Type: Schedule

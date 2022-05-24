@@ -44,7 +44,7 @@ public class BasebibliotekGenerator {
     private static final String NNCIP_URI_FIELD_NAME = "nncip_uri";
     private static final String IO_WS_FIELD_NAME = "io_ws";
     public static final String HTTP_NB_NO_BASE_BIBLIOTEK_NAME_SPACE = "http://nb.no/BaseBibliotek";
-    private static final int DAY_IN_MILLI_SECONDS = 1000 * 60 * 60 *24;
+    private static final int DAY_IN_MILLI_SECONDS = 1000 * 60 * 60 * 24;
 
     private BigInteger currentRid;
 

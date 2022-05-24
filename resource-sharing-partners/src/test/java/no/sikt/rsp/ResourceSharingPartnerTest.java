@@ -1,5 +1,10 @@
 package no.sikt.rsp;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -80,7 +85,7 @@ public class ResourceSharingPartnerTest {
     private static final String BASEBIBLIOTEK_XML = "redacted_bb_full.xml";
     private static final String BASEBIBLIOTEK_0030100_XML = "bb_0030100.xml";
     private final String LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH = "/libCodeToAlmaCodeMapping.json";
-
+    private static final String NO_0030100_ID = "NO-0030100";
     private static final String INVALID_BASEBIBLIOTEK_XML_STRING = "invalid";
     public static final String ALMA = "alma";
     public static final String BIBSYS = "bibsys";
@@ -132,8 +137,25 @@ public class ResourceSharingPartnerTest {
         var baseBibliotek0030100 = IoUtils.stringFromResources(Path.of(BASEBIBLIOTEK_0030100_XML));
         var uri = s3Driver.insertFile(randomS3Path(), baseBibliotek0030100);
         var s3Event = createS3Event(uri);
-
+        WireMocker.mockAlmaGetResponseNotFound();
+        WireMocker.mockAlmaPostResponse();
         Integer response = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        verify(getRequestedFor(urlPathMatching(WireMocker.URL_PATH_PARTNER + NO_0030100_ID)));
+        verify(postRequestedFor(urlPathMatching(WireMocker.URL_PATH_PARTNER + NO_0030100_ID)));
+        assertThat(response, is(notNullValue()));
+        assertThat(response, is(1));
+    }
+
+    @Test
+    public void shouldBeAbleToReadAndPutRecordToAlma() throws IOException {
+        var baseBibliotek0030100 = IoUtils.stringFromResources(Path.of(BASEBIBLIOTEK_0030100_XML));
+        var uri = s3Driver.insertFile(randomS3Path(), baseBibliotek0030100);
+        var s3Event = createS3Event(uri);
+        WireMocker.mockAlmaGetResponse();
+        WireMocker.mockAlmaPutResponse();
+        Integer response = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        verify(getRequestedFor(urlPathMatching(WireMocker.URL_PATH_PARTNER + NO_0030100_ID)));
+        verify(putRequestedFor(urlPathMatching(WireMocker.URL_PATH_PARTNER + NO_0030100_ID)));
         assertThat(response, is(notNullValue()));
         assertThat(response, is(1));
     }
