@@ -79,7 +79,7 @@ public class ResourceSharingPartnerTest {
     public static final long SOME_FILE_SIZE = 100L;
     private static final String BASEBIBLIOTEK_XML = "redacted_bb_full.xml";
     private static final String BASEBIBLIOTEK_0030100_XML = "bb_0030100.xml";
-    private static final String INST_REG_PATH = "inst-reg.json";
+    private final String LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH = "/libCodeToAlmaCodeMapping.json";
 
     private static final String INVALID_BASEBIBLIOTEK_XML_STRING = "invalid";
     public static final String ALMA = "alma";
@@ -94,9 +94,8 @@ public class ResourceSharingPartnerTest {
     private static final String NNCIP_SERVER = "https://nncipuri.org";
     private ResourceSharingPartnerHandler resourceSharingPartnerHandler;
     public static final Context CONTEXT = mock(Context.class);
-    private static final String INST_REG_AS_JSON = IoUtils.stringFromResources(Path.of(INST_REG_PATH));
     private static final String BIBNR_RESOLVABLE_TO_ALMA_CODE = "0030100";
-    private static final String RESOLVED_ALMA_CODE = "NTNU-UB";
+    private static final String RESOLVED_ALMA_CODE = "NB";
     private FakeS3Client s3Client;
     private S3Driver s3Driver;
 
@@ -109,11 +108,16 @@ public class ResourceSharingPartnerTest {
         WireMocker.startWiremockServer();
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_API_HOST))
             .thenReturn(UriWrapper.fromUri(WireMocker.serverUri).toString());
-        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.SHARED_CONFIG_BUCKET_NAME_ENV_NAME)).thenReturn(
-            SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.SHARED_CONFIG_BUCKET_NAME_ENV_NAME))
+            .thenReturn(SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY))
+            .thenReturn(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH);
 
-        s3Driver.insertFile(UnixPath.of(ResourceSharingPartnerHandler.INST_REG_CONFIG_FILE_PATH),
-                                      INST_REG_AS_JSON);
+        final String fullLibCodeToAlmaCodeMapping = IoUtils.stringFromResources(
+            Path.of("fullLibCodeToAlmaCodeMapping.json"));
+
+        s3Driver.insertFile(UnixPath.of(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH),
+                            fullLibCodeToAlmaCodeMapping);
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment,
                                                                           WireMocker.httpClient);
     }
@@ -635,7 +639,7 @@ public class ResourceSharingPartnerTest {
 
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
 
-        assertThat(appender.getMessages(), containsString(ResourceSharingPartnerHandler.INST_REG_CONFIG_FILE_PATH));
+        assertThat(appender.getMessages(), containsString(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH));
     }
 
     @Test
@@ -648,17 +652,20 @@ public class ResourceSharingPartnerTest {
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
 
-        s3Driver.insertFile(UnixPath.of(ResourceSharingPartnerHandler.INST_REG_CONFIG_FILE_PATH),
-                            IoUtils.stringFromResources(Path.of("empty-inst-reg.json")));
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
+            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY))
+            .thenReturn(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH);
+
+        s3Driver.insertFile(UnixPath.of(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH),
+                            IoUtils.stringFromResources(Path.of("emptyLibCodeToAlmaCodeMapping.json")));
 
         var basebibliotekGenerator = new BasebibliotekGenerator(record);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
-
-        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
-            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment,
                                                                           WireMocker.httpClient);
@@ -680,17 +687,20 @@ public class ResourceSharingPartnerTest {
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
 
-        s3Driver.insertFile(UnixPath.of(ResourceSharingPartnerHandler.INST_REG_CONFIG_FILE_PATH),
-                            IoUtils.stringFromResources(Path.of("invalid-inst-reg.json")));
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
+            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY))
+            .thenReturn(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH);
+
+        s3Driver.insertFile(UnixPath.of(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH),
+                            IoUtils.stringFromResources(Path.of("invalidLibCodeToAlmaCodeMapping.json")));
 
         var basebibliotekGenerator = new BasebibliotekGenerator(record);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
-
-        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
-            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment,
                                                                           WireMocker.httpClient);

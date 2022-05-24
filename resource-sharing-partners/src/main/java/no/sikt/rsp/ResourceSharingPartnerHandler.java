@@ -35,8 +35,8 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     public static final String S3_URI_TEMPLATE = "s3://%s/%s";
     public static final String ILL_SERVER_ENV_NAME = "ILL_SERVER";
     public static final String SHARED_CONFIG_BUCKET_NAME_ENV_NAME = "SHARED_CONFIG_BUCKET";
-    public static final String INST_REG_CONFIG_FILE_PATH = "/inst-reg.json";
-
+    public static final String LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY =
+        "LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH";
     private final S3Client s3Client;
     private final AlmaConnection almaConnection;
 
@@ -63,11 +63,12 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
         String illServer = environment.readEnv(ILL_SERVER_ENV_NAME);
         String sharedConfigBucketName = environment.readEnv(SHARED_CONFIG_BUCKET_NAME_ENV_NAME);
         S3Driver driver = new S3Driver(s3Client, sharedConfigBucketName);
+        String libCodeToAlmaCodeMappingFilePath = environment.readEnv(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY);
 
         try {
             var file = readFile(s3event);
             var baseibliotek = parseXmlFile(file);
-            final String instRegAsJson = driver.getFile(UnixPath.of(INST_REG_CONFIG_FILE_PATH));
+            final String instRegAsJson = driver.getFile(UnixPath.of(libCodeToAlmaCodeMappingFilePath));
             AlmaCodeProvider almaCodeProvider = new AlmaCodeProvider(instRegAsJson);
             PartnerConverter partnerConverter = new PartnerConverter(almaCodeProvider, illServer, baseibliotek);
             partners = partnerConverter.toPartners();
