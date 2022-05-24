@@ -129,6 +129,16 @@ public class ResourceSharingPartnerTest {
     }
 
     @Test
+    public void shouldBeAbleToReadAndPutRecordToAlma() throws IOException {
+        var baseBibliotek0030100 = IoUtils.stringFromResources(Path.of(BASEBIBLIOTEK_0030100_XML));
+        var uri = s3Driver.insertFile(randomS3Path(), baseBibliotek0030100);
+        var s3Event = createS3Event(uri);
+        Integer response = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        assertThat(response, is(notNullValue()));
+        assertThat(response, is(1));
+    }
+
+    @Test
     public void shouldLogExceptionWhenS3ClientFails() {
         var s3Event = createS3Event(randomString());
         var expectedMessage = randomString();

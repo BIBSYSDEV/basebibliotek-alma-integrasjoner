@@ -2,6 +2,7 @@ package test.utils;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
+import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
@@ -10,6 +11,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
+import no.sikt.rsp.AlmaConnection;
 import no.unit.nva.stubs.WiremockHttpClient;
 import nva.commons.core.ioutils.IoUtils;
 
@@ -25,6 +27,7 @@ public class WireMocker {
         httpServer.start();
         serverUri = URI.create(httpServer.baseUrl());
         mockAlmaGetResponse();
+        mockAlmaPutResponse();
     }
 
     public static void stopWiremockServer() {
@@ -33,7 +36,14 @@ public class WireMocker {
 
     private static void mockAlmaGetResponse() {
         String responseBody = IoUtils.stringFromResources(Path.of(EMPTY_STRING, "rsp_0030100.json"));
-        stubFor(get(urlPathMatching("/[A-Z]{2}-[0-9]{7}")).willReturn(ok().withBody(responseBody)));
+        stubFor(get(urlPathMatching("/" + AlmaConnection.PARTNERS_URL_PATH + "/[A-Z]{2}-[0-9]{7}"))
+                    .willReturn(ok().withBody(responseBody)));
+    }
+
+    private static void mockAlmaPutResponse() {
+        String responseBody = IoUtils.stringFromResources(Path.of(EMPTY_STRING, "rsp_0030100.json"));
+        stubFor(put(urlPathMatching("/" + AlmaConnection.PARTNERS_URL_PATH + "/[A-Z]{2}-[0-9]{7}"))
+                    .willReturn(ok().withBody(responseBody)));
     }
 
 
