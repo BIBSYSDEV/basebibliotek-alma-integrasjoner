@@ -3,11 +3,14 @@ package no.sikt.rsp;
 import jakarta.xml.bind.JAXB;
 import jakarta.xml.bind.JAXBElement;
 import java.io.StringWriter;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.xml.datatype.XMLGregorianCalendar;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.nb.basebibliotek.generated.Record;
 import no.sikt.alma.generated.EmailDetails;
@@ -20,11 +23,14 @@ import no.sikt.alma.generated.PartnerDetails.SystemType;
 import no.sikt.alma.generated.ProfileDetails;
 import no.sikt.alma.generated.ProfileType;
 import no.sikt.alma.generated.RequestExpiryType;
+import no.sikt.alma.generated.Status;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+//TODO: refactor and remove supress pmd.godclass warning
+@SuppressWarnings({"PMD.GodClass", "PMD.AvoidCalendarDateCreation"})
 public class PartnerConverter {
 
     private static final Logger logger = LoggerFactory.getLogger(PartnerConverter.class);
@@ -43,6 +49,8 @@ public class PartnerConverter {
     public static final String OTHER = "OTHER";
     public static final int RESENDING_OVERDUE_MESSAGE_INTERVAL = 7;
     public static final String NNCIP_URI = "nncip_uri";
+    public static final String TEMPORARILY_CLOSED = "U";
+    public static final String PERMANENTLY_CLOSED = "X";
 
     @JacocoGenerated
     public PartnerConverter() {
@@ -101,9 +109,8 @@ public class PartnerConverter {
         partnerDetails.setBorrowingWorkflow(BORROWING_WORKFLOW);
         partnerDetails.setHoldingCode(extractHoldingCodeIfAlmaOrBibsysLibrary(record).orElse(null));
         partnerDetails.setSystemType(extractSystemType(record));
-
         partnerDetails.setProfileDetails(extractProfileDetails(illServer, record));
-
+        partnerDetails.setStatus(extractStatus(record));
         return partnerDetails;
     }
 
@@ -218,5 +225,39 @@ public class PartnerConverter {
         return Objects.nonNull(record.getIsil())
                    ? record.getIsil()
                    : record.getLandkode().toUpperCase(Locale.ROOT) + ISIL_CODE_SEPARATOR + record.getBibnr();
+    }
+
+    private static Status extractStatus(Record record) {
+        return hasTemporaryOrPermanentlyClosedStatus(record)
+               || currentDateIsInStengtInterval(record)
+                   ? Status.INACTIVE
+                   : Status.ACTIVE;
+    }
+
+    private static boolean currentDateIsInStengtInterval(Record record) {
+        var stengFraIsInTheFuture = isDateInTheFuture(record.getStengtFra());
+        var stengTilIsIntheFuture = isDateInTheFuture(record.getStengtTil());
+        var stengFraIsNotSet = Objects.isNull(record.getStengtFra());
+        var stengTilisNotSet = Objects.isNull(record.getStengtTil());
+        return !stengFraIsInTheFuture && stengTilIsIntheFuture
+               || !stengFraIsInTheFuture && stengTilisNotSet
+               || stengFraIsNotSet && !stengTilisNotSet && stengTilIsIntheFuture;
+    }
+
+    private static boolean hasTemporaryOrPermanentlyClosedStatus(Record record) {
+        var stengtStatus = StringUtils.isNotEmpty(record.getStengt())
+                               ? record.getStengt()
+                               : StringUtils.EMPTY_STRING;
+        return TEMPORARILY_CLOSED.equalsIgnoreCase(stengtStatus) || PERMANENTLY_CLOSED.equalsIgnoreCase(stengtStatus);
+    }
+
+    private static boolean isDateInTheFuture(XMLGregorianCalendar date) {
+        boolean future = true;
+        if (Objects.nonNull(date)) {
+            GregorianCalendar gCalendar = date.toGregorianCalendar();
+            Date currentDate = new Date();
+            future = currentDate.getTime() < gCalendar.getTime().getTime();
+        }
+        return future;
     }
 }

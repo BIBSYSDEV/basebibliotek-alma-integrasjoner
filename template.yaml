@@ -79,7 +79,7 @@ Resources:
           BASEBIBLIOTEK_USERNAME: !Ref BasebibliotekUsername
           BASEBIBLIOTEK_PASSWORD: !Ref BasebibliotekPassword
           BASEBIBLIOTEK_URL: !Ref BasebibliotekUrl
-          BASEBIBLIOTEK_XML_BUCKET: !Ref BasebibliotekXmlBucketName
+          BASEBIBLIOTEK_XML_BUCKET:  !Ref BasebibliotekXmlBucket
       Events:
         ScheduledUpdate:
           Type: Schedule
