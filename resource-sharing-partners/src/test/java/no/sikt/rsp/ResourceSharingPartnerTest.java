@@ -14,7 +14,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.events.IoTButtonEvent;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.RequestParametersEntity;
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.ResponseElementsEntity;
@@ -46,7 +45,6 @@ import no.sikt.alma.generated.Partner;
 import no.sikt.alma.generated.Phones;
 import no.sikt.alma.generated.ProfileType;
 import no.sikt.alma.generated.Status;
-import no.sikt.rsp.json.AnnotatedDeserializer;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
@@ -191,7 +189,7 @@ public class ResourceSharingPartnerTest {
         var withLandkode = true;
         var withIsil = true;
         var appender = LogUtils.getTestingAppenderForRootLogger();
-        var expectedLogMessage = "Could not convert record to partner, missing landkode bibNr, record";
+        var expectedLogMessage = "Could not convert record, missing landkode bibNr, record";
         var shouldNotBeConvertedToPartner = new RecordSpecification(null,
                                                                     !withLandkode,
                                                                     null,
