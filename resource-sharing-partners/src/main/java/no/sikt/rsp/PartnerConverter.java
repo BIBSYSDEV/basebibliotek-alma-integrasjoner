@@ -52,13 +52,13 @@ public class PartnerConverter {
     public static final String PERMANENTLY_CLOSED = "X";
 
     private final AlmaCodeProvider almaCodeProvider;
-    private final String interLibraryLoadServer;
+    private final String interLibraryLoanServer;
     private final BaseBibliotek baseBibliotek;
 
-    public PartnerConverter(AlmaCodeProvider almaCodeProvider, String interLibraryLoadServer,
+    public PartnerConverter(AlmaCodeProvider almaCodeProvider, String interLibraryLoanServer,
                             BaseBibliotek baseBibliotek) {
         this.almaCodeProvider = almaCodeProvider;
-        this.interLibraryLoadServer = interLibraryLoadServer;
+        this.interLibraryLoanServer = interLibraryLoanServer;
         this.baseBibliotek = baseBibliotek;
     }
 
@@ -156,7 +156,7 @@ public class PartnerConverter {
 
             final IsoDetails isoDetails = new IsoDetails();
             isoDetails.setIllPort(9001);
-            isoDetails.setIllServer(interLibraryLoadServer);
+            isoDetails.setIllServer(interLibraryLoanServer);
             isoDetails.setIsoSymbol(record.getBibnr());
             isoDetails.setSharedBarcodes(true);
 
