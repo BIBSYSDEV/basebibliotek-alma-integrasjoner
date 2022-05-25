@@ -1,18 +1,17 @@
 package no.sikt.rsp;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Base64;
 import no.sikt.alma.generated.Partner;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-public final class Connection {
+public final class AlmaConnection {
 
     private static final String AUTHORIZATION_KEY = "Authorization";
     private static final String APIKEY_KEY = "apikey";
@@ -24,37 +23,17 @@ public final class Connection {
 
     private final HttpClient httpClient;
     private final URI almaApiHost;
-    private final URI basebibliotekHost;
-    public static final String BASEBIBLILOTEK_USERNAME_ENVIRONMENT_NAME = "BASEBIBLIOTEK_USERNAME";
-    public static final String BASEBIBLIOTEK_PASSWORD_ENVIRONMENT_NAME = "BASEBIBLIOTEK_PASSWORD";
-    private static final String USERNAME_PASSWORD_DELIMITER = ":";
-    private static final String BASIC_AUTHORIZATION = "Basic %s";
-    private static final String AUTHORIZATION = "Authorization";
-    private final String basebibliotekAuthorization;
-    private static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_URL";
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @JacocoGenerated
-    public Connection() {
+    public AlmaConnection() {
         this(HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build(),
-             UriWrapper.fromUri(new Environment().readEnv(ALMA_API_HOST)).getUri(),
-             UriWrapper.fromUri(new Environment().readEnv(BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).getUri(),
-             new Environment().readEnv(BASEBIBLIOTEK_PASSWORD_ENVIRONMENT_NAME),
-             new Environment().readEnv(BASEBIBLILOTEK_USERNAME_ENVIRONMENT_NAME));
+             UriWrapper.fromUri(new Environment().readEnv(ALMA_API_HOST)).getUri());
     }
 
-    public Connection(HttpClient httpClient, URI almaApiHost, URI basebibliotekHost, String basebibliotekPassword,
-                      String basebibliotekUsername) {
+    public AlmaConnection(HttpClient httpClient, URI almaApiHost) {
         this.httpClient = httpClient;
         this.almaApiHost = almaApiHost;
-        this.basebibliotekHost = basebibliotekHost;
-        this.basebibliotekAuthorization = createBasebibliotekAuthorization(basebibliotekPassword,
-                                                                           basebibliotekUsername);
-    }
-
-    private String createBasebibliotekAuthorization(String basebibliotekPassword, String basebibliotekUsername) {
-        String loginPassword = basebibliotekUsername + USERNAME_PASSWORD_DELIMITER + basebibliotekPassword;
-        return String.format(BASIC_AUTHORIZATION, Base64.getEncoder().encodeToString(loginPassword.getBytes()));
     }
 
     /**
@@ -65,7 +44,7 @@ public final class Connection {
      * @throws IOException          When something goes wrong.
      * @throws InterruptedException When something goes wrong.
      */
-    public HttpResponse<String> getAlmaPartner(String code)
+    public HttpResponse<String> sendGet(String code)
         throws IOException, InterruptedException {
         String almaApikey = new Environment().readEnv(ALMA_APIKEY);
         HttpRequest request = HttpRequest.newBuilder()
@@ -85,7 +64,7 @@ public final class Connection {
      * @throws IOException          When something goes wrong.
      * @throws InterruptedException When something goes wrong.
      */
-    public HttpResponse<String> putAlmaPartner(Partner partner) throws IOException, InterruptedException {
+    public HttpResponse<String> sendPut(Partner partner) throws IOException, InterruptedException {
         String almaApikey = new Environment().readEnv(ALMA_APIKEY);
         HttpRequest request = HttpRequest.newBuilder()
                                   .PUT(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(partner)))
@@ -107,7 +86,7 @@ public final class Connection {
      * @throws IOException          When something goes wrong.
      * @throws InterruptedException When something goes wrong.
      */
-    public HttpResponse<String> postAlmaPartner(Partner partner) throws IOException, InterruptedException {
+    public HttpResponse<String> sendPost(Partner partner) throws IOException, InterruptedException {
         String almaApikey = new Environment().readEnv(ALMA_APIKEY);
         HttpRequest request = HttpRequest.newBuilder()
                                   .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(partner)))
@@ -118,15 +97,6 @@ public final class Connection {
                                   .header(CONTENT_TYPE_KEY, APPLICATION_JSON)
                                   .build();
 
-        return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-    }
-
-    public HttpResponse<String> getBasebibliotek(String bibNr) throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                                  .GET()
-                                  .uri(UriWrapper.fromUri(basebibliotekHost).addChild(bibNr).getUri())
-                                  .setHeader(AUTHORIZATION, basebibliotekAuthorization)
-                                  .build();
         return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     }
 }

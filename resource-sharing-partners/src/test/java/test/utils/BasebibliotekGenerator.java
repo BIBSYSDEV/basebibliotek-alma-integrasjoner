@@ -52,16 +52,18 @@ public class BasebibliotekGenerator {
 
     public BasebibliotekGenerator(RecordSpecification specification) {
         this.currentRid = BigInteger.ONE;
-        this.records = List.of(generateRecord(specification.getWithLandkode(),
-                                              specification.getNncipUri(),
-                                              specification.getWithStengtFra(),
-                                              specification.getWithStengtTil(),
-                                              specification.getWithPaddr(),
-                                              specification.getWithVaddr(),
-                                              specification.getWithIsil(),
-                                              specification.getKatsys(),
-                                              specification.getEressursExcludes(),
-                                              specification.getStengt()));
+        this.records = List.of(generateRecord(
+            specification.getBibNr(),
+            specification.getWithLandkode(),
+            specification.getNncipUri(),
+            specification.getWithStengtFra(),
+            specification.getWithStengtTil(),
+            specification.getWithPaddr(),
+            specification.getWithVaddr(),
+            specification.getWithIsil(),
+            specification.getKatsys(),
+            specification.getEressursExcludes(),
+            specification.getStengt()));
     }
 
     public BasebibliotekGenerator(Record... records) {
@@ -82,6 +84,7 @@ public class BasebibliotekGenerator {
     }
 
     private Record generateRecord(
+        String bibNr,
         boolean shouldHaveLandkode,
         String specifiedNncipUri,
         boolean withStengtFra,
@@ -96,9 +99,7 @@ public class BasebibliotekGenerator {
         record.setRid(incrementCurrentRidAndReturnResult());
         record.setTstamp(randomLocalDate().toString());
 
-        //optional fields:
-
-        record.setBibnr(randomString());
+        record.setBibnr(bibNr);
 
         var start = Instant.now().toEpochMilli() - DAY_IN_MILLI_SECONDS;
         var end = Instant.now().toEpochMilli() + DAY_IN_MILLI_SECONDS;
