@@ -6,6 +6,10 @@ Description: >
   Sample SAM Template for AWS
 
 Parameters:
+  BasebibliotekTxtBucketName:
+    Type: String
+    Default: "basebibliotek-txt-files"
+    Description: Name of bucket for basebibliotek txt file
   SharedConfigBucketName:
     Type: String
     Default: 'shared-config-bucket'
@@ -13,11 +17,7 @@ Parameters:
   LibCodeToAlmaCodeFilePath:
     Type: String
     Default: '/libCode2AlmaCode.json'
-    Description: 'Path to the libCode to almaCode mapping file'
-  BasebibliotekXmlBucketName:
-    Type: String
-    Default: "basebibliotek-xml-file"
-    Description: Name of bucket for basebibliotek xml file
+    Description: 'Path to the libCode to almaCode mapping file'    
   ReportBucketName:
     Type: String
     Default: 'basebibliotek-report'
@@ -60,7 +60,7 @@ Resources:
       Environment:
         Variables:
           REPORT_BUCKET: !Ref ReportBucketName
-          BASEBIBLIOTEK_XML_BUCKET: !Ref BasebibliotekXmlBucket
+          BASEBIBLIOTEK_TXT_BUCKET: !Ref BasebibliotekTxtBucket
           SHARED_CONFIG_BUCKET: !Ref SharedConfigBucketName
           LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH: !Ref LibCodeToAlmaCodeFilePath
           ILL_SERVER: !Ref IllServerUri
@@ -71,7 +71,7 @@ Resources:
         BasebibliotekFileUpload:
           Type: S3
           Properties:
-            Bucket: !Ref BasebibliotekXmlBucket
+            Bucket: !Ref BasebibliotekTxtBucket
             Events: 's3:ObjectCreated:*'
             Filter:
               S3Key:
@@ -90,7 +90,7 @@ Resources:
           BASEBIBLIOTEK_USERNAME: !Ref BasebibliotekUsername
           BASEBIBLIOTEK_PASSWORD: !Ref BasebibliotekPassword
           BASEBIBLIOTEK_URL: !Ref BasebibliotekUrl
-          BASEBIBLIOTEK_XML_BUCKET:  !Ref BasebibliotekXmlBucket
+          BASEBIBLIOTEK_TXT_BUCKET:  !Ref BasebibliotekTxtBucket
       Events:
         ScheduledUpdate:
           Type: Schedule
@@ -141,12 +141,13 @@ Resources:
               - lambda:InvokeFunction
             Resource: "*"
 
-  BasebibliotekXmlBucketAccessPolicy:
+  BasebibliotekTxtBucketAccessPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Sub BasebibliotekXmlBucketAccessPolicy-${AWS::StackName}
+      PolicyName: !Sub BasebibliotekTxtBucketAccessPolicy-${AWS::StackName}
       Roles:
         - !Ref ResourceSharingPartnerHandlerRole
+        - !Ref BasebibliotekFetchCronjobRole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -154,7 +155,7 @@ Resources:
             Action:
               - 's3:*'
             Resource:
-              - !Sub '${BasebibliotekXmlBucket.Arn}/*'
+              - !Sub '${BasebibliotekTxtBucket.Arn}/*'
 
   ReportBucketAccessPolicy:
     Type: AWS::IAM::Policy
@@ -171,11 +172,11 @@ Resources:
             Resource:
               - !Sub '${ReportBucket.Arn}/*'
 
-  BasebibliotekXmlBucket:
+  BasebibliotekTxtBucket:
     Type: AWS::S3::Bucket
     Properties:
       AccessControl: Private
-      BucketName: !Sub "${BasebibliotekXmlBucketName}-${AWS::AccountId}"
+      BucketName: !Sub "${BasebibliotekTxtBucketName}-${AWS::AccountId}"
       LifecycleConfiguration:
         Rules:
           - Id: DeleteContentAfter3Days
