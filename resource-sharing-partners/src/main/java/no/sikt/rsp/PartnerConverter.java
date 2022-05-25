@@ -252,9 +252,9 @@ public class PartnerConverter {
     private static boolean isDateInTheFuture(XMLGregorianCalendar date) {
         boolean future = true;
         if (Objects.nonNull(date)) {
-            GregorianCalendar gCalendar = date.toGregorianCalendar();
+            GregorianCalendar gregorianCalendar = date.toGregorianCalendar();
             Date currentDate = new Date();
-            future = currentDate.getTime() < gCalendar.getTime().getTime();
+            future = currentDate.getTime() < gregorianCalendar.getTime().getTime();
         }
         return future;
     }
