@@ -83,24 +83,23 @@ public class BasebibliotekGenerator {
         return xmlWriter.toString();
     }
 
-    private Record generateRecord(
-        String bibNr,
-        boolean shouldHaveLandkode,
-        String specifiedNncipUri,
-        boolean withStengtFra,
-        boolean withStengtTil,
-        boolean withPaddr,
-        boolean withVaddr,
-        boolean withIsil,
-        String katsys,
-        List<String> eressursExcludes,
-        String stengt) {
+    private Record generateRecord(String bibnr,
+                                  boolean shouldHaveLandkode,
+                                  String specifiedNncipUri,
+                                  boolean withStengtFra,
+                                  boolean withStengtTil,
+                                  boolean withPaddr,
+                                  boolean withVaddr,
+                                  boolean withIsil,
+                                  String katsys,
+                                  List<String> eressursExcludes,
+                                  String stengt) {
         var record = new Record();
         record.setRid(incrementCurrentRidAndReturnResult());
         record.setTstamp(randomLocalDate().toString());
+        record.setBibnr(bibnr);
 
-        record.setBibnr(bibNr);
-
+        //optional fields:
         var start = Instant.now().toEpochMilli() - DAY_IN_MILLI_SECONDS;
         var end = Instant.now().toEpochMilli() + DAY_IN_MILLI_SECONDS;
         if (withStengtFra) {
