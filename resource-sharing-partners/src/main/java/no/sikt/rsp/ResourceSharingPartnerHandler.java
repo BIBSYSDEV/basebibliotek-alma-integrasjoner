@@ -17,6 +17,7 @@ import no.sikt.alma.generated.Partner;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,9 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
 
     public static final String S3_URI_TEMPLATE = "s3://%s/%s";
     public static final String ILL_SERVER_ENV_NAME = "ILL_SERVER";
-
+    public static final String SHARED_CONFIG_BUCKET_NAME_ENV_NAME = "SHARED_CONFIG_BUCKET";
+    public static final String LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY =
+        "LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH";
     private final S3Client s3Client;
     private final AlmaConnection connection;
 
@@ -69,13 +72,20 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
         logger.info(EVENT + gson.toJson(s3event));
 
         String illServer = environment.readEnv(ILL_SERVER_ENV_NAME);
+        String sharedConfigBucketName = environment.readEnv(SHARED_CONFIG_BUCKET_NAME_ENV_NAME);
+        S3Driver driver = new S3Driver(s3Client, sharedConfigBucketName);
+        String libCodeToAlmaCodeMappingFilePath = environment.readEnv(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY);
 
         try {
             var bibNrFile = readFile(s3event);
+
+            final String instRegAsJson = driver.getFile(UnixPath.of(libCodeToAlmaCodeMappingFilePath));
+            AlmaCodeProvider almaCodeProvider = new AlmaCodeProvider(instRegAsJson);
+
             partners =
                 getBibNrList(bibNrFile).stream()
                     .map(basebibliotekConnection::getBasebibliotek)
-                    .map(baseBibliotek -> PartnerConverter.convertBasebibliotekToPartners(illServer, baseBibliotek))
+                    .map(baseBibliotek -> new PartnerConverter(almaCodeProvider, illServer, baseBibliotek).toPartners())
                     .flatMap(List::stream)
                     .collect(Collectors.toList());
             return toIntExact(partners.stream()

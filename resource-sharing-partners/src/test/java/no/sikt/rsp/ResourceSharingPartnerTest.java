@@ -57,6 +57,7 @@ import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
+import nva.commons.logutils.TestAppender;
 import org.hamcrest.core.IsNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,32 +82,33 @@ public class ResourceSharingPartnerTest {
     public static final UserIdentityEntity EMPTY_USER_IDENTITY = null;
     public static final long SOME_FILE_SIZE = 100L;
     private static final String BASEBIBLIOTEK_0030100_XML = "bb_0030100.xml";
+    private final String LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH = "/libCodeToAlmaCodeMapping.json";
     private static final String NO_0030100_ID = "NO-0030100";
-
     private static final String INVALID_BASEBIBLIOTEK_XML_STRING = "invalid";
     public static final String ALMA = "alma";
     public static final String BIBSYS = "bibsys";
     public static final String TIDEMANN = "Tidemann";
     public static final String OTHER = "other";
+    private static final String SHARED_CONFIG_BUCKET_NAME_ENV_VALUE = "SharedConfigBucket";
 
-    private static final String ILL_SERVER_ENVIRONMENT_NAME = "ILL_SERVER";
     private static final String ILL_SERVER_ENVIRONMENT_VALUE = "eu01.alma.exlibrisgroup.com";
     public static final int ILL_SERVER_PORT = 9001;
 
-    private static final String NNCIP_SERVER = "http://nncipuri.org";
+    private static final String NNCIP_SERVER = "https://nncipuri.org";
     private ResourceSharingPartnerHandler resourceSharingPartnerHandler;
     public static final String BIBLIOTEK_EKSPORT_BIBLEV_PATH = "/bibliotek/eksport/biblev";
     public static final Context CONTEXT = mock(Context.class);
-
+    private static final String BIBNR_RESOLVABLE_TO_ALMA_CODE = "0030100";
+    private static final String RESOLVED_ALMA_CODE = "NB";
     private FakeS3Client s3Client;
     private S3Driver s3Driver;
 
     private final Environment mockedEnvironment = mock(Environment.class);
 
     @BeforeEach
-    public void init() {
+    public void init() throws IOException {
         s3Client = new FakeS3Client();
-        s3Driver = new S3Driver(s3Client, "ignoredValue");
+        s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
         WireMocker.startWiremockServer();
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_API_HOST))
             .thenReturn(UriWrapper.fromUri(WireMocker.serverUri).toString());
@@ -116,6 +118,17 @@ public class ResourceSharingPartnerTest {
             .thenReturn(randomString());
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.BASEBIBLIOTEK_PASSWORD_ENVIRONMENT_NAME))
             .thenReturn(randomString());
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.SHARED_CONFIG_BUCKET_NAME_ENV_NAME))
+            .thenReturn(SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY))
+            .thenReturn(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH);
+
+        final String fullLibCodeToAlmaCodeMapping = IoUtils.stringFromResources(
+            Path.of("fullLibCodeToAlmaCodeMapping.json"));
+
+        s3Driver.insertFile(UnixPath.of(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH),
+                            fullLibCodeToAlmaCodeMapping);
+
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment,
                                                                           WireMocker.httpClient);
     }
@@ -182,22 +195,20 @@ public class ResourceSharingPartnerTest {
     public void shouldExtractContactDetailsCorrectly() throws IOException {
         var withPaddr = true;
         var withVaddr = true;
-        var bibNr = randomString();
-        var specification =
-            new RecordSpecification(bibNr,
-                                    true,
-                                    null,
-                                    randomBoolean(),
-                                    randomBoolean(),
-                                    withPaddr,
-                                    withVaddr,
-                                    randomBoolean(),
-                                    randomString());
+        var specification = new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE,
+                                                    true,
+                                                    null,
+                                                    randomBoolean(),
+                                                    randomBoolean(),
+                                                    withPaddr,
+                                                    withVaddr,
+                                                    randomBoolean(),
+                                                    randomString());
         var basebibliotekGenerator = new BasebibliotekGenerator(specification);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
-        WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
-        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
         var s3Event = createS3Event(uri);
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var partners = resourceSharingPartnerHandler.getPartners();
@@ -211,7 +222,7 @@ public class ResourceSharingPartnerTest {
                                                        boolean yieldsError,
                                                        boolean withIsil) throws IOException {
         var appender = LogUtils.getTestingAppenderForRootLogger();
-        var expectedLogMessage = "Could not convert record to partner, missing landkode, record";
+        var expectedLogMessage = "Could not convert record, missing landkode, record";
         var basebibliotekGenerator = new BasebibliotekGenerator(recordSpecification);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
@@ -278,21 +289,19 @@ public class ResourceSharingPartnerTest {
 
     @Test
     void shouldExtractBasicPartnerDetailsCorrectly() throws IOException {
-        var bibNr = randomString();
-        var specifiation =
-            new RecordSpecification(bibNr,
-                                    true,
-                                    null, randomBoolean(),
-                                    randomBoolean(),
-                                    randomBoolean(),
-                                    randomBoolean(),
-                                    randomBoolean(),
-                                    randomString());
+        var specifiation = new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE,
+                                                   true,
+                                                   null, randomBoolean(),
+                                                   randomBoolean(),
+                                                   randomBoolean(),
+                                                   randomBoolean(),
+                                                   randomBoolean(),
+                                                   randomString());
         var basebibliotekGenerator = new BasebibliotekGenerator(specifiation);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
-        WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
-        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
         var s3Event = createS3Event(uri);
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var partners = resourceSharingPartnerHandler.getPartners();
@@ -319,10 +328,9 @@ public class ResourceSharingPartnerTest {
     @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
     public void shouldExtractCertainDataIfAlmaOrBibsysLibrary(String katsys) throws IOException {
         var withLandkode = true;
-        var bibNr = randomString();
-        var specification = new RecordSpecification(bibNr,
+        var specification = new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE,
                                                     withLandkode,
-                                                    "http://nncip.edu",
+                                                    NNCIP_SERVER,
                                                     randomBoolean(),
                                                     randomBoolean(),
                                                     randomBoolean(),
@@ -332,22 +340,28 @@ public class ResourceSharingPartnerTest {
         var basebibliotekGenerator = new BasebibliotekGenerator(specification);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
-        WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
-        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
         var s3Event = createS3Event(uri);
+
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var partners = resourceSharingPartnerHandler.getPartners();
         var isAlmaOrBibsys = BIBSYS.equals(katsys) || ALMA.equals(katsys);
+
+        assertThat("Expected one mapped partner for katsyst " + katsys, partners, hasSize(1));
+
         var expectedHoldingCode = isAlmaOrBibsys
                                       ? basebibliotek.getRecord().get(0).getLandkode().toUpperCase(Locale.ROOT)
-                                        + bibNr
+                                        + BIBNR_RESOLVABLE_TO_ALMA_CODE
                                       : null;
+        assertThat(partners.get(0).getPartnerDetails().getHoldingCode(), is(equalTo(expectedHoldingCode)));
+
         var expectedSystemTypeValueValue = isAlmaOrBibsys
                                                ? ALMA.toUpperCase(Locale.ROOT) : OTHER.toUpperCase(Locale.ROOT);
-        var expectedSystemTypeValueDesc = isAlmaOrBibsys ? ALMA : OTHER;
-        assertThat(partners.get(0).getPartnerDetails().getHoldingCode(), is(equalTo(expectedHoldingCode)));
         assertThat(partners.get(0).getPartnerDetails().getSystemType().getValue(),
                    is(equalTo(expectedSystemTypeValueValue)));
+
+        var expectedSystemTypeValueDesc = isAlmaOrBibsys ? ALMA : OTHER;
         assertThat(partners.get(0).getPartnerDetails().getSystemType().getDesc(),
                    is(equalTo(expectedSystemTypeValueDesc)));
         //TODO:LocateProfile in partnerDetails should be set when isAlmaOrBibsys, otherwise null. SMILE-1573
@@ -357,7 +371,7 @@ public class ResourceSharingPartnerTest {
     @ValueSource(strings = {ALMA, BIBSYS})
     public void shouldExtractPartnerDetailsProfileDataIsoCorrectly(final String katsys) throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys)
-                                  .withBibnr("1")
+                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
                                   .withLandkode("1")
                                   .build();
 
@@ -369,7 +383,8 @@ public class ResourceSharingPartnerTest {
         WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
         var s3Event = createS3Event(uri);
 
-        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -405,7 +420,8 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), bibNr);
         var s3Event = createS3Event(uri);
 
-        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -440,7 +456,8 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), bibNr);
         var s3Event = createS3Event(uri);
 
-        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -474,7 +491,8 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), bibNr);
         var s3Event = createS3Event(uri);
 
-        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -506,7 +524,8 @@ public class ResourceSharingPartnerTest {
         WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
         var s3Event = createS3Event(uri);
 
-        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -534,7 +553,8 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), bibNr);
         var s3Event = createS3Event(uri);
         WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
-        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -563,7 +583,8 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), bibNr);
         var s3Event = createS3Event(uri);
         WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
-        when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -578,23 +599,22 @@ public class ResourceSharingPartnerTest {
     @MethodSource("provideStengtArguments")
     public void shouldCalculateStengtStatusCorrectly(String stengt, boolean withStengtFra, boolean withStengTil,
                                                      Status expectedStatus) throws IOException {
-        var bibNr = randomString();
-        var specificaion =
-            new RecordSpecification(bibNr, true,
-                                    null,
-                                    withStengtFra,
-                                    withStengTil,
-                                    randomBoolean(),
-                                    randomBoolean(),
-                                    randomBoolean(),
-                                    randomString(),
-                                    Collections.emptyList(),
-                                    stengt);
-        var basebibliotekGenerator = new BasebibliotekGenerator(specificaion);
+        var specification = new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE,
+                                                    true,
+                                                    null,
+                                                    withStengtFra,
+                                                    withStengTil,
+                                                    randomBoolean(),
+                                                    randomBoolean(),
+                                                    randomBoolean(),
+                                                    randomString(),
+                                                    Collections.emptyList(),
+                                                    stengt);
+        var basebibliotekGenerator = new BasebibliotekGenerator(specification);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
-        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
-        WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
+        var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, BIBNR_RESOLVABLE_TO_ALMA_CODE);
         var s3Event = createS3Event(uri);
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var partners = resourceSharingPartnerHandler.getPartners();
@@ -619,6 +639,139 @@ public class ResourceSharingPartnerTest {
         var s3Event = createS3Event(uri);
         WireMocker.mockBassebibliotekFailure(bibNr);
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
+    }
+
+    @ParameterizedTest(name = "Should handle katsys codes differently")
+    @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
+    public void shouldExtractAlmaCodeInPartnerDetailsCorrectly(final String katsys) throws IOException {
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys)
+                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+                                  .withLandkode("1")
+                                  .build();
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        var s3Event = createS3Event(uri);
+
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
+            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, BIBNR_RESOLVABLE_TO_ALMA_CODE);
+
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+
+        var partners = resourceSharingPartnerHandler.getPartners();
+
+        // we should have only ony partner from the one record we have:
+        Partner partner = partners.get(0);
+
+        final String expectedInstitutionCode;
+        if (ALMA.equals(katsys) || BIBSYS.equals(katsys)) {
+            expectedInstitutionCode = RESOLVED_ALMA_CODE;
+        } else {
+            expectedInstitutionCode = "";
+        }
+        assertThat(partner.getPartnerDetails().getInstitutionCode(), is(expectedInstitutionCode));
+    }
+
+    @Test
+    public void shouldLogAndThrowExceptionWhenAlmaCodeLookupTableIsMissing() throws IOException {
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), ALMA)
+                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+                                  .withLandkode("1")
+                                  .build();
+
+        s3Client = new FakeS3Client();
+        s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
+            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment,
+                                                                          WireMocker.httpClient);
+
+        TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+
+        assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
+
+        assertThat(appender.getMessages(), containsString(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH));
+    }
+
+    @Test
+    public void shouldLogAndThrowExceptionWhenAlmaCodeLookupTableIsEmpty() throws IOException {
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), ALMA)
+                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+                                  .withLandkode("1")
+                                  .build();
+
+        s3Client = new FakeS3Client();
+        s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
+
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
+            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY))
+            .thenReturn(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH);
+
+        s3Driver.insertFile(UnixPath.of(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH),
+                            IoUtils.stringFromResources(Path.of("emptyLibCodeToAlmaCodeMapping.json")));
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment,
+                                                                          WireMocker.httpClient);
+
+        TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+
+        assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
+
+        assertThat(appender.getMessages(), containsString(AlmaCodeProvider.EMPTY_MAPPING_TABLE_MESSAGE));
+    }
+
+    @Test
+    public void shouldLogAndThrowExceptionWhenAlmaCodeLookupTableIsInvalidJson() throws IOException {
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), ALMA)
+                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+                                  .withLandkode("1")
+                                  .build();
+
+        s3Client = new FakeS3Client();
+        s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
+
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
+            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY))
+            .thenReturn(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH);
+
+        s3Driver.insertFile(UnixPath.of(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH),
+                            IoUtils.stringFromResources(Path.of("invalidLibCodeToAlmaCodeMapping.json")));
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var s3Event = createS3Event(uri);
+
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment,
+                                                                          WireMocker.httpClient);
+
+        TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+
+        assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
+
+        assertThat(appender.getMessages(), containsString(LibCodeToAlmaCodeEntry.FIELD_IS_NULL_OR_EMPTY_MESSAGE));
     }
 
     private void assertIsoProfileDetailsPopulatedCorrectly(final Partner partner, final String bibnr) {
