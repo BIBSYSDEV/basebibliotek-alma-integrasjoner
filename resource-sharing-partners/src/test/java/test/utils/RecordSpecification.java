@@ -4,8 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class RecordSpecification {
-
-    private final String bibnr;
+    private final String bibNr;
     private final boolean withLandkode;
 
     private final String nncipUri;
@@ -19,10 +18,10 @@ public class RecordSpecification {
 
     private final List<String> eressursExcludes;
 
-    public RecordSpecification(String bibnr, boolean withLandkode, String nncipUri, boolean withStengtFra,
+    public RecordSpecification(String bibNr, boolean withLandkode, String nncipUri, boolean withStengtFra,
                                boolean withStengtTil, boolean withPaddr, boolean withVaddr, boolean withIsil,
                                String katsys, List<String> eressursExcludes, String stengt) {
-        this.bibnr = bibnr;
+        this.bibNr = bibNr;
         this.withLandkode = withLandkode;
         this.nncipUri = nncipUri;
         this.withStengtFra = withStengtFra;
@@ -35,15 +34,15 @@ public class RecordSpecification {
         this.stengt = stengt;
     }
 
-    public RecordSpecification(String bibnr, boolean withLandkode, String nncipUri, boolean withStengtFra,
+    public RecordSpecification(String bibNr, boolean withLandkode, String nncipUri, boolean withStengtFra,
                                boolean withStengtTil, boolean withPaddr, boolean withVaddr, boolean withIsil,
                                String katsys) {
-        this(bibnr, withLandkode, nncipUri, withStengtFra, withStengtTil, withPaddr, withVaddr, withIsil, katsys,
+        this(bibNr, withLandkode, nncipUri, withStengtFra, withStengtTil, withPaddr, withVaddr, withIsil, katsys,
              Collections.emptyList(), null);
     }
 
-    public String getBibnr() {
-        return bibnr;
+    public String getBibNr() {
+        return bibNr;
     }
 
     public boolean getWithLandkode() {

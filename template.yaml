@@ -77,7 +77,7 @@ Resources:
               S3Key:
                 Rules:
                   - Name: suffix
-                    Value: '.xml'
+                    Value: '.txt'
 
   BasebibliotekFetchCronjob:
     Type: AWS::Serverless::Function

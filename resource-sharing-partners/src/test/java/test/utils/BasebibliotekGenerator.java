@@ -50,32 +50,25 @@ public class BasebibliotekGenerator {
 
     private final Collection<? extends Record> records;
 
-    public BasebibliotekGenerator(List<RecordSpecification> specificationList) {
+    public BasebibliotekGenerator(RecordSpecification specification) {
         this.currentRid = BigInteger.ONE;
-        this.records = generateRecordsFromSpecificationList(specificationList);
+        this.records = List.of(generateRecord(
+            specification.getBibNr(),
+            specification.getWithLandkode(),
+            specification.getNncipUri(),
+            specification.getWithStengtFra(),
+            specification.getWithStengtTil(),
+            specification.getWithPaddr(),
+            specification.getWithVaddr(),
+            specification.getWithIsil(),
+            specification.getKatsys(),
+            specification.getEressursExcludes(),
+            specification.getStengt()));
     }
 
     public BasebibliotekGenerator(Record... records) {
         this.currentRid = null; // not relevant as we do not call generateRecordsFromSpecificationList here
         this.records = Arrays.asList(records);
-    }
-
-    private Collection<? extends Record> generateRecordsFromSpecificationList(
-        List<RecordSpecification> specificationList) {
-        return specificationList
-                   .stream()
-                   .map(recordsSpecification -> generateRecord(recordsSpecification.getBibnr(),
-                                                               recordsSpecification.getWithLandkode(),
-                                                               recordsSpecification.getNncipUri(),
-                                                               recordsSpecification.getWithStengtFra(),
-                                                               recordsSpecification.getWithStengtTil(),
-                                                               recordsSpecification.getWithPaddr(),
-                                                               recordsSpecification.getWithVaddr(),
-                                                               recordsSpecification.getWithIsil(),
-                                                               recordsSpecification.getKatsys(),
-                                                               recordsSpecification.getEressursExcludes(),
-                                                               recordsSpecification.getStengt()))
-                   .collect(Collectors.toList());
     }
 
     public BaseBibliotek generateBaseBibliotek() {
