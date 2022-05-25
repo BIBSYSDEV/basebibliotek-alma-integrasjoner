@@ -105,7 +105,7 @@ public class PartnerConverter {
         return missingFields.isEmpty();
     }
 
-    List<String> findMissingRequiredFields(Record record) {
+    private List<String> findMissingRequiredFields(Record record) {
         final List<String> missingFields = new ArrayList<>();
 
         if (StringUtils.isEmpty(record.getBibnr())) {
