@@ -50,32 +50,25 @@ public class BasebibliotekGenerator {
 
     private final Collection<? extends Record> records;
 
-    public BasebibliotekGenerator(List<RecordSpecification> specificationList) {
+    public BasebibliotekGenerator(RecordSpecification specification) {
         this.currentRid = BigInteger.ONE;
-        this.records = generateRecordsFromSpecificationList(specificationList);
+        this.records = List.of(generateRecord(
+            specification.getBibNr(),
+            specification.getWithLandkode(),
+            specification.getNncipUri(),
+            specification.getWithStengtFra(),
+            specification.getWithStengtTil(),
+            specification.getWithPaddr(),
+            specification.getWithVaddr(),
+            specification.getWithIsil(),
+            specification.getKatsys(),
+            specification.getEressursExcludes(),
+            specification.getStengt()));
     }
 
     public BasebibliotekGenerator(Record... records) {
         this.currentRid = null; // not relevant as we do not call generateRecordsFromSpecificationList here
         this.records = Arrays.asList(records);
-    }
-
-    private Collection<? extends Record> generateRecordsFromSpecificationList(
-        List<RecordSpecification> specificationList) {
-        return specificationList
-                   .stream()
-                   .map(recordsSpecification -> generateRecord(recordsSpecification.getWithBibnr(),
-                                                               recordsSpecification.getWithLandkode(),
-                                                               recordsSpecification.getNncipUri(),
-                                                               recordsSpecification.getWithStengtFra(),
-                                                               recordsSpecification.getWithStengtTil(),
-                                                               recordsSpecification.getWithPaddr(),
-                                                               recordsSpecification.getWithVaddr(),
-                                                               recordsSpecification.getWithIsil(),
-                                                               recordsSpecification.getKatsys(),
-                                                               recordsSpecification.getEressursExcludes(),
-                                                               recordsSpecification.getStengt()))
-                   .collect(Collectors.toList());
     }
 
     public BaseBibliotek generateBaseBibliotek() {
@@ -90,26 +83,24 @@ public class BasebibliotekGenerator {
         return xmlWriter.toString();
     }
 
-    private Record generateRecord(boolean shouldHaveBibNr,
-                                  boolean shouldHaveLandkode,
-                                  String specifiedNncipUri,
-                                  boolean withStengtFra,
-                                  boolean withStengtTil,
-                                  boolean withPaddr,
-                                  boolean withVaddr,
-                                  boolean withIsil,
-                                  String katsys,
-                                  List<String> eressursExcludes,
-                                  String stengt) {
+    private Record generateRecord(
+        String bibNr,
+        boolean shouldHaveLandkode,
+        String specifiedNncipUri,
+        boolean withStengtFra,
+        boolean withStengtTil,
+        boolean withPaddr,
+        boolean withVaddr,
+        boolean withIsil,
+        String katsys,
+        List<String> eressursExcludes,
+        String stengt) {
         var record = new Record();
         record.setRid(incrementCurrentRidAndReturnResult());
         record.setTstamp(randomLocalDate().toString());
 
-        //optional fields:
+        record.setBibnr(bibNr);
 
-        if (shouldHaveBibNr) {
-            record.setBibnr(randomString());
-        }
         var start = Instant.now().toEpochMilli() - DAY_IN_MILLI_SECONDS;
         var end = Instant.now().toEpochMilli() + DAY_IN_MILLI_SECONDS;
         if (withStengtFra) {

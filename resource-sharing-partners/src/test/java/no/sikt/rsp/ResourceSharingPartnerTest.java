@@ -14,7 +14,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.StringContains.containsString;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -81,7 +80,6 @@ public class ResourceSharingPartnerTest {
     public static final ResponseElementsEntity EMPTY_RESPONSE_ELEMENTS = null;
     public static final UserIdentityEntity EMPTY_USER_IDENTITY = null;
     public static final long SOME_FILE_SIZE = 100L;
-    private static final String BASEBIBLIOTEK_XML = "redacted_bb_full.xml";
     private static final String BASEBIBLIOTEK_0030100_XML = "bb_0030100.xml";
     private static final String NO_0030100_ID = "NO-0030100";
 
@@ -97,6 +95,7 @@ public class ResourceSharingPartnerTest {
 
     private static final String NNCIP_SERVER = "http://nncipuri.org";
     private ResourceSharingPartnerHandler resourceSharingPartnerHandler;
+    public static final String BIBLIOTEK_EKSPORT_BIBLEV_PATH = "/bibliotek/eksport/biblev";
     public static final Context CONTEXT = mock(Context.class);
 
     private FakeS3Client s3Client;
@@ -111,6 +110,12 @@ public class ResourceSharingPartnerTest {
         WireMocker.startWiremockServer();
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_API_HOST))
             .thenReturn(UriWrapper.fromUri(WireMocker.serverUri).toString());
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME))
+            .thenReturn(UriWrapper.fromUri(WireMocker.serverUri).addChild(BIBLIOTEK_EKSPORT_BIBLEV_PATH).toString());
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.BASEBIBLILOTEK_USERNAME_ENVIRONMENT_NAME))
+            .thenReturn(randomString());
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.BASEBIBLIOTEK_PASSWORD_ENVIRONMENT_NAME))
+            .thenReturn(randomString());
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment,
                                                                           WireMocker.httpClient);
     }
@@ -122,8 +127,10 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldBeAbleToReadAndPostRecordToAlma() throws IOException {
+        var bibNr = "0030100";
         var baseBibliotek0030100 = IoUtils.stringFromResources(Path.of(BASEBIBLIOTEK_0030100_XML));
-        var uri = s3Driver.insertFile(randomS3Path(), baseBibliotek0030100);
+        WireMocker.mockBasebibliotekXml(baseBibliotek0030100, bibNr);
+        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
         var s3Event = createS3Event(uri);
         WireMocker.mockAlmaGetResponseNotFound();
         WireMocker.mockAlmaPostResponse();
@@ -136,8 +143,10 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldBeAbleToReadAndPutRecordToAlma() throws IOException {
+        var bibNr = "0030100";
         var baseBibliotek0030100 = IoUtils.stringFromResources(Path.of(BASEBIBLIOTEK_0030100_XML));
-        var uri = s3Driver.insertFile(randomS3Path(), baseBibliotek0030100);
+        WireMocker.mockBasebibliotekXml(baseBibliotek0030100, bibNr);
+        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
         var s3Event = createS3Event(uri);
         WireMocker.mockAlmaGetResponse();
         WireMocker.mockAlmaPutResponse();
@@ -162,116 +171,128 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldLogExceptionWhenS3BucketFileCannotBeConvertedToBaseBibliotek() throws IOException {
-        var uri = s3Driver.insertFile(randomS3Path(), INVALID_BASEBIBLIOTEK_XML_STRING);
+        var bibNr = "0030100";
+        WireMocker.mockBasebibliotekXml(INVALID_BASEBIBLIOTEK_XML_STRING, bibNr);
+        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
         var s3Event = createS3Event(uri);
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
-    }
-
-    @Test
-    public void shouldBeAbleToConvertFullBasebibliotekFile() throws IOException {
-        var fullBaseBibliotekFile = IoUtils.stringFromResources(Path.of(BASEBIBLIOTEK_XML));
-        var uri = s3Driver.insertFile(randomS3Path(), fullBaseBibliotekFile);
-        var s3Event = createS3Event(uri);
-        assertDoesNotThrow(() -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
     }
 
     @Test
     public void shouldExtractContactDetailsCorrectly() throws IOException {
         var withPaddr = true;
         var withVaddr = true;
-        var specifiedList = List.of(
-            new RecordSpecification(true,
+        var bibNr = randomString();
+        var specification =
+            new RecordSpecification(bibNr,
                                     true,
-                                    null, randomBoolean(),
+                                    null,
+                                    randomBoolean(),
                                     randomBoolean(),
                                     withPaddr,
                                     withVaddr,
                                     randomBoolean(),
-                                    randomString()));
-        var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
+                                    randomString());
+        var basebibliotekGenerator = new BasebibliotekGenerator(specification);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
-        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
+        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
         var s3Event = createS3Event(uri);
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var partners = resourceSharingPartnerHandler.getPartners();
         assertContactInfo(partners.get(0).getContactInfo(), basebibliotek.getRecord().get(0));
     }
 
-    @Test
-    public void shouldRecordHandleIsilBibNrAndLandKode() throws IOException {
-        var withBibNr = true;
-        var withLandkode = true;
-        var withIsil = true;
+    @ParameterizedTest
+    @MethodSource("provideIsilBibNRAndLandkodeSpecification")
+    public void shouldRecordHandleIsilBibNrAndLandKode(RecordSpecification recordSpecification,
+                                                       int expectedSize,
+                                                       boolean yieldsError,
+                                                       boolean withIsil) throws IOException {
         var appender = LogUtils.getTestingAppenderForRootLogger();
-        var expectedLogMessage = "Could not convert record to partner, missing landkode bibNr, record";
-        var shouldNotBeConvertedToPartner = new RecordSpecification(!withBibNr,
-                                                                    !withLandkode,
-                                                                    null,
-                                                                    randomBoolean(),
-                                                                    randomBoolean(),
-                                                                    randomBoolean(),
-                                                                    randomBoolean(),
-                                                                    !withIsil,
-                                                                    randomString());
-        var shouldUseIsilAsPartnerDetailsCode = new RecordSpecification(withBibNr,
-                                                                        withLandkode,
-                                                                        null,
-                                                                        randomBoolean(),
-                                                                        randomBoolean(),
-                                                                        randomBoolean(),
-                                                                        randomBoolean(),
-                                                                        withIsil,
-                                                                        randomString());
-        var shouldCombineBibNrAndLandKodeAsPartnerDetailsCode = new RecordSpecification(withBibNr,
-                                                                                        withLandkode,
-                                                                                        null,
-                                                                                        randomBoolean(),
-                                                                                        randomBoolean(),
-                                                                                        randomBoolean(),
-                                                                                        randomBoolean(),
-                                                                                        !withIsil,
-                                                                                        randomString());
-        var specifiedList = List.of(
-            shouldUseIsilAsPartnerDetailsCode,
-            shouldCombineBibNrAndLandKodeAsPartnerDetailsCode,
-            shouldNotBeConvertedToPartner);
-        var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
+        var expectedLogMessage = "Could not convert record to partner, missing landkode, record";
+        var basebibliotekGenerator = new BasebibliotekGenerator(recordSpecification);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
-        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var bibNr = basebibliotek.getRecord().get(0).getBibnr();
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
+        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
         var s3Event = createS3Event(uri);
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var partners = resourceSharingPartnerHandler.getPartners();
-        var recordWithIsil = basebibliotek.getRecord().get(0);
-        assertThat(partners, hasSize(2));
-        assertThat(appender.getMessages(), containsString(expectedLogMessage));
-        assertThat(partners.get(0).getPartnerDetails().getCode(), is(equalTo(recordWithIsil.getIsil())));
 
-        var recordWithoutIsilButContainingBibNrAndLandKode = basebibliotek.getRecord().get(1);
-        var expectedCraftedPartnerCode =
-            recordWithoutIsilButContainingBibNrAndLandKode.getLandkode().toUpperCase(Locale.ROOT)
-            + "-"
-            + recordWithoutIsilButContainingBibNrAndLandKode.getBibnr();
-        assertThat(partners.get(1).getPartnerDetails().getCode(),
-                   is(equalTo(expectedCraftedPartnerCode)));
+        assertThat(partners, hasSize(expectedSize));
+        if (yieldsError) {
+            assertThat(appender.getMessages(), containsString(expectedLogMessage));
+        }
+        if (!yieldsError && withIsil) {
+            assertThat(partners.get(0).getPartnerDetails().getCode(),
+                       is(equalTo(basebibliotek.getRecord().get(0).getIsil())));
+        }
+        if (!yieldsError && !withIsil) {
+            var recordWithoutIsilButContainingBibNrAndLandKode = basebibliotek.getRecord().get(0);
+            var expectedCraftedPartnerCode =
+                recordWithoutIsilButContainingBibNrAndLandKode.getLandkode().toUpperCase(Locale.ROOT)
+                + "-"
+                + recordWithoutIsilButContainingBibNrAndLandKode.getBibnr();
+            assertThat(partners.get(0).getPartnerDetails().getCode(),
+                       is(equalTo(expectedCraftedPartnerCode)));
+        }
+    }
+
+    private static Stream<Arguments> provideIsilBibNRAndLandkodeSpecification() {
+        var withLandkode = true;
+        var withIsil = true;
+        var yieldsError = true;
+        var bibNr = randomString();
+        return Stream.of(
+            Arguments.of(new RecordSpecification(bibNr,
+                                                 !withLandkode,
+                                                 null,
+                                                 randomBoolean(),
+                                                 randomBoolean(),
+                                                 randomBoolean(),
+                                                 randomBoolean(),
+                                                 !withIsil,
+                                                 randomString()), 0, yieldsError, !withIsil),
+            Arguments.of(new RecordSpecification(bibNr,
+                                                 withLandkode,
+                                                 null,
+                                                 randomBoolean(),
+                                                 randomBoolean(),
+                                                 randomBoolean(),
+                                                 randomBoolean(),
+                                                 withIsil,
+                                                 randomString()), 1, !yieldsError, withIsil),
+            Arguments.of(new RecordSpecification(bibNr,
+                                                 withLandkode,
+                                                 null,
+                                                 randomBoolean(),
+                                                 randomBoolean(),
+                                                 randomBoolean(),
+                                                 randomBoolean(),
+                                                 !withIsil,
+                                                 randomString()), 1, !yieldsError, !withIsil));
     }
 
     @Test
     void shouldExtractBasicPartnerDetailsCorrectly() throws IOException {
-        var specifiedList = List.of(
-            new RecordSpecification(true,
+        var bibNr = randomString();
+        var specifiation =
+            new RecordSpecification(bibNr,
                                     true,
                                     null, randomBoolean(),
                                     randomBoolean(),
                                     randomBoolean(),
                                     randomBoolean(),
                                     randomBoolean(),
-                                    randomString()));
-        var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
+                                    randomString());
+        var basebibliotekGenerator = new BasebibliotekGenerator(specifiation);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
-        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
+        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
         var s3Event = createS3Event(uri);
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var partners = resourceSharingPartnerHandler.getPartners();
@@ -297,28 +318,29 @@ public class ResourceSharingPartnerTest {
     @ParameterizedTest(name = "Should handle katsys codes differently")
     @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
     public void shouldExtractCertainDataIfAlmaOrBibsysLibrary(String katsys) throws IOException {
-        var withBibNr = true;
         var withLandkode = true;
-        var specifiedList = List.of(new RecordSpecification(withBibNr,
-                                                            withLandkode,
-                                                            "http://nncip.edu",
-                                                            randomBoolean(),
-                                                            randomBoolean(),
-                                                            randomBoolean(),
-                                                            randomBoolean(),
-                                                            randomBoolean(),
-                                                            katsys));
-        var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
+        var bibNr = randomString();
+        var specification = new RecordSpecification(bibNr,
+                                                    withLandkode,
+                                                    "http://nncip.edu",
+                                                    randomBoolean(),
+                                                    randomBoolean(),
+                                                    randomBoolean(),
+                                                    randomBoolean(),
+                                                    randomBoolean(),
+                                                    katsys);
+        var basebibliotekGenerator = new BasebibliotekGenerator(specification);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
-        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
+        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
         var s3Event = createS3Event(uri);
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var partners = resourceSharingPartnerHandler.getPartners();
         var isAlmaOrBibsys = BIBSYS.equals(katsys) || ALMA.equals(katsys);
         var expectedHoldingCode = isAlmaOrBibsys
                                       ? basebibliotek.getRecord().get(0).getLandkode().toUpperCase(Locale.ROOT)
-                                        + basebibliotek.getRecord().get(0).getBibnr()
+                                        + bibNr
                                       : null;
         var expectedSystemTypeValueValue = isAlmaOrBibsys
                                                ? ALMA.toUpperCase(Locale.ROOT) : OTHER.toUpperCase(Locale.ROOT);
@@ -341,8 +363,10 @@ public class ResourceSharingPartnerTest {
 
         var basebibliotekGenerator = new BasebibliotekGenerator(record);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var bibNr = record.getBibnr();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
-        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
         var s3Event = createS3Event(uri);
 
         when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
@@ -375,8 +399,10 @@ public class ResourceSharingPartnerTest {
         var basebibliotekGenerator = new BasebibliotekGenerator(record);
 
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var bibNr = record.getBibnr();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
-        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
+        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
         var s3Event = createS3Event(uri);
 
         when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
@@ -409,7 +435,9 @@ public class ResourceSharingPartnerTest {
 
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
-        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var bibNr = record.getBibnr();
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
+        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
         var s3Event = createS3Event(uri);
 
         when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
@@ -439,10 +467,11 @@ public class ResourceSharingPartnerTest {
                                   .build();
 
         var basebibliotekGenerator = new BasebibliotekGenerator(record);
-
+        var bibNr = record.getBibnr();
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
-        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
+        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
         var s3Event = createS3Event(uri);
 
         when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
@@ -472,7 +501,9 @@ public class ResourceSharingPartnerTest {
         var basebibliotekGenerator = new BasebibliotekGenerator(record);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
-        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var bibNr = record.getBibnr();
+        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
         var s3Event = createS3Event(uri);
 
         when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
@@ -499,9 +530,10 @@ public class ResourceSharingPartnerTest {
         var basebibliotekGenerator = new BasebibliotekGenerator(record);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
-        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var bibNr = record.getBibnr();
+        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
         var s3Event = createS3Event(uri);
-
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
         when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
@@ -526,10 +558,11 @@ public class ResourceSharingPartnerTest {
 
         var basebibliotekGenerator = new BasebibliotekGenerator(record);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var bibNr = record.getBibnr();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
-        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
         var s3Event = createS3Event(uri);
-
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
         when(mockedEnvironment.readEnv(ILL_SERVER_ENVIRONMENT_NAME)).thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
@@ -545,9 +578,9 @@ public class ResourceSharingPartnerTest {
     @MethodSource("provideStengtArguments")
     public void shouldCalculateStengtStatusCorrectly(String stengt, boolean withStengtFra, boolean withStengTil,
                                                      Status expectedStatus) throws IOException {
-        var specifiedList = List.of(
-            new RecordSpecification(true,
-                                    true,
+        var bibNr = randomString();
+        var specificaion =
+            new RecordSpecification(bibNr, true,
                                     null,
                                     withStengtFra,
                                     withStengTil,
@@ -556,11 +589,12 @@ public class ResourceSharingPartnerTest {
                                     randomBoolean(),
                                     randomString(),
                                     Collections.emptyList(),
-                                    stengt));
-        var basebibliotekGenerator = new BasebibliotekGenerator(specifiedList);
+                                    stengt);
+        var basebibliotekGenerator = new BasebibliotekGenerator(specificaion);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
-        var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
+        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
         var s3Event = createS3Event(uri);
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var partners = resourceSharingPartnerHandler.getPartners();
@@ -576,6 +610,15 @@ public class ResourceSharingPartnerTest {
             Arguments.of(null, true, true, Status.INACTIVE),
             Arguments.of(null, false, false, Status.ACTIVE)
         );
+    }
+
+    @Test
+    public void shouldLogErrorWhenConnectingToBasebibliotekFails() throws IOException {
+        var bibNr = randomString();
+        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
+        var s3Event = createS3Event(uri);
+        WireMocker.mockBassebibliotekFailure(bibNr);
+        assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
     }
 
     private void assertIsoProfileDetailsPopulatedCorrectly(final Partner partner, final String bibnr) {

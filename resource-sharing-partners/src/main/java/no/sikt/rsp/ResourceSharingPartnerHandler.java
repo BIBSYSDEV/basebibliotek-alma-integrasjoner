@@ -5,15 +5,14 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.google.gson.Gson;
-import jakarta.xml.bind.JAXB;
 import java.io.IOException;
-import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
+import java.util.Arrays;
 import java.util.List;
-import no.nb.basebibliotek.generated.BaseBibliotek;
+import java.util.stream.Collectors;
 import no.sikt.alma.generated.Partner;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
@@ -35,11 +34,16 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     public static final String ILL_SERVER_ENV_NAME = "ILL_SERVER";
 
     private final S3Client s3Client;
-    private final AlmaConnection almaConnection;
+    private final AlmaConnection connection;
 
     private List<Partner> partners;
 
     private final Environment environment;
+    public static final String BASEBIBLILOTEK_USERNAME_ENVIRONMENT_NAME = "BASEBIBLIOTEK_USERNAME";
+    public static final String BASEBIBLIOTEK_PASSWORD_ENVIRONMENT_NAME = "BASEBIBLIOTEK_PASSWORD";
+    public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_URL";
+
+    private final BasebibliotekConnection basebibliotekConnection;
 
     @JacocoGenerated
     public ResourceSharingPartnerHandler() {
@@ -49,8 +53,15 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     public ResourceSharingPartnerHandler(S3Client s3Client, Environment environment, HttpClient httpClient) {
         this.s3Client = s3Client;
         this.environment = environment;
-        this.almaConnection = new AlmaConnection(httpClient,
-                UriWrapper.fromUri(environment.readEnv(ALMA_API_HOST)).getUri());
+        this.connection = new AlmaConnection(httpClient,
+                                             UriWrapper.fromUri(environment.readEnv(ALMA_API_HOST)).getUri());
+        this.basebibliotekConnection = new BasebibliotekConnection(httpClient,
+                                                                   UriWrapper.fromUri(environment.readEnv(
+                                                                       BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).getUri(),
+                                                                   environment.readEnv(
+                                                                       BASEBIBLIOTEK_PASSWORD_ENVIRONMENT_NAME),
+                                                                   environment.readEnv(
+                                                                       BASEBIBLILOTEK_USERNAME_ENVIRONMENT_NAME));
     }
 
     @Override
@@ -60,26 +71,34 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
         String illServer = environment.readEnv(ILL_SERVER_ENV_NAME);
 
         try {
-            var file = readFile(s3event);
-            var baseibliotek = parseXmlFile(file);
-            partners = PartnerConverter.convertBasebibliotekToPartners(illServer, baseibliotek);
+            var bibNrFile = readFile(s3event);
+            partners =
+                getBibNrList(bibNrFile).stream()
+                    .map(basebibliotekConnection::getBasebibliotek)
+                    .map(baseBibliotek -> PartnerConverter.convertBasebibliotekToPartners(illServer, baseBibliotek))
+                    .flatMap(List::stream)
+                    .collect(Collectors.toList());
             return toIntExact(partners.stream()
-                    .filter(this::sendToAlma)
-                    .count());
+                                  .filter(this::sendToAlma)
+                                  .count());
         } catch (Exception exception) {
             throw logErrorAndThrowException(exception);
         }
     }
 
+    private List<String> getBibNrList(String bibNrFile) {
+        return Arrays.stream(bibNrFile.split("\n")).map(String::trim).collect(Collectors.toList());
+    }
+
     private boolean sendToAlma(Partner partner) {
         try {
-            HttpResponse<String> httpResponse = almaConnection.sendGet(partner.getPartnerDetails().getCode());
+            HttpResponse<String> httpResponse = connection.sendGet(partner.getPartnerDetails().getCode());
             logger.info(String.format("Read partner %s successfully.", partner.getPartnerDetails().getCode()));
             if (httpResponse.statusCode() <= HttpURLConnection.HTTP_MULT_CHOICE) {
-                almaConnection.sendPut(partner);
+                connection.sendPut(partner);
                 logger.info(String.format("Updated partner %s successfully.", partner.getPartnerDetails().getCode()));
             } else {
-                almaConnection.sendPost(partner);
+                connection.sendPost(partner);
                 logger.info(String.format("Created partner %s successfully.", partner.getPartnerDetails().getCode()));
             }
         } catch (IOException | InterruptedException e) {
@@ -90,10 +109,6 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
 
     public List<Partner> getPartners() {
         return partners;
-    }
-
-    private BaseBibliotek parseXmlFile(String file) {
-        return JAXB.unmarshal(new StringReader(file), BaseBibliotek.class);
     }
 
     private RuntimeException logErrorAndThrowException(Exception exception) {
