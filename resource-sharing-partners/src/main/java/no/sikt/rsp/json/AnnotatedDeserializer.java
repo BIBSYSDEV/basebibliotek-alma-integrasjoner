@@ -12,33 +12,39 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class AnnotatedDeserializer<T> implements JsonDeserializer<T> {
+
     private static final Logger logger = LoggerFactory.getLogger(AnnotatedDeserializer.class);
 
     @Override
-    public T deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
-        throws JsonParseException {
+    public T deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
         T pojo = new Gson().fromJson(json, typeOfT);
 
         Field[] fields = pojo.getClass().getDeclaredFields();
         for (Field f : fields) {
             NotNullOrEmpty notNullOrEmpty = f.getAnnotation(NotNullOrEmpty.class);
             if (notNullOrEmpty != null) {
-                try {
-                    f.setAccessible(true);
-                    Object fieldObject = f.get(pojo);
-                    if (f.getType().equals(String.class) && StringUtils.isEmpty((String) fieldObject)) {
-                        throw new JsonParseException(notNullOrEmpty.message() + ": " + f.getName());
-                    } else {
-                        if (fieldObject == null) {
-                            throw new JsonParseException(notNullOrEmpty.message() + ": " + f.getName());
-                        }
-                    }
-                } catch (IllegalArgumentException | IllegalAccessException ex) {
-                    // should never happen!
-                    logger.error("Unable to inspect class for deserialization!", ex);
-                }
+                checkAnnotationConstraints(pojo, f, notNullOrEmpty);
             }
         }
         return pojo;
+    }
+
+    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
+    private void checkAnnotationConstraints(T pojo, Field f, NotNullOrEmpty notNullOrEmpty) {
+        try {
+            f.setAccessible(true);
+            Object fieldObject = f.get(pojo);
+
+            if (f.getType().equals(String.class) && StringUtils.isEmpty((String) fieldObject)) {
+                throw new JsonParseException(notNullOrEmpty.message() + ": " + f.getName());
+            } else {
+                if (fieldObject == null) {
+                    throw new JsonParseException(notNullOrEmpty.message() + ": " + f.getName());
+                }
+            }
+        } catch (IllegalArgumentException | IllegalAccessException e) {
+            // should never happen!
+            logger.error("Unable to inspect class for deserialization!", e);
+        }
     }
 }
