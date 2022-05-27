@@ -12,7 +12,7 @@ Parameters:
     Description: Name of bucket for basebibliotek txt file
   SharedConfigBucketName:
     Type: String
-    Default: 'shared-config-bucket'
+    Default: 'shared-config-bucket-dev'
     Description: 'Bucket name for shared, persistent configuration files. Created manually before deploying pipeline.'
   LibCodeToAlmaCodeFilePath:
     Type: String
@@ -106,9 +106,6 @@ Resources:
             Principal:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
-          - Effect: Allow
-            Action: 's3:GetObject'
-            Resource: !Sub "arn:aws:s3:::${SharedConfigBucketName}/*"
 
   BasebibliotekFetchCronjobRole:
     Type: AWS::IAM::Role
@@ -155,6 +152,22 @@ Resources:
               - 's3:*'
             Resource:
               - !Sub '${BasebibliotekTxtBucket.Arn}/*'
+
+  SharedConfigBucketAccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub SharedConfigBucketAccessPolicy-${AWS::StackName}
+      Roles:
+        - !Ref ResourceSharingPartnerHandlerRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 's3:GetObject'
+            Resource:
+              -  !Sub "arn:aws:s3:::${SharedConfigBucketName}/*"
+
 
   ReportBucketAccessPolicy:
     Type: AWS::IAM::Policy
