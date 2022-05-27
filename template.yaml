@@ -61,7 +61,7 @@ Resources:
           BASEBIBLIOTEK_USERNAME: !Ref BasebibliotekUsername
           BASEBIBLIOTEK_PASSWORD: !Ref BasebibliotekPassword
           BASEBIBLIOTEK_URL: !Ref BasebibliotekUrl
-          SHARED_CONFIG_BUCKET: !Sub 'arn:aws:s3:::${SharedConfigBucketName}'
+          SHARED_CONFIG_BUCKET: !Ref SharedConfigBucketName
           LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH: !Ref LibCodeToAlmaCodeFilePath
           ILL_SERVER: !Ref IllServerUri
           ALMA_API_HOST: !Ref AlmaApiHost
