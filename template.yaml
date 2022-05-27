@@ -143,6 +143,7 @@ Resources:
       PolicyName: !Sub BasebibliotekTxtBucketAccessPolicy-${AWS::StackName}
       Roles:
         - !Ref ResourceSharingPartnerHandlerRole
+        - !Ref BasebibliotekFetchCronjobRole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -151,22 +152,6 @@ Resources:
               - 's3:*'
             Resource:
               - !Sub '${BasebibliotekTxtBucket.Arn}/*'
-
-  SharedConfigBucketAccessPolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: !Sub SharedConfigBucketAccessPolicy-${AWS::StackName}
-      Roles:
-        - !Ref ResourceSharingPartnerHandlerRole
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Action:
-              - 's3:GetObject'
-            Resource:
-              -  !Sub "arn:aws:s3:::${SharedConfigBucketName}/*"
-
 
   ReportBucketAccessPolicy:
     Type: AWS::IAM::Policy
