@@ -143,7 +143,6 @@ Resources:
       PolicyName: !Sub BasebibliotekTxtBucketAccessPolicy-${AWS::StackName}
       Roles:
         - !Ref ResourceSharingPartnerHandlerRole
-        - !Ref BasebibliotekFetchCronjobRole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
