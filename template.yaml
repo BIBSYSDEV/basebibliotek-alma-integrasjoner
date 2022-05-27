@@ -58,7 +58,6 @@ Resources:
       Environment:
         Variables:
           REPORT_BUCKET: !Sub 'arn:aws:::${ReportBucketName}-${AWS::AccountId}'
-          BASEBIBLIOTEK_XML_BUCKET: !Ref BasebibliotekXmlBucket
           BASEBIBLIOTEK_USERNAME: !Ref BasebibliotekUsername
           BASEBIBLIOTEK_PASSWORD: !Ref BasebibliotekPassword
           BASEBIBLIOTEK_URL: !Ref BasebibliotekUrl
