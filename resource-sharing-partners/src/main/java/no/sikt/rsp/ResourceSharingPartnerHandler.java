@@ -76,7 +76,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
         S3Driver driver = new S3Driver(s3Client, sharedConfigBucketName);
         String libCodeToAlmaCodeMappingFilePath = environment.readEnv(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY);
         logger.info("done setting up drivers and reading environment");
-
+        logger.info(sharedConfigBucketName);
         try {
             var bibNrFile = readFile(s3event);
             logger.info("done collecting bibNrFile");
