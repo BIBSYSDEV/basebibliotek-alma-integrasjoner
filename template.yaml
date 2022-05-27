@@ -2,22 +2,12 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
   AWS
-
   Sample SAM Template for AWS
-
 Parameters:
   BasebibliotekXmlBucketName:
     Type: String
-    Default: "basebibliotek-txt-files"
-    Description: Name of bucket for basebibliotek txt file
-  SharedConfigBucketName:
-    Type: String
-    Default: 'shared-config-bucket-dev'
-    Description: 'Bucket name for shared, persistent configuration files. Created manually before deploying pipeline.'
-  LibCodeToAlmaCodeFilePath:
-    Type: String
-    Default: '/libCode2AlmaCode.json'
-    Description: 'Path to the libCode to almaCode mapping file'    
+    Default: "basebibliotek-xml-file"
+    Description: Name of bucket for basebibliotek xml file
   ReportBucketName:
     Type: String
     Default: 'basebibliotek-report'
@@ -36,7 +26,6 @@ Parameters:
   AlmaApiHost:
     Type: String
     Default: 'https://api-eu.hosted.exlibrisgroup.com/almaws/v1/'
-
 Globals:
   Function:
     Timeout: 900
@@ -50,7 +39,6 @@ Globals:
 Resources:
   ApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
-
   ResourceSharingPartnerFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -61,8 +49,6 @@ Resources:
         Variables:
           REPORT_BUCKET: !Ref ReportBucketName
           BASEBIBLIOTEK_XML_BUCKET: !Ref BasebibliotekXmlBucket
-          SHARED_CONFIG_BUCKET: !Ref SharedConfigBucketName
-          LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH: !Ref LibCodeToAlmaCodeFilePath
           ILL_SERVER: !Ref IllServerUri
           ALMA_API_HOST: !Ref AlmaApiHost
           ALMA_APIKEY: '{{resolve:secretsmanager:ALMA_APIKEY:SecretString:ALMA_APIKEY}}'
@@ -77,7 +63,6 @@ Resources:
                 Rules:
                   - Name: suffix
                     Value: '.txt'
-
   BasebibliotekFetchCronjob:
     Type: AWS::Serverless::Function
     Properties:
@@ -95,7 +80,6 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: cron(0 18 * * ? *)
-
   ResourceSharingPartnerHandlerRole:
     Type: AWS::IAM::Role
     Properties:
@@ -106,7 +90,6 @@ Resources:
             Principal:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
-
   BasebibliotekFetchCronjobRole:
     Type: AWS::IAM::Role
     Properties:
@@ -117,8 +100,6 @@ Resources:
             Principal:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
-
-
   DefaultLambdaPermissions:
     Type: AWS::IAM::Policy
     Properties:
@@ -143,7 +124,6 @@ Resources:
       PolicyName: !Sub BasebibliotekXmlBucketAccessPolicy-${AWS::StackName}
       Roles:
         - !Ref ResourceSharingPartnerHandlerRole
-        - !Ref BasebibliotekFetchCronjobRole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -152,22 +132,6 @@ Resources:
               - 's3:*'
             Resource:
               - !Sub '${BasebibliotekXmlBucket.Arn}/*'
-
-  SharedConfigBucketAccessPolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: !Sub SharedConfigBucketAccessPolicy-${AWS::StackName}
-      Roles:
-        - !Ref ResourceSharingPartnerHandlerRole
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Action:
-              - 's3:GetObject'
-            Resource:
-              -  !Sub "arn:aws:s3:::${SharedConfigBucketName}/*"
-
 
   ReportBucketAccessPolicy:
     Type: AWS::IAM::Policy
@@ -194,7 +158,6 @@ Resources:
           - Id: DeleteContentAfter3Days
             Status: Enabled
             ExpirationInDays: 3
-
   ReportBucket:
     Type: AWS::S3::Bucket
     Properties:
