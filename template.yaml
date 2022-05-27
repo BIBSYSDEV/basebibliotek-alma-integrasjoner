@@ -57,8 +57,8 @@ Resources:
       Role: !GetAtt ResourceSharingPartnerHandlerRole.Arn
       Environment:
         Variables:
-          REPORT_BUCKET: !Sub 'arn:aws:s3:eu-west-1:${AWS::AccountId}:accesspoint/${ReportBucketName}-${AWS::AccountId}'
-          BASEBIBLIOTEK_XML_BUCKET: !Sub 'arn:aws:s3:eu-west-1:${AWS::AccountId}:accesspoint/${BasebibliotekXmlBucketName}-${AWS::AccountId}'
+          REPORT_BUCKET: !Sub 'arn:aws:::${ReportBucketName}-${AWS::AccountId}'
+          BASEBIBLIOTEK_XML_BUCKET: !Ref BasebibliotekXmlBucket
           BASEBIBLIOTEK_USERNAME: !Ref BasebibliotekUsername
           BASEBIBLIOTEK_PASSWORD: !Ref BasebibliotekPassword
           BASEBIBLIOTEK_URL: !Ref BasebibliotekUrl
