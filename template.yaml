@@ -2,22 +2,12 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
   AWS
-
   Sample SAM Template for AWS
-
 Parameters:
-  BasebibliotekTxtBucketName:
+  BasebibliotekXmlBucketName:
     Type: String
-    Default: "basebibliotek-txt-files"
-    Description: Name of bucket for basebibliotek txt file
-  SharedConfigBucketName:
-    Type: String
-    Default: 'shared-config-bucket'
-    Description: 'Bucket name for shared, persistent configuration files. Created manually before deploying pipeline.'
-  LibCodeToAlmaCodeFilePath:
-    Type: String
-    Default: '/libCode2AlmaCode.json'
-    Description: 'Path to the libCode to almaCode mapping file'    
+    Default: "basebibliotek-xml-file"
+    Description: Name of bucket for basebibliotek xml file
   ReportBucketName:
     Type: String
     Default: 'basebibliotek-report'
@@ -36,7 +26,6 @@ Parameters:
   AlmaApiHost:
     Type: String
     Default: 'https://api-eu.hosted.exlibrisgroup.com/almaws/v1/'
-
 Globals:
   Function:
     Timeout: 900
@@ -48,6 +37,7 @@ Globals:
       AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
       AllowOrigin: "'*'"
 Resources:
+
   ApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
 
@@ -60,18 +50,15 @@ Resources:
       Environment:
         Variables:
           REPORT_BUCKET: !Ref ReportBucketName
-          BASEBIBLIOTEK_TXT_BUCKET: !Ref BasebibliotekTxtBucket
-          SHARED_CONFIG_BUCKET: !Ref SharedConfigBucketName
-          LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH: !Ref LibCodeToAlmaCodeFilePath
+          BASEBIBLIOTEK_XML_BUCKET: !Ref BasebibliotekXmlBucket
           ILL_SERVER: !Ref IllServerUri
-          ALMA_CODE_LOOKUP_TABLE: !Ref AlmaLookupTable
           ALMA_API_HOST: !Ref AlmaApiHost
           ALMA_APIKEY: '{{resolve:secretsmanager:ALMA_APIKEY:SecretString:ALMA_APIKEY}}'
       Events:
         BasebibliotekFileUpload:
           Type: S3
           Properties:
-            Bucket: !Ref BasebibliotekTxtBucket
+            Bucket: !Ref BasebibliotekXmlBucket
             Events: 's3:ObjectCreated:*'
             Filter:
               S3Key:
@@ -90,7 +77,7 @@ Resources:
           BASEBIBLIOTEK_USERNAME: !Ref BasebibliotekUsername
           BASEBIBLIOTEK_PASSWORD: !Ref BasebibliotekPassword
           BASEBIBLIOTEK_URL: !Ref BasebibliotekUrl
-          BASEBIBLIOTEK_TXT_BUCKET:  !Ref BasebibliotekTxtBucket
+          BASEBIBLIOTEK_XML_BUCKET:  !Ref BasebibliotekXmlBucket
       Events:
         ScheduledUpdate:
           Type: Schedule
@@ -107,9 +94,6 @@ Resources:
             Principal:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
-          - Effect: Allow
-            Action: 's3:GetObject'
-            Resource: !Sub "arn:aws:s3:::${SharedConfigBucketName}/*"
 
   BasebibliotekFetchCronjobRole:
     Type: AWS::IAM::Role
@@ -121,7 +105,6 @@ Resources:
             Principal:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
-
 
   DefaultLambdaPermissions:
     Type: AWS::IAM::Policy
@@ -141,13 +124,12 @@ Resources:
               - lambda:InvokeFunction
             Resource: "*"
 
-  BasebibliotekTxtBucketAccessPolicy:
+  BasebibliotekXmlBucketAccessPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Sub BasebibliotekTxtBucketAccessPolicy-${AWS::StackName}
+      PolicyName: !Sub BasebibliotekXmlBucketAccessPolicy-${AWS::StackName}
       Roles:
         - !Ref ResourceSharingPartnerHandlerRole
-        - !Ref BasebibliotekFetchCronjobRole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -155,7 +137,7 @@ Resources:
             Action:
               - 's3:*'
             Resource:
-              - !Sub '${BasebibliotekTxtBucket.Arn}/*'
+              - !Sub '${BasebibliotekXmlBucket.Arn}/*'
 
   ReportBucketAccessPolicy:
     Type: AWS::IAM::Policy
@@ -172,17 +154,16 @@ Resources:
             Resource:
               - !Sub '${ReportBucket.Arn}/*'
 
-  BasebibliotekTxtBucket:
+  BasebibliotekXmlBucket:
     Type: AWS::S3::Bucket
     Properties:
       AccessControl: Private
-      BucketName: !Sub "${BasebibliotekTxtBucketName}-${AWS::AccountId}"
+      BucketName: !Sub "${BasebibliotekXmlBucketName}-${AWS::AccountId}"
       LifecycleConfiguration:
         Rules:
           - Id: DeleteContentAfter3Days
             Status: Enabled
             ExpirationInDays: 3
-
   ReportBucket:
     Type: AWS::S3::Bucket
     Properties:
