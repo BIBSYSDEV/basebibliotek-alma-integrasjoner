@@ -13,6 +13,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.hamcrest.core.IsNull.nullValue;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -46,6 +47,7 @@ import no.sikt.alma.generated.Emails;
 import no.sikt.alma.generated.IsoDetails;
 import no.sikt.alma.generated.NcipP2PDetails;
 import no.sikt.alma.generated.Partner;
+import no.sikt.alma.generated.PartnerDetails.LocateProfile;
 import no.sikt.alma.generated.Phones;
 import no.sikt.alma.generated.ProfileType;
 import no.sikt.alma.generated.Status;
@@ -772,6 +774,41 @@ public class ResourceSharingPartnerTest {
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
 
         assertThat(appender.getMessages(), containsString(LibCodeToAlmaCodeEntry.FIELD_IS_NULL_OR_EMPTY_MESSAGE));
+    }
+
+    @ParameterizedTest(name = "Should handle katsys codes differently")
+    @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
+    public void shouldPopulateLocateProfileInPartnerDetailsCorrectly(final String katsys) throws IOException {
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys)
+                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+                                  .withLandkode("1")
+                                  .build();
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        var s3Event = createS3Event(uri);
+
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
+            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, BIBNR_RESOLVABLE_TO_ALMA_CODE);
+
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+
+        var partners = resourceSharingPartnerHandler.getPartners();
+
+        // we should have only ony partner from the one record we have:
+        Partner partner = partners.get(0);
+
+        final LocateProfile locateProfile = partner.getPartnerDetails().getLocateProfile();
+        if (ALMA.equals(katsys) || BIBSYS.equals(katsys)) {
+            assertThat(locateProfile, notNullValue());
+            final String expectedLocateProfile = "47BIBSYS_NB";
+            assertThat(locateProfile.getValue(), is(expectedLocateProfile));
+        } else {
+            assertThat(locateProfile, nullValue());
+        }
     }
 
     private void assertIsoProfileDetailsPopulatedCorrectly(final Partner partner, final String bibnr) {

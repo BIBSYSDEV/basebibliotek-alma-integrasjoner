@@ -20,6 +20,7 @@ import no.sikt.alma.generated.IsoDetails;
 import no.sikt.alma.generated.NcipP2PDetails;
 import no.sikt.alma.generated.Partner;
 import no.sikt.alma.generated.PartnerDetails;
+import no.sikt.alma.generated.PartnerDetails.LocateProfile;
 import no.sikt.alma.generated.PartnerDetails.SystemType;
 import no.sikt.alma.generated.ProfileDetails;
 import no.sikt.alma.generated.ProfileType;
@@ -50,6 +51,7 @@ public class PartnerConverter {
     public static final String NNCIP_URI = "nncip_uri";
     public static final String TEMPORARILY_CLOSED = "U";
     public static final String PERMANENTLY_CLOSED = "X";
+    private static final String LOCATE_PROFILE_PREFIX = "47BIBSYS_";
 
     private final AlmaCodeProvider almaCodeProvider;
     private final String interLibraryLoanServer;
@@ -134,12 +136,27 @@ public class PartnerConverter {
         partnerDetails.setStatus(extractStatus(record));
 
         if (isAlmaOrBibsysLibrary(record)) {
-            partnerDetails.setInstitutionCode(almaCodeProvider.getAlmaCode(record.getBibnr()).orElse(""));
+            final String almaCode = almaCodeProvider.getAlmaCode(record.getBibnr()).orElse("");
+            partnerDetails.setInstitutionCode(almaCode);
+            final LocateProfile locateProfile = extractLocateProfile(almaCode);
+            partnerDetails.setLocateProfile(locateProfile);
         } else {
             partnerDetails.setInstitutionCode("");
+            partnerDetails.setLocateProfile(null);
         }
 
         return partnerDetails;
+    }
+
+    private LocateProfile extractLocateProfile(final String almaCode) {
+        if (StringUtils.isEmpty(almaCode)) {
+            return null;
+        } else {
+            final LocateProfile locateProfile = new LocateProfile();
+
+            locateProfile.setValue(LOCATE_PROFILE_PREFIX + almaCode);
+            return locateProfile;
+        }
     }
 
     private ProfileDetails extractProfileDetails(Record record) {
