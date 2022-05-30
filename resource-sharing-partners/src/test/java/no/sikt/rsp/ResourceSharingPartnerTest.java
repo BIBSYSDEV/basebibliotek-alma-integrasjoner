@@ -101,7 +101,7 @@ public class ResourceSharingPartnerTest {
     public static final String BIBLIOTEK_EKSPORT_BIBLEV_PATH = "/bibliotek/eksport/biblev";
     public static final Context CONTEXT = mock(Context.class);
     private static final String BIBNR_RESOLVABLE_TO_ALMA_CODE = "0030100";
-    private static final String RESOLVED_ALMA_CODE = "NB";
+    private static final String INSTITUTION_CODE = "47BIBSYS_NB";
     private FakeS3Client s3Client;
     private S3Driver s3Driver;
 
@@ -670,7 +670,7 @@ public class ResourceSharingPartnerTest {
 
         final String expectedInstitutionCode;
         if (ALMA.equals(katsys) || BIBSYS.equals(katsys)) {
-            expectedInstitutionCode = RESOLVED_ALMA_CODE;
+            expectedInstitutionCode = INSTITUTION_CODE;
         } else {
             expectedInstitutionCode = "";
         }
@@ -804,7 +804,7 @@ public class ResourceSharingPartnerTest {
         final LocateProfile locateProfile = partner.getPartnerDetails().getLocateProfile();
         if (ALMA.equals(katsys) || BIBSYS.equals(katsys)) {
             assertThat(locateProfile, notNullValue());
-            final String expectedLocateProfile = "47BIBSYS_NB";
+            final String expectedLocateProfile = "LOCATE_NB";
             assertThat(locateProfile.getValue(), is(expectedLocateProfile));
         } else {
             assertThat(locateProfile, nullValue());

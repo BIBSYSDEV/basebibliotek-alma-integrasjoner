@@ -51,7 +51,8 @@ public class PartnerConverter {
     public static final String NNCIP_URI = "nncip_uri";
     public static final String TEMPORARILY_CLOSED = "U";
     public static final String PERMANENTLY_CLOSED = "X";
-    private static final String LOCATE_PROFILE_PREFIX = "47BIBSYS_";
+    private static final String INSTITUTION_CODE_PREFIX = "47BIBSYS_";
+    private static final String LOCATE_PROFILE_VALUE_PREFIX = "LOCATE_";
 
     private final AlmaCodeProvider almaCodeProvider;
     private final String interLibraryLoanServer;
@@ -135,10 +136,10 @@ public class PartnerConverter {
         partnerDetails.setProfileDetails(extractProfileDetails(record));
         partnerDetails.setStatus(extractStatus(record));
 
-        if (isAlmaOrBibsysLibrary(record)) {
-            final String almaCode = almaCodeProvider.getAlmaCode(record.getBibnr()).orElse("");
-            partnerDetails.setInstitutionCode(almaCode);
-            final LocateProfile locateProfile = extractLocateProfile(almaCode);
+        final String almaCode = almaCodeProvider.getAlmaCode(record.getBibnr()).orElse("");
+        if (isAlmaOrBibsysLibrary(record) && StringUtils.isNotEmpty(almaCode)) {
+            partnerDetails.setInstitutionCode(INSTITUTION_CODE_PREFIX + almaCode);
+            final LocateProfile locateProfile = generateLocateProfile(almaCode);
             partnerDetails.setLocateProfile(locateProfile);
         } else {
             partnerDetails.setInstitutionCode("");
@@ -148,15 +149,10 @@ public class PartnerConverter {
         return partnerDetails;
     }
 
-    private LocateProfile extractLocateProfile(final String almaCode) {
-        if (StringUtils.isEmpty(almaCode)) {
-            return null;
-        } else {
-            final LocateProfile locateProfile = new LocateProfile();
-
-            locateProfile.setValue(LOCATE_PROFILE_PREFIX + almaCode);
-            return locateProfile;
-        }
+    private LocateProfile generateLocateProfile(final String almaCode) {
+        final LocateProfile locateProfile = new LocateProfile();
+        locateProfile.setValue(LOCATE_PROFILE_VALUE_PREFIX + almaCode);
+        return locateProfile;
     }
 
     private ProfileDetails extractProfileDetails(Record record) {
