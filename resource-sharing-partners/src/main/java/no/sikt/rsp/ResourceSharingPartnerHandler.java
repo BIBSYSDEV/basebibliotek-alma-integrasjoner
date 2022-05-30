@@ -42,9 +42,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     private List<Partner> partners;
 
     private final Environment environment;
-    public static final String BASEBIBLILOTEK_USERNAME_ENVIRONMENT_NAME = "BASEBIBLIOTEK_USERNAME";
-    public static final String BASEBIBLIOTEK_PASSWORD_ENVIRONMENT_NAME = "BASEBIBLIOTEK_PASSWORD";
-    public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_URL";
+    public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_REST_URL";
 
     private final BasebibliotekConnection basebibliotekConnection;
 
@@ -59,12 +57,10 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
         this.connection = new AlmaConnection(httpClient,
                                              UriWrapper.fromUri(environment.readEnv(ALMA_API_HOST)).getUri());
         this.basebibliotekConnection = new BasebibliotekConnection(httpClient,
-                                                                   UriWrapper.fromUri(environment.readEnv(
-                                                                       BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).getUri(),
-                                                                   environment.readEnv(
-                                                                       BASEBIBLIOTEK_PASSWORD_ENVIRONMENT_NAME),
-                                                                   environment.readEnv(
-                                                                       BASEBIBLILOTEK_USERNAME_ENVIRONMENT_NAME));
+                                                                   UriWrapper.fromUri(
+                                                                           environment.readEnv(
+                                                                               BASEBIBLIOTEK_URI_ENVIRONMENT_NAME))
+                                                                       .getUri());
     }
 
     @Override
