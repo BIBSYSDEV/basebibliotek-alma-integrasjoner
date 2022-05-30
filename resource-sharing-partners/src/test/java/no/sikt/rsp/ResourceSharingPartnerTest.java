@@ -96,7 +96,7 @@ public class ResourceSharingPartnerTest {
 
     private static final String NNCIP_SERVER = "https://nncipuri.org";
     private ResourceSharingPartnerHandler resourceSharingPartnerHandler;
-    public static final String BIBLIOTEK_EKSPORT_BIBLEV_PATH = "/bibliotek/eksport/biblev";
+    public static final String BIBLIOTEK_REST_PATH = "/basebibliotek/rest/bibnr/";
     public static final Context CONTEXT = mock(Context.class);
     private static final String BIBNR_RESOLVABLE_TO_ALMA_CODE = "0030100";
     private static final String RESOLVED_ALMA_CODE = "NB";
@@ -113,11 +113,7 @@ public class ResourceSharingPartnerTest {
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_API_HOST))
             .thenReturn(UriWrapper.fromUri(WireMocker.serverUri).toString());
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME))
-            .thenReturn(UriWrapper.fromUri(WireMocker.serverUri).addChild(BIBLIOTEK_EKSPORT_BIBLEV_PATH).toString());
-        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.BASEBIBLILOTEK_USERNAME_ENVIRONMENT_NAME))
-            .thenReturn(randomString());
-        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.BASEBIBLIOTEK_PASSWORD_ENVIRONMENT_NAME))
-            .thenReturn(randomString());
+            .thenReturn(UriWrapper.fromUri(WireMocker.serverUri).addChild(BIBLIOTEK_REST_PATH).toString());
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.SHARED_CONFIG_BUCKET_NAME_ENV_NAME))
             .thenReturn(SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY))
