@@ -120,7 +120,7 @@ public class PartnerConverter {
 
     private PartnerDetails extractPartnerDetailsFromRecord(Record record) {
         var partnerDetails = new PartnerDetails();
-        partnerDetails.setCode(extractIsilCode(record));
+        partnerDetails.setCode(extractCode(record));
         partnerDetails.setName(extractName(record));
         partnerDetails.setAvgSupplyTime(AVG_SUPPLY_TIME);
         partnerDetails.setDeliveryDelay(DELIVERY_DELAY);
@@ -249,10 +249,8 @@ public class PartnerConverter {
                    : StringUtils.EMPTY_STRING;
     }
 
-    private String extractIsilCode(Record record) {
-        return Objects.nonNull(record.getIsil())
-                   ? record.getIsil()
-                   : record.getLandkode().toUpperCase(Locale.ROOT) + ISIL_CODE_SEPARATOR + record.getBibnr();
+    private String extractCode(Record record) {
+        return record.getLandkode().toUpperCase(Locale.ROOT) + ISIL_CODE_SEPARATOR + record.getBibnr();
     }
 
     private static Status extractStatus(Record record) {

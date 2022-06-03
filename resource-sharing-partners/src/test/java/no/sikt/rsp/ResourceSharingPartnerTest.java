@@ -232,12 +232,7 @@ public class ResourceSharingPartnerTest {
         assertThat(partners, hasSize(expectedSize));
         if (yieldsError) {
             assertThat(appender.getMessages(), containsString(expectedLogMessage));
-        }
-        if (!yieldsError && withIsil) {
-            assertThat(partners.get(0).getPartnerDetails().getCode(),
-                       is(equalTo(basebibliotek.getRecord().get(0).getIsil())));
-        }
-        if (!yieldsError && !withIsil) {
+        } else {
             var recordWithoutIsilButContainingBibNrAndLandKode = basebibliotek.getRecord().get(0);
             var expectedCraftedPartnerCode =
                 recordWithoutIsilButContainingBibNrAndLandKode.getLandkode().toUpperCase(Locale.ROOT)
