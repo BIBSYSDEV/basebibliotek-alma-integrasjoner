@@ -25,7 +25,7 @@ dependencies {
     testImplementation group: 'com.github.bibsysdev', name: 'nvatestutils', version: '1.24.8'
     testImplementation group: 'org.hamcrest', name: 'hamcrest', version: '2.2'
     testImplementation group: 'org.hamcrest', name: 'hamcrest-core', version: '2.2'
-    testImplementation group: 'com.github.tomakehurst', name: 'wiremock-jre8', version: '2.32.0'
+    testImplementation group: 'com.github.tomakehurst', name: 'wiremock-jre8', version: '2.33.2'
     testImplementation group: 'org.mockito', name: 'mockito-core', version: '3.9.0'
     testImplementation group: 'com.github.bibsysdev', name: 'logutils', version: '1.24.8'
     implementation group: 'com.github.bibsysdev', name: 'nva-language', version: '1.0'
