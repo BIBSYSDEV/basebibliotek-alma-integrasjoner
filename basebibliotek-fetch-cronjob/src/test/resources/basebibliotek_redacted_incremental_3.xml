@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<BaseBibliotek export="2022-04-28 21:00:02" xmlns="http://nb.no/BaseBibliotek">
+  <record rid="3" tstamp="2018-12-06 07:56:14">
+    <bibkode>De FHH</bibkode>
+    <bibltype>UTL</bibltype>
+    <aut>redacted</aut>
+    <inst>Fachhochschule Hannover
+      Bibliothek</inst>
+    <inst_alt>University of Applied Sciences
+      Central Library</inst_alt>
+    <padr>Ricklinger Stadtweg 118</padr>
+    <ppostnr>DE-30459</ppostnr>
+    <ppoststed>HANNOVER</ppoststed>
+    <vadr>Ricklinger Stadtweg 118</vadr>
+    <vpostnr>DE-30459</vpostnr>
+    <vpoststed>HANNOVER</vpoststed>
+    <landkode>DE</landkode>
+    <tlf>12 34 56 78</tlf>
+    <tlf_fj>12 34 56 78</tlf_fj>
+    <epost_adr>redacted@redacted.no</epost_adr>
+    <epost_best>redacted@redacted.no</epost_best>
+    <url_hjem>http://www.fh-hannover.de/bibl/</url_hjem>
+    <fj_leder>redacted</fj_leder>
+  </record>
+</BaseBibliotek>

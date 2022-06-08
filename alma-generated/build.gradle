@@ -1,0 +1,49 @@
+plugins {
+    id 'java'
+}
+
+group 'no.sikt'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+repositories {
+    mavenCentral()
+}
+
+project.ext {
+    jaxbTargetDir = file("$buildDir/generated/sources/xjc")
+}
+
+sourceSets.main.java.srcDirs += jaxbTargetDir
+
+configurations {
+    jaxb
+}
+
+dependencies {
+    implementation group: 'org.glassfish.jaxb', name: 'jaxb-runtime', version: '3.0.2'
+    jaxb group: 'com.sun.xml.bind', name: 'jaxb-xjc', version: '3.0.2'
+    jaxb group: 'com.sun.xml.bind', name: 'jaxb-impl', version: '3.0.2'
+    jaxb group: 'javax.xml.bind', name: 'jaxb-api', version: '2.4.0-b180830.0359'
+    jaxb group: 'javax.activation', name:'javax.activation-api', version: '1.2.0'
+}
+
+task xsd2java() {
+    doLast {
+        jaxbTargetDir.mkdirs()
+        ant.taskdef(name: 'xjc', classname: 'com.sun.tools.xjc.XJC2Task', classpath: configurations.jaxb.asPath)
+        ant.jaxbTargetDir = jaxbTargetDir
+        ant.xjc(
+                destdir: '${jaxbTargetDir}',
+                package: 'no.sikt.alma.generated',
+                schema: 'https://developers.exlibrisgroup.com/wp-content/uploads/alma/xsd/rest_partners.xsd'
+        )
+    }
+}
+
+tasks.withType(JavaCompile) {
+    dependsOn(xsd2java)
+}

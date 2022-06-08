@@ -2,26 +2,41 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
   AWS
-
   Sample SAM Template for AWS
-
 Parameters:
   BasebibliotekXmlBucketName:
     Type: String
-    Default: "basebibliotek-xml-file"
-    Description: Name of bucket for basebibliotek xml file
+    Default: "basebibliotek-txt-files"
+    Description: Name of bucket for basebibliotek txt file
+  SharedConfigBucketName:
+    Type: String
+    Default: 'shared-config-bucket-dev'
+    Description: 'Bucket name for shared, persistent configuration files. Created manually before deploying pipeline.'
+  LibCodeToAlmaCodeFilePath:
+    Type: String
+    Default: 'fullLibCodeToAlmaCodeMapping.json'
+    Description: 'Path to the libCode to almaCode mapping file'
   ReportBucketName:
-    Type: 'AWS::SSM::Parameter::Value<String>'
+    Type: String
     Default: 'basebibliotek-report'
-  ReportEventBucketArn:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    Default: 'BasebibliotekReportArn'
-  ReportEventsBusArn:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    Default: 'ReportEventsBusArn'
-  ReportEventsBusName:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    Default: 'ReportEventsBusName'
+  BasebibliotekUsername:
+    Type: String
+    Default: "{{resolve:secretsmanager:basebibliotek-login:SecretString:USERNAME}}"
+  BasebibliotekPassword:
+    Type: String
+    Default: "{{resolve:secretsmanager:basebibliotek-login:SecretString:PASSWORD}}"
+  BasebibliotekExportUrl:
+    Type: String
+    Default: 'https://www.nb.no/baser/bibliotek/eksport/biblev/'
+  BasebibliotekRestUrl:
+    Type: String
+    Default: 'https://www.nb.no/basebibliotek/rest/bibnr/'
+  IllServerUri:
+    Type: String
+    Default: 'eu01.alma.exlibrisgroup.com'
+  AlmaApiHost:
+    Type: String
+    Default: 'https://api-eu.hosted.exlibrisgroup.com/almaws/v1/'
 
 Globals:
   Function:
@@ -45,10 +60,15 @@ Resources:
       Role: !GetAtt ResourceSharingPartnerHandlerRole.Arn
       Environment:
         Variables:
-          EVENTS_BUCKET: !Ref ReportBucketName
-          EVENTS_BUS: !Ref ReportEventsBusName
+          REPORT_BUCKET: !Sub 'arn:aws:s3:eu-west-1:${AWS::AccountId}:accesspoint/${ReportBucketName}-${AWS::AccountId}'
+          BASEBIBLIOTEK_REST_URL: !Ref BasebibliotekRestUrl
+          SHARED_CONFIG_BUCKET: !Ref SharedConfigBucketName
+          LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH: !Ref LibCodeToAlmaCodeFilePath
+          ILL_SERVER: !Ref IllServerUri
+          ALMA_API_HOST: !Ref AlmaApiHost
+          ALMA_APIKEY: '{{resolve:secretsmanager:ALMA_APIKEY:SecretString:ALMA_APIKEY}}'
       Events:
-        Basebibliotek:
+        BasebibliotekFileUpload:
           Type: S3
           Properties:
             Bucket: !Ref BasebibliotekXmlBucket
@@ -57,7 +77,25 @@ Resources:
               S3Key:
                 Rules:
                   - Name: suffix
-                    Value: '.xml'
+                    Value: '.txt'
+
+  BasebibliotekFetchCronjob:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: basebibliotek-fetch-cronjob
+      Handler: no.sikt.BasebibliotekFetchHandler::handleRequest
+      Role: !GetAtt BasebibliotekFetchCronjobRole.Arn
+      Environment:
+        Variables:
+          BASEBIBLIOTEK_USERNAME: !Ref BasebibliotekUsername
+          BASEBIBLIOTEK_PASSWORD: !Ref BasebibliotekPassword
+          BASEBIBLIOTEK_EXPORT_URL: !Ref BasebibliotekExportUrl
+          BASEBIBLIOTEK_XML_BUCKET:  !Ref BasebibliotekXmlBucket
+      Events:
+        ScheduledUpdate:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 18 * * ? *)
 
   ResourceSharingPartnerHandlerRole:
     Type: AWS::IAM::Role
@@ -70,12 +108,25 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
 
+  BasebibliotekFetchCronjobRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+
+
   DefaultLambdaPermissions:
     Type: AWS::IAM::Policy
     Properties:
       PolicyName: !Sub DefaultLambdaPermissions-${AWS::StackName}
       Roles:
         - !Ref ResourceSharingPartnerHandlerRole
+        - !Ref BasebibliotekFetchCronjobRole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -86,13 +137,13 @@ Resources:
               - logs:PutLogEvents
               - lambda:InvokeFunction
             Resource: "*"
-
   BasebibliotekXmlBucketAccessPolicy:
     Type: AWS::IAM::Policy
     Properties:
       PolicyName: !Sub BasebibliotekXmlBucketAccessPolicy-${AWS::StackName}
       Roles:
         - !Ref ResourceSharingPartnerHandlerRole
+        - !Ref BasebibliotekFetchCronjobRole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -100,12 +151,12 @@ Resources:
             Action:
               - 's3:*'
             Resource:
-              - !Sub '${BasebibliotekXmlBucket.Arn}/*'
+              - !Sub 'arn:aws:s3:::${BasebibliotekXmlBucketName}-${AWS::AccountId}*'
 
-  SendEventsToReports:
+  SharedConfigBucketAccessPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Sub SendEventsToReports-${AWS::StackName}
+      PolicyName: !Sub SharedConfigBucketAccessPolicy-${AWS::StackName}
       Roles:
         - !Ref ResourceSharingPartnerHandlerRole
       PolicyDocument:
@@ -115,13 +166,23 @@ Resources:
             Action:
               - 's3:*'
             Resource:
-              - !Sub '${ReportEventBucketArn}/*'
+              -  !Sub "arn:aws:s3:::${SharedConfigBucketName}*"
+
+
+  ReportBucketAccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub ReportBucketAccessPolicy-${AWS::StackName}
+      Roles:
+        - !Ref ResourceSharingPartnerHandlerRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
           - Effect: Allow
             Action:
-              - events:PutEvents
+              - 's3:*'
             Resource:
-              - !Ref ReportEventsBusArn
-
+              - !Sub 'arn:aws:s3:::${ReportBucketName}-${AWS::AccountId}*'
   BasebibliotekXmlBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -132,3 +193,9 @@ Resources:
           - Id: DeleteContentAfter3Days
             Status: Enabled
             ExpirationInDays: 3
+
+  ReportBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: !Sub "${ReportBucketName}-${AWS::AccountId}"
