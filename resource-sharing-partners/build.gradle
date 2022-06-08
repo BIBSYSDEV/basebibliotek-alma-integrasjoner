@@ -42,7 +42,7 @@ dependencies {
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
     implementation group: 'com.github.bibsysdev', name: 's3', version: '1.24.8'
     implementation group: 'com.github.bibsysdev', name: 'core', version: '1.24.8'
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.13.1'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.13.3'
     implementation project(path: ":basebibliotek-generated", configuration: 'default')
     implementation project(path: ":alma-generated", configuration: 'default')
 
