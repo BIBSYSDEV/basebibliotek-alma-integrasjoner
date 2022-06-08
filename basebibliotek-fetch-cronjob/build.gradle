@@ -36,7 +36,7 @@ dependencies {
 
     implementation 'org.apache.logging.log4j:log4j-api:2.17.1'
     implementation 'org.apache.logging.log4j:log4j-core:2.17.1'
-    implementation 'org.apache.logging.log4j:log4j-slf4j18-impl:2.17.1'
+    implementation 'org.apache.logging.log4j:log4j-slf4j18-impl:2.17.2'
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.7'
 
     implementation group: 'com.github.bibsysdev', name: 'core', version: '1.24.8'
