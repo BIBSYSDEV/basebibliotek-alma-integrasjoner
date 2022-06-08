@@ -75,6 +75,7 @@ import test.utils.RecordBuilder;
 import test.utils.RecordSpecification;
 import test.utils.WireMocker;
 
+@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class ResourceSharingPartnerTest {
 
     public static final RequestParametersEntity EMPTY_REQUEST_PARAMETERS = null;
@@ -82,7 +83,7 @@ public class ResourceSharingPartnerTest {
     public static final UserIdentityEntity EMPTY_USER_IDENTITY = null;
     public static final long SOME_FILE_SIZE = 100L;
     private static final String BASEBIBLIOTEK_0030100_XML = "bb_0030100.xml";
-    private final String LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH = "/libCodeToAlmaCodeMapping.json";
+    private static final String LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH = "/libCodeToAlmaCodeMapping.json";
     private static final String NO_0030100_ID = "NO-0030100";
     private static final String INVALID_BASEBIBLIOTEK_XML_STRING = "invalid";
     public static final String ALMA = "alma";
@@ -95,15 +96,17 @@ public class ResourceSharingPartnerTest {
     public static final int ILL_SERVER_PORT = 9001;
 
     private static final String NNCIP_SERVER = "https://nncipuri.org";
-    private ResourceSharingPartnerHandler resourceSharingPartnerHandler;
+    private static final String EMAIL_ADR = "adr@example.com";
+    private static final String EMAIL_BEST = "best@example.com";
+    private transient ResourceSharingPartnerHandler resourceSharingPartnerHandler;
     public static final String BIBLIOTEK_REST_PATH = "/basebibliotek/rest/bibnr/";
     public static final Context CONTEXT = mock(Context.class);
     private static final String BIBNR_RESOLVABLE_TO_ALMA_CODE = "0030100";
     private static final String RESOLVED_ALMA_CODE = "NB";
-    private FakeS3Client s3Client;
-    private S3Driver s3Driver;
+    private transient FakeS3Client s3Client;
+    private transient S3Driver s3Driver;
 
-    private final Environment mockedEnvironment = mock(Environment.class);
+    private static final Environment mockedEnvironment = mock(Environment.class);
 
     @BeforeEach
     public void init() throws IOException {
@@ -136,10 +139,9 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldBeAbleToReadAndPostRecordToAlma() throws IOException {
-        var bibNr = "0030100";
         var baseBibliotek0030100 = IoUtils.stringFromResources(Path.of(BASEBIBLIOTEK_0030100_XML));
-        WireMocker.mockBasebibliotekXml(baseBibliotek0030100, bibNr);
-        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
+        WireMocker.mockBasebibliotekXml(baseBibliotek0030100, BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
         var s3Event = createS3Event(uri);
         WireMocker.mockAlmaGetResponseNotFound();
         WireMocker.mockAlmaPostResponse();
@@ -152,10 +154,9 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldBeAbleToReadAndPutRecordToAlma() throws IOException {
-        var bibNr = "0030100";
         var baseBibliotek0030100 = IoUtils.stringFromResources(Path.of(BASEBIBLIOTEK_0030100_XML));
-        WireMocker.mockBasebibliotekXml(baseBibliotek0030100, bibNr);
-        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
+        WireMocker.mockBasebibliotekXml(baseBibliotek0030100, BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
         var s3Event = createS3Event(uri);
         WireMocker.mockAlmaGetResponse();
         WireMocker.mockAlmaPutResponse();
@@ -180,9 +181,8 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldLogExceptionWhenS3BucketFileCannotBeConvertedToBaseBibliotek() throws IOException {
-        var bibNr = "0030100";
-        WireMocker.mockBasebibliotekXml(INVALID_BASEBIBLIOTEK_XML_STRING, bibNr);
-        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
+        WireMocker.mockBasebibliotekXml(INVALID_BASEBIBLIOTEK_XML_STRING, BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
         var s3Event = createS3Event(uri);
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
     }
@@ -389,14 +389,12 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldExtractPartnerDetailsProfileDataNncipCorrectlyPreferringEmailBest() throws IOException {
-        final String emailBest = "best@example.com";
-        final String emailAdr = "adr@example.com";
 
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
                                   .withBibnr("1")
                                   .withLandkode("1")
-                                  .withEpostBest(emailBest)
-                                  .withEpostAdr(emailAdr)
+                                  .withEpostBest(EMAIL_BEST)
+                                  .withEpostAdr(EMAIL_ADR)
                                   .withEressurser(
                                       new EressurserBuilder().withNncipUri(NNCIP_SERVER)
                                           .build())
@@ -421,7 +419,7 @@ public class ResourceSharingPartnerTest {
         // we should have only ony partner from the one record we have:
         Partner partner = partners.get(0);
 
-        assertNncipProfileDetailsPopulatedCorrectly(partner, record.getBibnr(), emailBest);
+        assertNncipProfileDetailsPopulatedCorrectly(partner, record.getBibnr(), EMAIL_BEST);
     }
 
     @Test
@@ -497,14 +495,12 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldExtractProfileDetailsEmailPreferringEmailBest() throws IOException {
-        final String emailBest = "best@example.com";
-        final String emailAdr = "adr@example.com";
 
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
                                   .withBibnr("1")
                                   .withLandkode("1")
-                                  .withEpostBest(emailBest)
-                                  .withEpostAdr(emailAdr)
+                                  .withEpostBest(EMAIL_BEST)
+                                  .withEpostAdr(EMAIL_ADR)
                                   .build();
 
         var basebibliotekGenerator = new BasebibliotekGenerator(record);
@@ -524,7 +520,7 @@ public class ResourceSharingPartnerTest {
         // we should have only ony partner from the one record we have:
         Partner partner = partners.get(0);
 
-        assertEmailProfileDetailsPopulatedCorrectly(partner, emailBest);
+        assertEmailProfileDetailsPopulatedCorrectly(partner, EMAIL_BEST);
     }
 
     @Test
@@ -810,7 +806,6 @@ public class ResourceSharingPartnerTest {
     }
 
     private void assertEmails(Emails emails, Record record) {
-
         var emailBestShouldExist = Objects.nonNull(record.getEpostBest());
         var emailRegularShouldExist = Objects.nonNull(record.getEpostAdr());
         var expectedEmailsSize = (emailBestShouldExist ? 1 : 0) + (emailRegularShouldExist ? 1 : 0);
@@ -905,7 +900,7 @@ public class ResourceSharingPartnerTest {
         assertThat(address.isPreferred(), is(expectedPreferred));
         assertThat(address.getCity(), is(equalTo(expectedCity)));
         assertThat(address.getPostalCode(), is(equalTo(expectedPostalCode)));
-        assertThat(address.getCountry().getValue(), is(equalTo(expectedCountry.toUpperCase())));
+        assertThat(address.getCountry().getValue(), is(equalTo(expectedCountry.toUpperCase(Locale.getDefault()))));
         var expectedAddressTypes = List.of("billing", "claim", "order", "payment", "returns", "shipping");
         assertThat(address.getAddressTypes().getAddressType(), hasSize(expectedAddressTypes.size()));
         expectedAddressTypes.forEach(expectedAddressType -> assertThat(address.getAddressTypes().getAddressType(),
@@ -951,7 +946,7 @@ public class ResourceSharingPartnerTest {
 
     private static class FakeS3ClientThrowingException extends FakeS3Client {
 
-        private final String expectedErrorMessage;
+        private transient final String expectedErrorMessage;
 
         public FakeS3ClientThrowingException(String expectedErrorMessage) {
             super();

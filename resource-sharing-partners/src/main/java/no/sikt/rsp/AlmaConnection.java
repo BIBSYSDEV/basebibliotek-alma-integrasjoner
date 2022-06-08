@@ -22,9 +22,9 @@ public final class AlmaConnection {
     public static final String ALMA_API_HOST = "ALMA_API_HOST";
     public static final String PARTNERS_URL_PATH = "partners";
 
-    private final HttpClient httpClient;
-    private final URI almaApiHost;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private transient final HttpClient httpClient;
+    private transient final URI almaApiHost;
+    private transient final ObjectMapper objectMapper = new ObjectMapper();
 
     @JacocoGenerated
     public AlmaConnection() {

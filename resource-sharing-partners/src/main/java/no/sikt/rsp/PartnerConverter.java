@@ -51,9 +51,9 @@ public class PartnerConverter {
     public static final String TEMPORARILY_CLOSED = "U";
     public static final String PERMANENTLY_CLOSED = "X";
 
-    private final AlmaCodeProvider almaCodeProvider;
-    private final String interLibraryLoanServer;
-    private final BaseBibliotek baseBibliotek;
+    private transient final AlmaCodeProvider almaCodeProvider;
+    private transient final String interLibraryLoanServer;
+    private transient final BaseBibliotek baseBibliotek;
 
     public PartnerConverter(AlmaCodeProvider almaCodeProvider, String interLibraryLoanServer,
                             BaseBibliotek baseBibliotek) {
@@ -142,6 +142,7 @@ public class PartnerConverter {
         return partnerDetails;
     }
 
+    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     private ProfileDetails extractProfileDetails(Record record) {
         ProfileDetails details = new ProfileDetails();
 
@@ -277,6 +278,7 @@ public class PartnerConverter {
         return TEMPORARILY_CLOSED.equalsIgnoreCase(stengtStatus) || PERMANENTLY_CLOSED.equalsIgnoreCase(stengtStatus);
     }
 
+    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     private static boolean isDateInTheFuture(XMLGregorianCalendar date) {
         boolean future = true;
         if (Objects.nonNull(date)) {

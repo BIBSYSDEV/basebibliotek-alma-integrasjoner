@@ -49,24 +49,24 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
     private static final String TXT = ".txt";
     private static final String COULD_NOT_GET_ERROR_MESSAGE = "could not GET ";
 
-    private final S3Client s3Client;
-    private final HttpClient httpClient;
+    private transient final S3Client s3Client;
+    private transient final HttpClient httpClient;
 
     public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_EXPORT_URL";
     public static final String BASEBIBLILOTEK_USERNAME_ENVIRONMENT_NAME = "BASEBIBLIOTEK_USERNAME";
     public static final String BASEBIBLIOTEK_PASSWORD_ENVIRONMENT_NAME = "BASEBIBLIOTEK_PASSWORD";
     public static final String S3_BUCKET_ENVIRONMENT_NAME = "BASEBIBLIOTEK_XML_BUCKET";
-    private final String basebibliotekUri;
-    private final String basebibliotekUsername;
-    private final String basebibliotekPassword;
-    private final String s3BasebibliotekXmlBucket;
+    private transient final String basebibliotekUri;
+    private transient final String basebibliotekUsername;
+    private transient final String basebibliotekPassword;
+    private transient final String s3BasebibliotekXmlBucket;
 
-    private final String BASEBIBLIOTEK_RESPONSE_STATUS_ERROR = "could not connect to basebibliotek, Connection "
+    private transient final String BASEBIBLIOTEK_RESPONSE_STATUS_ERROR = "could not connect to basebibliotek, Connection "
                                                                + "responded with status: ";
 
     private static final String IMPORT_ALL_LIBRARIES = "bb-full.xml";
 
-    private final String basebibliotekAuthorization;
+    private transient final String basebibliotekAuthorization;
 
     @JacocoGenerated
     public BasebibliotekFetchHandler() {

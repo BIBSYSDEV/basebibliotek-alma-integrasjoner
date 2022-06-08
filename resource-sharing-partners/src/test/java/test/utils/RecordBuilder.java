@@ -6,14 +6,14 @@ import no.nb.basebibliotek.generated.Eressurser;
 import no.nb.basebibliotek.generated.Record;
 
 public class RecordBuilder {
-    private final BigInteger rid;
-    private final LocalDate timestamp;
-    private final String katsyst;
-    private String bibnr;
-    private String landkode;
-    private String epostBest;
-    private String epostAdr;
-    private Eressurser eressurser;
+    private transient final BigInteger rid;
+    private transient final LocalDate timestamp;
+    private transient final String katsyst;
+    private transient String bibnr;
+    private transient String landkode;
+    private transient String epostBest;
+    private transient String epostAdr;
+    private transient Eressurser eressurser;
 
     public RecordBuilder(BigInteger rid, LocalDate timestamp, String katsyst) {
         this.rid = rid;
