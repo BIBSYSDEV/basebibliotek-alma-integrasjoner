@@ -1,8 +1,4 @@
 
-group 'no.sikt'
-version '1.0-SNAPSHOT'
-
-
 project.ext {
     jaxbTargetDir = file("$buildDir/generated/sources/xjc")
 }
