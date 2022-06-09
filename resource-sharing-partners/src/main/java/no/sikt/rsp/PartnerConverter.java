@@ -51,9 +51,9 @@ public class PartnerConverter {
     public static final String TEMPORARILY_CLOSED = "U";
     public static final String PERMANENTLY_CLOSED = "X";
 
-    private transient final AlmaCodeProvider almaCodeProvider;
-    private transient final String interLibraryLoanServer;
-    private transient final BaseBibliotek baseBibliotek;
+    private final transient AlmaCodeProvider almaCodeProvider;
+    private final transient String interLibraryLoanServer;
+    private final transient BaseBibliotek baseBibliotek;
 
     public PartnerConverter(AlmaCodeProvider almaCodeProvider, String interLibraryLoanServer,
                             BaseBibliotek baseBibliotek) {

@@ -946,7 +946,7 @@ public class ResourceSharingPartnerTest {
 
     private static class FakeS3ClientThrowingException extends FakeS3Client {
 
-        private transient final String expectedErrorMessage;
+        private final transient String expectedErrorMessage;
 
         public FakeS3ClientThrowingException(String expectedErrorMessage) {
             super();

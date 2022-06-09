@@ -48,7 +48,7 @@ public class BasebibliotekGenerator {
 
     private transient BigInteger currentRid;
 
-    private transient final Collection<? extends Record> records;
+    private final transient Collection<? extends Record> records;
 
     public BasebibliotekGenerator(RecordSpecification specification) {
         this.currentRid = BigInteger.ONE;

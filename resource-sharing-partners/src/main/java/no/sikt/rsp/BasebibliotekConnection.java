@@ -21,8 +21,8 @@ public class BasebibliotekConnection {
     private static final String BASEBIBLIOTEK_RESPONSE_STATUS_ERROR = "could not connect to basebibliotek, Connection "
                                                                + "responded with status: ";
     private static final Logger logger = LoggerFactory.getLogger(BasebibliotekConnection.class);
-    private transient final URI basebibliotekHost;
-    private transient final HttpClient httpClient;
+    private final transient URI basebibliotekHost;
+    private final transient HttpClient httpClient;
 
     @JacocoGenerated
     public BasebibliotekConnection() {

@@ -6,9 +6,9 @@ import no.nb.basebibliotek.generated.Eressurser;
 import no.nb.basebibliotek.generated.Record;
 
 public class RecordBuilder {
-    private transient final BigInteger rid;
-    private transient final LocalDate timestamp;
-    private transient final String katsyst;
+    private final transient BigInteger rid;
+    private final transient LocalDate timestamp;
+    private final transient String katsyst;
     private transient String bibnr;
     private transient String landkode;
     private transient String epostBest;

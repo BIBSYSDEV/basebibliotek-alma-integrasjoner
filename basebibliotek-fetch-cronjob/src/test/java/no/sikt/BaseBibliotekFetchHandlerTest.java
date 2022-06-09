@@ -86,7 +86,8 @@ public class BaseBibliotekFetchHandlerTest {
         var expectedMessage =
             "could not connect to basebibliotek, Connection responded with status: " + HttpURLConnection.HTTP_FORBIDDEN;
         mockedGetRequestWithSpecifiedStatusCode(HttpURLConnection.HTTP_FORBIDDEN, BIBLIOTEK_EKSPORT_BIBLEV_PATH);
-        assertThrows(RuntimeException.class, () -> baseBibliotekFetchHandler.handleRequest(new ScheduledEvent(), CONTEXT));
+        assertThrows(RuntimeException.class, () -> baseBibliotekFetchHandler
+            .handleRequest(new ScheduledEvent(), CONTEXT));
         assertThat(appender.getMessages(), containsString(expectedMessage));
     }
 
@@ -99,11 +100,13 @@ public class BaseBibliotekFetchHandlerTest {
         var basebibliotekXML2 = IoUtils.stringFromResources(
             Path.of(BASEBIBLIOTEK_REDACTED_INCREMENTAL_2_XML));
         mockedGetRequestWithSpecifiedStatusCode(HttpURLConnection.HTTP_FORBIDDEN,
-                                                BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_04_27_XML);
+                                                BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/"
+                                                + BASEBIBLIOTEK_BB_2022_04_27_XML);
         mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_05_04_XML,
                               basebibliotekXML2);
 
-        assertThrows(RuntimeException.class, () -> baseBibliotekFetchHandler.handleRequest(new ScheduledEvent(), CONTEXT));
+        assertThrows(RuntimeException.class, () -> baseBibliotekFetchHandler
+            .handleRequest(new ScheduledEvent(), CONTEXT));
 
         var expectedMessage =
             "could not GET " + BASEBIBLIOTEK_BB_2022_04_27_XML;
@@ -218,7 +221,7 @@ public class BaseBibliotekFetchHandlerTest {
 
     class RequestBodyMatches implements ArgumentMatcher<RequestBody> {
 
-        private transient final RequestBody left;
+        private final transient RequestBody left;
         transient String leftContent = "";
         transient String rightContent = "";
 
