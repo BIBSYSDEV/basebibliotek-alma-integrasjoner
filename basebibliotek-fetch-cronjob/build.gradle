@@ -1,22 +1,5 @@
-plugins {
-    id 'java'
-    id 'checkstyle'
-    id 'pmd'
-    id 'jacoco'
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
-    id 'org.owasp.dependencycheck' version '7.0.4.1'
-    id 'nebula.lint' version '17.7.0'
-}
-
-sourceCompatibility = JavaVersion.VERSION_11  // source-code version and must be <= targetCompatibility
-targetCompatibility = JavaVersion.VERSION_11 // bytecode target version
-
 group 'no.sikt'
 version '1.0-SNAPSHOT'
-
-repositories {
-    mavenCentral()
-}
 
 dependencies {
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.8.2'
