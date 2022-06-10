@@ -18,11 +18,11 @@ import org.slf4j.LoggerFactory;
 
 public class BasebibliotekConnection {
     private static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_URL";
-    private final String BASEBIBLIOTEK_RESPONSE_STATUS_ERROR = "could not connect to basebibliotek, Connection "
+    private static final String BASEBIBLIOTEK_RESPONSE_STATUS_ERROR = "could not connect to basebibliotek, Connection "
                                                                + "responded with status: ";
     private static final Logger logger = LoggerFactory.getLogger(BasebibliotekConnection.class);
-    private final URI basebibliotekHost;
-    private final HttpClient httpClient;
+    private final transient URI basebibliotekHost;
+    private final transient HttpClient httpClient;
 
     @JacocoGenerated
     public BasebibliotekConnection() {

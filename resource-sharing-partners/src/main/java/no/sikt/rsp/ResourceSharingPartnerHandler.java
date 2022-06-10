@@ -36,15 +36,15 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     public static final String SHARED_CONFIG_BUCKET_NAME_ENV_NAME = "SHARED_CONFIG_BUCKET";
     public static final String LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY =
         "LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH";
-    private final S3Client s3Client;
-    private final AlmaConnection connection;
+    private final transient S3Client s3Client;
+    private final transient AlmaConnection connection;
 
-    private List<Partner> partners;
+    private transient List<Partner> partners;
 
-    private final Environment environment;
+    private final transient Environment environment;
     public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_REST_URL";
 
-    private final BasebibliotekConnection basebibliotekConnection;
+    private final transient BasebibliotekConnection basebibliotekConnection;
 
     @JacocoGenerated
     public ResourceSharingPartnerHandler() {
@@ -64,6 +64,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     }
 
     @Override
+    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     public Integer handleRequest(S3Event s3event, Context context) {
         logger.info(EVENT + gson.toJson(s3event));
 

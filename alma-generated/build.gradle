@@ -1,17 +1,3 @@
-plugins {
-    id 'java'
-}
-
-group 'no.sikt'
-version '1.0-SNAPSHOT'
-
-repositories {
-    mavenCentral()
-}
-
-repositories {
-    mavenCentral()
-}
 
 project.ext {
     jaxbTargetDir = file("$buildDir/generated/sources/xjc")

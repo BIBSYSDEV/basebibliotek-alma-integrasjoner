@@ -8,7 +8,7 @@ import no.nb.basebibliotek.generated.Eressurser;
 
 public class EressurserBuilder {
 
-    private final Map<String, String> valueMap = new HashMap<>();
+    private static final Map<String, String> valueMap = new HashMap<>();
 
     public EressurserBuilder withNncipUri(String value) {
         valueMap.put("nncip_uri", value);
