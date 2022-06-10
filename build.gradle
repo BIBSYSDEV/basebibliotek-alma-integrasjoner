@@ -4,7 +4,6 @@ plugins {
     id 'pmd'
     id 'jacoco'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
-    id 'org.owasp.dependencycheck' version '7.0.4.1'
     id 'nebula.lint' version '17.7.0'
 }
 
@@ -17,8 +16,6 @@ version '1.0-SNAPSHOT'
 
 allprojects {
     apply plugin: 'java'
-    apply plugin: 'nebula.lint'
-    gradleLint.rules = ['all-dependency']
 
     repositories {
         mavenCentral()
@@ -33,6 +30,8 @@ subprojects {
             apply plugin: 'pmd'
             apply plugin: 'jacoco'
             apply plugin: 'com.github.johnrengelman.shadow'
+            apply plugin: 'nebula.lint'
+            gradleLint.rules = ['all-dependency']
         }
 
 }
