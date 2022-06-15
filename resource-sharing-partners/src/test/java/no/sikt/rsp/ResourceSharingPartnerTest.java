@@ -180,11 +180,13 @@ public class ResourceSharingPartnerTest {
     }
 
     @Test
-    public void shouldLogExceptionWhenS3BucketFileCannotBeConvertedToBaseBibliotek() throws IOException {
+    public void shouldSkipWhenCannotBeConvertedToBaseBibliotek() throws IOException {
         WireMocker.mockBasebibliotekXml(INVALID_BASEBIBLIOTEK_XML_STRING, BIBNR_RESOLVABLE_TO_ALMA_CODE);
         var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
         var s3Event = createS3Event(uri);
-        assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
+        var expectedSuccessfulConversion = 0;
+        var numberOfSuccessfulConversion = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        assertThat(numberOfSuccessfulConversion, is(equalTo(expectedSuccessfulConversion)));
     }
 
     @Test
@@ -620,12 +622,14 @@ public class ResourceSharingPartnerTest {
     }
 
     @Test
-    public void shouldLogErrorWhenConnectingToBasebibliotekFails() throws IOException {
+    public void shouldSkipWhenBasebibliotekFails() throws IOException {
         var bibNr = randomString();
         var uri = s3Driver.insertFile(randomS3Path(), bibNr);
         var s3Event = createS3Event(uri);
         WireMocker.mockBassebibliotekFailure(bibNr);
-        assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
+        var expectedNumberOfSuccessfulConversion = 0;
+        var numberOfSuccessFulConversion = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        assertThat(numberOfSuccessFulConversion, is(equalTo(expectedNumberOfSuccessfulConversion)));
     }
 
     @ParameterizedTest(name = "Should handle katsys codes differently")

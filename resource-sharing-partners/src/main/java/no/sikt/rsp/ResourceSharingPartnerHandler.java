@@ -10,9 +10,11 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.sikt.alma.generated.Partner;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
@@ -39,7 +41,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     private final transient S3Client s3Client;
     private final transient AlmaConnection connection;
 
-    private transient List<Partner> partners;
+    private final transient List<Partner> partners;
 
     private final transient Environment environment;
     public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_REST_URL";
@@ -61,6 +63,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
                                                                            environment.readEnv(
                                                                                BASEBIBLIOTEK_URI_ENVIRONMENT_NAME))
                                                                        .getUri());
+        this.partners = new ArrayList<>();
     }
 
     @Override
@@ -82,15 +85,35 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
             logger.info("done collecting instreg");
             AlmaCodeProvider almaCodeProvider = new AlmaCodeProvider(instRegAsJson);
 
-            partners =
-                getBibNrList(bibNrFile).stream()
-                    .map(basebibliotekConnection::getBasebibliotek)
-                    .map(baseBibliotek -> new PartnerConverter(almaCodeProvider, illServer, baseBibliotek).toPartners())
-                    .flatMap(List::stream)
-                    .collect(Collectors.toList());
-            return toIntExact(partners.stream()
-                                  .filter(this::sendToAlma)
-                                  .count());
+            var basebiblioteks = new ArrayList<BaseBibliotek>();
+            var bibnrList = getBibNrList(bibNrFile);
+            for (String bibnr : bibnrList) {
+                try {
+                    basebiblioteks.add(basebibliotekConnection.getBasebibliotek(bibnr));
+                } catch (Exception e) {
+                    logger.info("Could not fetch basebibliotek", e);
+                }
+            }
+            for (BaseBibliotek baseBibliotek : basebiblioteks) {
+                try {
+                    partners.addAll(new PartnerConverter(almaCodeProvider, illServer, baseBibliotek).toPartners());
+                } catch (Exception e) {
+                    logger.info("Could not convert to partner", e);
+                }
+            }
+            var counter = 0;
+            for (Partner partner : partners) {
+                try {
+                    if (sendToAlma(partner)) {
+                        counter++;
+                    }
+                    sendToAlma(partner);
+                } catch (Exception e) {
+                    logger.info("Could not contact Alma", e);
+                }
+            }
+
+            return counter;
         } catch (Exception exception) {
             throw logErrorAndThrowException(exception);
         }
