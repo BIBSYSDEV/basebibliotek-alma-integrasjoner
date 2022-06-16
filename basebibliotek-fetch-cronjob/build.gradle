@@ -1,115 +1,32 @@
-plugins {
-    id 'java'
-    id 'checkstyle'
-    id 'pmd'
-    id 'jacoco'
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
-    id 'org.owasp.dependencycheck' version '7.0.4.1'
-    id 'nebula.lint' version '17.7.0'
-}
-
-sourceCompatibility = JavaVersion.VERSION_11  // source-code version and must be <= targetCompatibility
-targetCompatibility = JavaVersion.VERSION_11 // bytecode target version
-
-group 'no.sikt'
-version '1.0-SNAPSHOT'
-
-repositories {
-    mavenCentral()
-}
 
 dependencies {
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.8.2'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
-    testImplementation group: 'com.github.bibsysdev', name: 'nvatestutils', version: '1.24.8'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.8.2'
+    testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.8.2'
+    testImplementation group: 'com.github.bibsysdev', name: 'nvatestutils', version: '1.24.18'
+    testImplementation group: 'com.github.bibsysdev', name: 'logutils', version: '1.24.18'
     testImplementation group: 'org.hamcrest', name: 'hamcrest', version: '2.2'
     testImplementation group: 'org.hamcrest', name: 'hamcrest-core', version: '2.2'
-    testImplementation group: 'org.mockito', name: 'mockito-core', version: '3.9.0'
-    testImplementation group: 'com.github.bibsysdev', name: 'logutils', version: '1.24.8'
-    testImplementation "com.github.tomakehurst:wiremock-jre8:2.32.0"
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: '4.3.1'
+    testImplementation group: 'com.github.tomakehurst', name: 'wiremock-jre8', version: '2.33.2'
 
     implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.1'
     implementation group: 'com.amazonaws', name: 'aws-lambda-java-log4j2', version: '1.5.1'
     implementation group: 'com.amazonaws', name: 'aws-lambda-java-events', version: '3.11.0'
-    implementation group: 'software.amazon.awssdk', name: 's3', version: '2.17.175'
+    implementation group: 'software.amazon.awssdk', name: 's3', version: '2.17.191'
 
-    implementation 'org.apache.logging.log4j:log4j-api:2.17.1'
-    implementation 'org.apache.logging.log4j:log4j-core:2.17.1'
-    implementation 'org.apache.logging.log4j:log4j-slf4j18-impl:2.17.1'
-    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.7'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.17.2'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.17.2'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j18-impl', version: '2.17.2'
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.36'
 
-    implementation group: 'com.github.bibsysdev', name: 'core', version: '1.24.8'
-    implementation group: 'com.github.bibsysdev', name: 's3', version: '1.24.8'
+    implementation group: 'com.github.bibsysdev', name: 'core', version: '1.24.18'
+    implementation group: 'com.github.bibsysdev', name: 's3', version: '1.24.18'
     implementation group: 'com.github.bibsysdev', name: 'nva-language', version: '1.0'
     implementation project(path: ":basebibliotek-generated", configuration: 'default')
 
     shadowJar {
         archiveClassifier.set('')
         zip64 true
-    }
-}
-
-test {
-    useJUnitPlatform()
-    failFast = true
-    finalizedBy jacocoTestReport
-}
-
-// We don't want a jar, just a fatJar
-jar.enabled = false
-project.tasks.build.dependsOn project.tasks.shadowJar
-
-pmd {
-    ruleSetConfig = rootProject.resources.text.fromFile('config/pmd/ruleset.xml')
-    ruleSets = []
-    ignoreFailures = false
-}
-
-checkstyle {
-    configFile = rootProject.resources.text.fromFile('config/checkstyle/checkstyle.xml').asFile()
-    showViolations = true
-}
-
-tasks.withType(Checkstyle) {
-    reports {
-        xml.enabled false
-        html.enabled true
-        html.stylesheet rootProject.resources.text.fromFile('config/checkstyle/checkstyle-simple.xsl')
-    }
-}
-
-jacocoTestReport {
-    reports {
-        xml.enabled false
-        csv.enabled false
-        html.destination file("${buildDir}/reports/jacoco")
-    }
-}
-
-jacoco {
-    toolVersion = "0.8.5"
-}
-
-check.dependsOn jacocoTestCoverageVerification
-jacocoTestCoverageVerification.dependsOn(jacocoTestReport)
-
-jacocoTestCoverageVerification {
-    violationRules {
-        rule {
-            limit {
-                counter = 'METHOD'
-                value = 'COVEREDRATIO'
-                minimum = 1.00
-            }
-        }
-
-        rule {
-            limit {
-                counter = 'CLASS'
-                value = 'COVEREDRATIO'
-                minimum = 1.00
-            }
-        }
     }
 }

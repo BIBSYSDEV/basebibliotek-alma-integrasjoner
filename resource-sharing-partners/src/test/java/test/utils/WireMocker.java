@@ -61,11 +61,11 @@ public class WireMocker {
     }
 
     public static void mockBasebibliotekXml(String basebibliotek, String bibNr) {
-        stubFor(get(urlPathMatching("/bibliotek/eksport/biblev/" + bibNr)).willReturn(ok().withBody(basebibliotek)));
+        stubFor(get(urlPathMatching("/basebibliotek/rest/bibnr/" + bibNr)).willReturn(ok().withBody(basebibliotek)));
     }
 
     public static void mockBassebibliotekFailure(String bibNr) {
-        stubFor(get(urlPathMatching("/bibliotek/eksport/biblev/" + bibNr)).willReturn(forbidden()));
+        stubFor(get(urlPathMatching("/basebibliotek/rest/bibnr/" + bibNr)).willReturn(forbidden()));
     }
 
 

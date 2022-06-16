@@ -19,7 +19,7 @@ public class AlmaCodeProvider {
     /* default */ static final String EMPTY_MAPPING_TABLE_MESSAGE = "Alma code mapping table is empty.";
     /* default */ static final String INVALID_JSON_MESSAGE = "Alma code mapping JSON is invalid.";
 
-    private final Map<String, String> libCodeToAlmaCodeMap = new ConcurrentHashMap<>();
+    private static final Map<String, String> libCodeToAlmaCodeMap = new ConcurrentHashMap<>();
 
     public AlmaCodeProvider(final String jsonConfig) {
         if (StringUtils.isNotEmpty(jsonConfig)) {

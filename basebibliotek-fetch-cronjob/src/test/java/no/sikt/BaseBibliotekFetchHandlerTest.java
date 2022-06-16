@@ -8,16 +8,13 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.ScheduledEvent;
@@ -27,8 +24,6 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 import no.unit.nva.stubs.WiremockHttpClient;
 import nva.commons.core.Environment;
@@ -53,14 +48,15 @@ public class BaseBibliotekFetchHandlerTest {
     private static final String BASEBIBLIOTEK_BB_2022_04_27_XML = "bb-2022-04-27.xml";
     private static final String BASEBIBLIOTEK_BB_2022_05_04_XML = "bb-2022-05-04.xml";
     private static final String BASEBIBLIOTEK_BB_FULL_XML = "bb-full.xml";
-    private WireMockServer httpServer;
+    public static final String BASEBIBLIOTEK_URL_HTML = "basebibliotek-url.html";
+    private transient WireMockServer httpServer;
 
-    private BasebibliotekFetchHandler baseBibliotekFetchHandler;
+    private transient BasebibliotekFetchHandler baseBibliotekFetchHandler;
     public static final Context CONTEXT = mock(Context.class);
 
-    private S3Client s3Client;
+    private transient S3Client s3Client;
 
-    private TestAppender appender;
+    private transient TestAppender appender;
 
     @BeforeEach
     public void init() {
@@ -87,30 +83,30 @@ public class BaseBibliotekFetchHandlerTest {
 
     @Test
     public void shouldLogExceptionsWhenBasebibliotekRefusesConnection() {
-        var scheduledEvent = new ScheduledEvent();
-
         var expectedMessage =
             "could not connect to basebibliotek, Connection responded with status: " + HttpURLConnection.HTTP_FORBIDDEN;
         mockedGetRequestWithSpecifiedStatusCode(HttpURLConnection.HTTP_FORBIDDEN, BIBLIOTEK_EKSPORT_BIBLEV_PATH);
-        assertThrows(RuntimeException.class, () -> baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT));
+        assertThrows(RuntimeException.class, () -> baseBibliotekFetchHandler
+            .handleRequest(new ScheduledEvent(), CONTEXT));
         assertThat(appender.getMessages(), containsString(expectedMessage));
     }
 
     @Test
     public void shouldLogExceptionWhenBasebibliotekXmlGetRequestFails() {
         var basebibliotekUrlsAsHtml = IoUtils.stringFromResources(
-            Path.of("basebibliotek-url.html"));
+            Path.of(BASEBIBLIOTEK_URL_HTML));
         mockedGetRequestThatReturnsSpecifiedResponse(basebibliotekUrlsAsHtml);
 
         var basebibliotekXML2 = IoUtils.stringFromResources(
             Path.of(BASEBIBLIOTEK_REDACTED_INCREMENTAL_2_XML));
         mockedGetRequestWithSpecifiedStatusCode(HttpURLConnection.HTTP_FORBIDDEN,
-                                                BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_04_27_XML);
+                                                BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/"
+                                                + BASEBIBLIOTEK_BB_2022_04_27_XML);
         mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_05_04_XML,
                               basebibliotekXML2);
 
-        var scheduledEvent = new ScheduledEvent();
-        assertThrows(RuntimeException.class, () -> baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT));
+        assertThrows(RuntimeException.class, () -> baseBibliotekFetchHandler
+            .handleRequest(new ScheduledEvent(), CONTEXT));
 
         var expectedMessage =
             "could not GET " + BASEBIBLIOTEK_BB_2022_04_27_XML;
@@ -121,7 +117,7 @@ public class BaseBibliotekFetchHandlerTest {
     public void shouldCollectListOfBibnrAndUploadThemTos3() {
 
         var basebibliotekUrlsAsHtml = IoUtils.stringFromResources(
-            Path.of("basebibliotek-url.html"));
+            Path.of(BASEBIBLIOTEK_URL_HTML));
         mockedGetRequestThatReturnsSpecifiedResponse(basebibliotekUrlsAsHtml);
 
         var basebibliotekXML1 = IoUtils.stringFromResources(
@@ -157,7 +153,7 @@ public class BaseBibliotekFetchHandlerTest {
     @Test
     public void shouldHandleS3Exceptions() {
         var basebibliotekUrlsAsHtml = IoUtils.stringFromResources(
-            Path.of("basebibliotek-url.html"));
+            Path.of(BASEBIBLIOTEK_URL_HTML));
         mockedGetRequestThatReturnsSpecifiedResponse(basebibliotekUrlsAsHtml);
 
         var basebibliotekXML1 = IoUtils.stringFromResources(
@@ -179,7 +175,7 @@ public class BaseBibliotekFetchHandlerTest {
     @Test
     public void shouldLogRecordsThatAreMissingBibNr() {
         var basebibliotekUrlsAsHtml = IoUtils.stringFromResources(
-            Path.of("basebibliotek-url.html"));
+            Path.of(BASEBIBLIOTEK_URL_HTML));
         mockedGetRequestThatReturnsSpecifiedResponse(basebibliotekUrlsAsHtml);
 
         var basebibliotekXML1 = IoUtils.stringFromResources(
@@ -225,9 +221,9 @@ public class BaseBibliotekFetchHandlerTest {
 
     class RequestBodyMatches implements ArgumentMatcher<RequestBody> {
 
-        private final RequestBody left;
-        String leftContent = "";
-        String rightContent = "";
+        private final transient RequestBody left;
+        transient String leftContent = "";
+        transient String rightContent = "";
 
         public RequestBodyMatches(RequestBody left) {
             this.left = left;

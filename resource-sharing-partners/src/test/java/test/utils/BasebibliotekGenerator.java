@@ -46,9 +46,9 @@ public class BasebibliotekGenerator {
     public static final String HTTP_NB_NO_BASE_BIBLIOTEK_NAME_SPACE = "http://nb.no/BaseBibliotek";
     private static final int DAY_IN_MILLI_SECONDS = 1000 * 60 * 60 * 24;
 
-    private BigInteger currentRid;
+    private transient BigInteger currentRid;
 
-    private final Collection<? extends Record> records;
+    private final transient Collection<? extends Record> records;
 
     public BasebibliotekGenerator(RecordSpecification specification) {
         this.currentRid = BigInteger.ONE;
@@ -66,6 +66,7 @@ public class BasebibliotekGenerator {
             specification.getStengt()));
     }
 
+    @SuppressWarnings("PMD.NullAssignment")
     public BasebibliotekGenerator(Record... records) {
         this.currentRid = null; // not relevant as we do not call generateRecordsFromSpecificationList here
         this.records = Arrays.asList(records);

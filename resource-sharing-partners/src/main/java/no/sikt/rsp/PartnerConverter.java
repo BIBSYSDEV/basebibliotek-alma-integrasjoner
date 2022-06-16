@@ -54,9 +54,9 @@ public class PartnerConverter {
     private static final String INSTITUTION_CODE_PREFIX = "47BIBSYS_";
     private static final String LOCATE_PROFILE_VALUE_PREFIX = "LOCATE_";
 
-    private final AlmaCodeProvider almaCodeProvider;
-    private final String interLibraryLoanServer;
-    private final BaseBibliotek baseBibliotek;
+    private final transient AlmaCodeProvider almaCodeProvider;
+    private final transient String interLibraryLoanServer;
+    private final transient BaseBibliotek baseBibliotek;
 
     public PartnerConverter(AlmaCodeProvider almaCodeProvider, String interLibraryLoanServer,
                             BaseBibliotek baseBibliotek) {
@@ -123,7 +123,7 @@ public class PartnerConverter {
 
     private PartnerDetails extractPartnerDetailsFromRecord(Record record) {
         var partnerDetails = new PartnerDetails();
-        partnerDetails.setCode(extractIsilCode(record));
+        partnerDetails.setCode(extractCode(record));
         partnerDetails.setName(extractName(record));
         partnerDetails.setAvgSupplyTime(AVG_SUPPLY_TIME);
         partnerDetails.setDeliveryDelay(DELIVERY_DELAY);
@@ -155,6 +155,7 @@ public class PartnerConverter {
         return locateProfile;
     }
 
+    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     private ProfileDetails extractProfileDetails(Record record) {
         ProfileDetails details = new ProfileDetails();
 
@@ -262,10 +263,8 @@ public class PartnerConverter {
                    : StringUtils.EMPTY_STRING;
     }
 
-    private String extractIsilCode(Record record) {
-        return Objects.nonNull(record.getIsil())
-                   ? record.getIsil()
-                   : record.getLandkode().toUpperCase(Locale.ROOT) + ISIL_CODE_SEPARATOR + record.getBibnr();
+    private String extractCode(Record record) {
+        return record.getLandkode().toUpperCase(Locale.ROOT) + ISIL_CODE_SEPARATOR + record.getBibnr();
     }
 
     private static Status extractStatus(Record record) {
@@ -292,6 +291,7 @@ public class PartnerConverter {
         return TEMPORARILY_CLOSED.equalsIgnoreCase(stengtStatus) || PERMANENTLY_CLOSED.equalsIgnoreCase(stengtStatus);
     }
 
+    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     private static boolean isDateInTheFuture(XMLGregorianCalendar date) {
         boolean future = true;
         if (Objects.nonNull(date)) {

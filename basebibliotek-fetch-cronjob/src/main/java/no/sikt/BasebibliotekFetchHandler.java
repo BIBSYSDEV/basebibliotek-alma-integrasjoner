@@ -49,24 +49,24 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
     private static final String TXT = ".txt";
     private static final String COULD_NOT_GET_ERROR_MESSAGE = "could not GET ";
 
-    private final S3Client s3Client;
-    private final HttpClient httpClient;
+    private final transient S3Client s3Client;
+    private final transient HttpClient httpClient;
 
-    public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_URL";
+    public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_EXPORT_URL";
     public static final String BASEBIBLILOTEK_USERNAME_ENVIRONMENT_NAME = "BASEBIBLIOTEK_USERNAME";
     public static final String BASEBIBLIOTEK_PASSWORD_ENVIRONMENT_NAME = "BASEBIBLIOTEK_PASSWORD";
     public static final String S3_BUCKET_ENVIRONMENT_NAME = "BASEBIBLIOTEK_XML_BUCKET";
-    private final String basebibliotekUri;
-    private final String basebibliotekUsername;
-    private final String basebibliotekPassword;
-    private final String s3BasebibliotekXmlBucket;
+    private final transient String basebibliotekUri;
+    private final transient String basebibliotekUsername;
+    private final transient String basebibliotekPassword;
+    private final transient String s3BasebibliotekXmlBucket;
 
-    private final String BASEBIBLIOTEK_RESPONSE_STATUS_ERROR = "could not connect to basebibliotek, Connection "
-                                                               + "responded with status: ";
+    private static final String BASEBIBLIOTEK_RESPONSE_ERROR =
+        "could not connect to basebibliotek, Connection responded with status: ";
 
     private static final String IMPORT_ALL_LIBRARIES = "bb-full.xml";
 
-    private final String basebibliotekAuthorization;
+    private final transient String basebibliotekAuthorization;
 
     @JacocoGenerated
     public BasebibliotekFetchHandler() {
@@ -186,7 +186,7 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
 
     private String getBodyFromResponse(HttpResponse<String> response) {
         if (response.statusCode() != HttpURLConnection.HTTP_OK) {
-            logger.info(BASEBIBLIOTEK_RESPONSE_STATUS_ERROR + response.statusCode());
+            logger.info(BASEBIBLIOTEK_RESPONSE_ERROR + response.statusCode());
             throw new RuntimeException();
         }
         return response.body();
