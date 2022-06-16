@@ -13,6 +13,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.hamcrest.core.IsNull.nullValue;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -46,6 +47,7 @@ import no.sikt.alma.generated.Emails;
 import no.sikt.alma.generated.IsoDetails;
 import no.sikt.alma.generated.NcipP2PDetails;
 import no.sikt.alma.generated.Partner;
+import no.sikt.alma.generated.PartnerDetails.LocateProfile;
 import no.sikt.alma.generated.Phones;
 import no.sikt.alma.generated.ProfileType;
 import no.sikt.alma.generated.Status;
@@ -103,7 +105,7 @@ public class ResourceSharingPartnerTest {
     public static final String BIBLIOTEK_REST_PATH = "/basebibliotek/rest/bibnr/";
     public static final Context CONTEXT = mock(Context.class);
     private static final String BIBNR_RESOLVABLE_TO_ALMA_CODE = "0030100";
-    private static final String RESOLVED_ALMA_CODE = "NB";
+    private static final String INSTITUTION_CODE = "47BIBSYS_NB";
     private transient FakeS3Client s3Client;
     private transient S3Driver s3Driver;
 
@@ -333,7 +335,7 @@ public class ResourceSharingPartnerTest {
         assertThat(partners.get(0).getPartnerDetails().getBorrowingWorkflow(), is(equalTo(expectedBorrowingWorkflow)));
     }
 
-    @ParameterizedTest(name = "Should handle katsys codes differently")
+    @ParameterizedTest(name = "Should handle katsys codes differently when generating systemtype")
     @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
     public void shouldExtractCertainDataIfAlmaOrBibsysLibrary(String katsys) throws IOException {
         var withLandkode = true;
@@ -376,7 +378,7 @@ public class ResourceSharingPartnerTest {
         //TODO:LocateProfile in partnerDetails should be set when isAlmaOrBibsys, otherwise null. SMILE-1573
     }
 
-    @ParameterizedTest(name = "Should handle katsys codes differently")
+    @ParameterizedTest(name = "Should handle katsys codes differently when generating isoData")
     @ValueSource(strings = {ALMA, BIBSYS})
     public void shouldExtractPartnerDetailsProfileDataIsoCorrectly(final String katsys) throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys)
@@ -655,12 +657,12 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), bibNr + "\n" + bibNrSucess);
         var s3Event = createS3Event(uri);
         WireMocker.mockBassebibliotekFailure(bibNr);
-        var expectedNumberOfSuccessfulConversion = 1;
-        var numberOfSuccessFulConversion = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
-        assertThat(numberOfSuccessFulConversion, is(equalTo(expectedNumberOfSuccessfulConversion)));
+        var expectedNumberOfSuccessfulConversions = 1;
+        var numberOfSuccessfulConversions = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        assertThat(numberOfSuccessfulConversions, is(equalTo(expectedNumberOfSuccessfulConversions)));
     }
 
-    @ParameterizedTest(name = "Should handle katsys codes differently")
+    @ParameterizedTest(name = "Should handle katsys codes differently when generating institution code")
     @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
     public void shouldExtractAlmaCodeInPartnerDetailsCorrectly(final String katsys) throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys)
@@ -687,7 +689,7 @@ public class ResourceSharingPartnerTest {
 
         final String expectedInstitutionCode;
         if (ALMA.equals(katsys) || BIBSYS.equals(katsys)) {
-            expectedInstitutionCode = RESOLVED_ALMA_CODE;
+            expectedInstitutionCode = INSTITUTION_CODE;
         } else {
             expectedInstitutionCode = "";
         }
@@ -793,6 +795,7 @@ public class ResourceSharingPartnerTest {
         assertThat(appender.getMessages(), containsString(LibCodeToAlmaCodeEntry.FIELD_IS_NULL_OR_EMPTY_MESSAGE));
     }
 
+
     @Test
     void shouldGenerateReport() throws IOException {
         //success library
@@ -802,7 +805,8 @@ public class ResourceSharingPartnerTest {
                                   .withEpostBest(EMAIL_BEST)
                                   .withEpostAdr(EMAIL_ADR)
                                   .build();
-        var basebibliotekSucessXml = BasebibliotekGenerator.toXml(new BasebibliotekGenerator(record).generateBaseBibliotek());
+        var basebibliotekSucessXml = BasebibliotekGenerator.toXml(
+            new BasebibliotekGenerator(record).generateBaseBibliotek());
         var bibNrSucess = record.getBibnr();
         WireMocker.mockBasebibliotekXml(basebibliotekSucessXml, bibNrSucess);
         // basebibliotekFailureLibrary
@@ -813,22 +817,24 @@ public class ResourceSharingPartnerTest {
         var conversionFailureBibNr = "3";
         // if landKode is null the conversion should fail.
         var conversionFailureRecord = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
-                                             .withBibnr(conversionFailureBibNr)
-                                             .withLandkode(null)
-                                             .withEpostBest(EMAIL_BEST)
-                                             .withEpostAdr(EMAIL_ADR)
-                                             .build();
-        var conversionFailureLibraryXml = BasebibliotekGenerator.toXml(new BasebibliotekGenerator(conversionFailureRecord).generateBaseBibliotek());
+                                          .withBibnr(conversionFailureBibNr)
+                                          .withLandkode(null)
+                                          .withEpostBest(EMAIL_BEST)
+                                          .withEpostAdr(EMAIL_ADR)
+                                          .build();
+        var conversionFailureLibraryXml = BasebibliotekGenerator.toXml(
+            new BasebibliotekGenerator(conversionFailureRecord).generateBaseBibliotek());
         WireMocker.mockBasebibliotekXml(conversionFailureLibraryXml, conversionFailureBibNr);
         // contact alma failure library
         var almaLibraryFailureBibNr = "1234567";
         var almaFailureRecord = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
-                                     .withBibnr(almaLibraryFailureBibNr)
-                                     .withLandkode("NO")
-                                     .withEpostBest(EMAIL_BEST)
-                                     .withEpostAdr(EMAIL_ADR)
-                                     .build();
-        var almaFailureXml = BasebibliotekGenerator.toXml(new BasebibliotekGenerator(almaFailureRecord).generateBaseBibliotek());
+                                    .withBibnr(almaLibraryFailureBibNr)
+                                    .withLandkode("NO")
+                                    .withEpostBest(EMAIL_BEST)
+                                    .withEpostAdr(EMAIL_ADR)
+                                    .build();
+        var almaFailureXml = BasebibliotekGenerator.toXml(
+            new BasebibliotekGenerator(almaFailureRecord).generateBaseBibliotek());
         WireMocker.mockBasebibliotekXml(almaFailureXml, almaLibraryFailureBibNr);
         WireMocker.mockAlmaForbiddenGetResponse("NO-" + almaLibraryFailureBibNr);
         WireMocker.mockAlmaForbiddenPostResponse("NO-" + almaLibraryFailureBibNr);
@@ -842,8 +848,8 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(s3Path, rspInputFileContent);
         var s3Event = createS3Event(uri);
         var resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client,
-                                                                                             mockedEnvironment,
-                                                                          WireMocker.httpClient);
+                                                                              mockedEnvironment,
+                                                                              WireMocker.httpClient);
         var numberOfSucessFulLibraries = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var expectedNumberOfSuccessFulLibraries = 1;
         assertThat(numberOfSucessFulLibraries, is(equalTo(expectedNumberOfSuccessFulLibraries)));
@@ -867,7 +873,41 @@ public class ResourceSharingPartnerTest {
                    containsString(
                        almaLibraryFailureBibNr
                        + ResourceSharingPartnerHandler.COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE));
+    }
 
+    @ParameterizedTest(name = "Should handle katsys codes differently when generating locateProfile")
+    @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
+    public void shouldPopulateLocateProfileInPartnerDetailsCorrectly(final String katsys) throws IOException {
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys)
+                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+                                  .withLandkode("1")
+                                  .build();
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        var s3Event = createS3Event(uri);
+
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
+            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, BIBNR_RESOLVABLE_TO_ALMA_CODE);
+
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+
+        var partners = resourceSharingPartnerHandler.getPartners();
+
+        // we should have only ony partner from the one record we have:
+        Partner partner = partners.get(0);
+
+        final LocateProfile locateProfile = partner.getPartnerDetails().getLocateProfile();
+        if (ALMA.equals(katsys) || BIBSYS.equals(katsys)) {
+            assertThat(locateProfile, notNullValue());
+            final String expectedLocateProfile = "LOCATE_NB";
+            assertThat(locateProfile.getValue(), is(expectedLocateProfile));
+        } else {
+            assertThat(locateProfile, nullValue());
+        }
     }
 
     private void assertIsoProfileDetailsPopulatedCorrectly(final Partner partner, final String bibnr) {

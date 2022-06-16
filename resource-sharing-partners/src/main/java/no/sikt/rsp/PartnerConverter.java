@@ -20,6 +20,7 @@ import no.sikt.alma.generated.IsoDetails;
 import no.sikt.alma.generated.NcipP2PDetails;
 import no.sikt.alma.generated.Partner;
 import no.sikt.alma.generated.PartnerDetails;
+import no.sikt.alma.generated.PartnerDetails.LocateProfile;
 import no.sikt.alma.generated.PartnerDetails.SystemType;
 import no.sikt.alma.generated.ProfileDetails;
 import no.sikt.alma.generated.ProfileType;
@@ -50,6 +51,8 @@ public class PartnerConverter {
     public static final String NNCIP_URI = "nncip_uri";
     public static final String TEMPORARILY_CLOSED = "U";
     public static final String PERMANENTLY_CLOSED = "X";
+    private static final String INSTITUTION_CODE_PREFIX = "47BIBSYS_";
+    private static final String LOCATE_PROFILE_VALUE_PREFIX = "LOCATE_";
 
     private final transient AlmaCodeProvider almaCodeProvider;
     private final transient String interLibraryLoanServer;
@@ -135,13 +138,23 @@ public class PartnerConverter {
         partnerDetails.setProfileDetails(extractProfileDetails(record));
         partnerDetails.setStatus(extractStatus(record));
 
-        if (isAlmaOrBibsysLibrary(record)) {
-            partnerDetails.setInstitutionCode(almaCodeProvider.getAlmaCode(record.getBibnr()).orElse(""));
+        final String almaCode = almaCodeProvider.getAlmaCode(record.getBibnr()).orElse("");
+        if (isAlmaOrBibsysLibrary(record) && StringUtils.isNotEmpty(almaCode)) {
+            partnerDetails.setInstitutionCode(INSTITUTION_CODE_PREFIX + almaCode);
+            final LocateProfile locateProfile = generateLocateProfile(almaCode);
+            partnerDetails.setLocateProfile(locateProfile);
         } else {
             partnerDetails.setInstitutionCode("");
+            partnerDetails.setLocateProfile(null);
         }
 
         return partnerDetails;
+    }
+
+    private LocateProfile generateLocateProfile(final String almaCode) {
+        final LocateProfile locateProfile = new LocateProfile();
+        locateProfile.setValue(LOCATE_PROFILE_VALUE_PREFIX + almaCode);
+        return locateProfile;
     }
 
     @SuppressWarnings("PMD.DataflowAnomalyAnalysis")

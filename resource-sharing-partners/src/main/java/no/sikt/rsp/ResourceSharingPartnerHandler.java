@@ -137,7 +137,10 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
         return counter;
     }
 
-    private Collection<? extends Partner> generatePartners(List<BaseBibliotek> basebiblioteks, StringBuilder reportStringBuilder, AlmaCodeProvider almaCodeProvider, String illServer) {
+    private Collection<? extends Partner> generatePartners(List<BaseBibliotek> basebiblioteks,
+                                                           StringBuilder reportStringBuilder,
+                                                           AlmaCodeProvider almaCodeProvider,
+                                                           String illServer) {
         var partners = new ArrayList<Partner>();
         for (BaseBibliotek baseBibliotek : basebiblioteks) {
             try {
