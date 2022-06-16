@@ -66,7 +66,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mockito;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
@@ -99,6 +98,7 @@ public class ResourceSharingPartnerTest {
     private static final String NNCIP_SERVER = "https://nncipuri.org";
     private static final String EMAIL_ADR = "adr@example.com";
     private static final String EMAIL_BEST = "best@example.com";
+    public static final String BASEBIBLIOTEK_REPORT = "basebibliotek-report";
     private transient ResourceSharingPartnerHandler resourceSharingPartnerHandler;
     public static final String BIBLIOTEK_REST_PATH = "/basebibliotek/rest/bibnr/";
     public static final Context CONTEXT = mock(Context.class);
@@ -122,6 +122,8 @@ public class ResourceSharingPartnerTest {
             .thenReturn(SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY))
             .thenReturn(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.REPORT_BUCKET_ENVIRONMENT_NAME))
+            .thenReturn(BASEBIBLIOTEK_REPORT);
 
         final String fullLibCodeToAlmaCodeMapping = IoUtils.stringFromResources(
             Path.of("fullLibCodeToAlmaCodeMapping.json"));
@@ -201,9 +203,6 @@ public class ResourceSharingPartnerTest {
         var expectedSuccessfulConversion = 1;
         var numberOfSuccessfulConversion = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         assertThat(numberOfSuccessfulConversion, is(equalTo(expectedSuccessfulConversion)));
-        var reports3Driver = new S3Driver(s3Client, "reportBucket");
-        var report = reports3Driver.getFile(UnixPath.of("report-" + s3path.toString()));
-        assertThat(report, containsString(ResourceSharingPartnerHandler.COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE));
     }
 
     @Test
@@ -792,6 +791,87 @@ public class ResourceSharingPartnerTest {
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
 
         assertThat(appender.getMessages(), containsString(LibCodeToAlmaCodeEntry.FIELD_IS_NULL_OR_EMPTY_MESSAGE));
+    }
+
+    @Test
+    void shouldGenerateReport() throws IOException {
+        //success library
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
+                                  .withBibnr("1")
+                                  .withLandkode("NO")
+                                  .withEpostBest(EMAIL_BEST)
+                                  .withEpostAdr(EMAIL_ADR)
+                                  .build();
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekSucessXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var bibNrSucess = record.getBibnr();
+        WireMocker.mockBasebibliotekXml(basebibliotekSucessXml, bibNrSucess);
+        // basebibliotekFailureLibrary
+        var basebibliotekFailureBibnr = "2";
+        WireMocker.mockBasebibliotekXml(INVALID_BASEBIBLIOTEK_XML_STRING, basebibliotekFailureBibnr);
+
+        // Conversion failureLibrary
+        var conversionFailureBibNr = "3";
+        var conversionFailureRecord = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
+                                             .withBibnr(conversionFailureBibNr)
+                                             .withLandkode(null)
+                                             .withEpostBest(EMAIL_BEST)
+                                             .withEpostAdr(EMAIL_ADR)
+                                             .build();
+        basebibliotekGenerator = new BasebibliotekGenerator(conversionFailureRecord);
+        basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var conversionFailureLibraryXml = BasebibliotekGenerator.toXml(basebibliotek);
+        WireMocker.mockBasebibliotekXml(conversionFailureLibraryXml, conversionFailureBibNr);
+        // contact alma failure library
+        var almaLibraryFailureBibNr = "1234567";
+        var almaFailureRecord = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
+                                     .withBibnr(almaLibraryFailureBibNr)
+                                     .withLandkode("NO")
+                                     .withEpostBest(EMAIL_BEST)
+                                     .withEpostAdr(EMAIL_ADR)
+                                     .build();
+        basebibliotekGenerator = new BasebibliotekGenerator(almaFailureRecord);
+        basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var almaFailureXml = BasebibliotekGenerator.toXml(basebibliotek);
+        WireMocker.mockBasebibliotekXml(almaFailureXml, almaLibraryFailureBibNr);
+        WireMocker.mockAlmaForbiddenGetResponse("NO-" + almaLibraryFailureBibNr);
+        WireMocker.mockAlmaForbiddenPostResponse("NO-" + almaLibraryFailureBibNr);
+
+        var s3Path = randomS3Path();
+        var rspInputFileContent = bibNrSucess + "\n" + basebibliotekFailureBibnr + "\n"
+                                  + conversionFailureBibNr
+                                  + "\n" + almaLibraryFailureBibNr;
+
+        var uri = s3Driver.insertFile(s3Path, rspInputFileContent);
+        var s3Event = createS3Event(uri);
+        var resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client,
+                                                                                             mockedEnvironment,
+                                                                          WireMocker.httpClient);
+        var numberOfSucessFulLibraries = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        var expectedNumberOfSucessFulLibraries = 1;
+        assertThat(numberOfSucessFulLibraries, is(equalTo(expectedNumberOfSucessFulLibraries)));
+        var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
+        var report = reports3Driver.getFile(UnixPath.of("report-" + s3Path.toString()));
+        assertThat(report,
+                   containsString(
+                       bibNrSucess
+                       + StringUtils.SPACE
+                       + ResourceSharingPartnerHandler.OK_REPORT_MESSAGE));
+        assertThat(report,
+                   containsString(
+                       basebibliotekFailureBibnr
+                       + ResourceSharingPartnerHandler.COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE));
+        assertThat(report,
+                   containsString(
+                       conversionFailureBibNr
+                       + ResourceSharingPartnerHandler.COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE));
+        assertThat(report,
+                   containsString(
+                       almaLibraryFailureBibNr
+                       + ResourceSharingPartnerHandler.COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE));
+
     }
 
     private void assertIsoProfileDetailsPopulatedCorrectly(final Partner partner, final String bibnr) {

@@ -41,7 +41,7 @@ test {
     environment "ALMA_API_HOST", "https://localhost:63535"
     environment "ALMA_APIKEY", "apiKeyNZ"
     environment "API_HOST", "api.localhost.nva.aws.unit.no"
-    environment "REPORT_BUCKET", "reportBucket"
+    environment "REPORT_BUCKET", "basebibliotek-report"
     environment "BASEBIBLIOTEK_USERNAME", "username"
     environment "BASEBIBLIOTEK_PASSWORD", "password"
     environment "BASEBIBLIOTEK_URL", "mock.url.com"

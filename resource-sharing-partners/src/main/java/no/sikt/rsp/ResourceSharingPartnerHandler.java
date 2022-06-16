@@ -37,6 +37,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     public static final String COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE = " could not fetch basebibliotek\n";
     public static final String COULD_NOT_FETCH_BASEBIBLIOTEK_ERROR_MESSAGE = " Could not fetch basebibliotek";
     public static final String OK_REPORT_MESSAGE = "OK\n";
+    public static final String REPORT_FILE_NAME_PREFIX = "report-";
     private final transient Gson gson = new Gson();
 
     public static final String S3_URI_TEMPLATE = "s3://%s/%s";
@@ -51,6 +52,9 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
 
     private final transient Environment environment;
     public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_REST_URL";
+
+    private transient final String reportS3BucketName;
+    public static final String REPORT_BUCKET_ENVIRONMENT_NAME = "REPORT_BUCKET";
 
     private final transient BasebibliotekConnection basebibliotekConnection;
 
@@ -70,6 +74,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
                                                                                BASEBIBLIOTEK_URI_ENVIRONMENT_NAME))
                                                                        .getUri());
         this.partners = new ArrayList<>();
+        this.reportS3BucketName = environment.readEnv(REPORT_BUCKET_ENVIRONMENT_NAME);
     }
 
     @Override
@@ -93,13 +98,13 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
 
             var basebiblioteks = new ArrayList<BaseBibliotek>();
             var bibnrList = getBibNrList(bibNrFile);
-            var reportString = new StringBuilder();
+            var reportStringBuilder = new StringBuilder();
             for (String bibnr : bibnrList) {
                 try {
                     basebiblioteks.add(basebibliotekConnection.getBasebibliotek(bibnr));
                 } catch (Exception e) {
                     logger.info(COULD_NOT_FETCH_BASEBIBLIOTEK_ERROR_MESSAGE, e);
-                    reportString.append(bibnr + COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE);
+                    reportStringBuilder.append(bibnr + COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE);
                 }
             }
             for (BaseBibliotek baseBibliotek : basebiblioteks) {
@@ -107,16 +112,16 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
                     partners.addAll(new PartnerConverter(almaCodeProvider, illServer, baseBibliotek).toPartners());
                 } catch (Exception e) {
                     logger.info(COULD_NOT_CONVERT_TO_PARTNER_ERROR_MESSAGE, e);
-                    reportString.append(baseBibliotek
-                                            .getRecord()
-                                            .get(0)
-                                            .getBibnr()
-                                        + COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE);
+                    reportStringBuilder.append(baseBibliotek
+                                                   .getRecord()
+                                                   .get(0)
+                                                   .getBibnr()
+                                               + COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE);
                 }
             }
             var counter = 0;
             for (Partner partner : partners) {
-                var charIndexStartOfBibNrInPartnerCode = 2;
+                var charIndexStartOfBibNrInPartnerCode = 3;
                 var bibNr = partner
                                 .getPartnerDetails()
                                 .getCode()
@@ -124,23 +129,28 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
                 try {
                     if (sendToAlma(partner)) {
                         counter++;
-                        reportString.append(bibNr + StringUtils.SPACE + OK_REPORT_MESSAGE);
-                    }else {
-                        reportString.append(bibNr
-                                            + StringUtils.SPACE + COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE );
+                        reportStringBuilder.append(bibNr + StringUtils.SPACE + OK_REPORT_MESSAGE);
+                    } else {
+                        reportStringBuilder.append(bibNr
+                                                   + StringUtils.SPACE + COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE);
                     }
                 } catch (Exception e) {
                     logger.info("Could not contact Alma", e);
-                    reportString.append(bibNr
-                                        + COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE );
-
+                    reportStringBuilder.append(bibNr
+                                               + COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE);
                 }
             }
-
+            reportToS3Bucket(reportStringBuilder, s3event);
             return counter;
         } catch (Exception exception) {
             throw logErrorAndThrowException(exception);
         }
+    }
+
+    private void reportToS3Bucket(StringBuilder reportStringBuilder, S3Event s3Event) throws IOException {
+        var report = reportStringBuilder.toString();
+        var s3Driver = new S3Driver(s3Client, reportS3BucketName);
+        s3Driver.insertFile(UnixPath.of(REPORT_FILE_NAME_PREFIX + extractFilename(s3Event)), report);
     }
 
     private List<String> getBibNrList(String bibNrFile) {
