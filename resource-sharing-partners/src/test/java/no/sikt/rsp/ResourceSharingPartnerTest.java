@@ -652,9 +652,9 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), bibNr + "\n" + bibNrSucess);
         var s3Event = createS3Event(uri);
         WireMocker.mockBassebibliotekFailure(bibNr);
-        var expectedNumberOfSuccessfulConversion = 1;
-        var numberOfSuccessFulConversion = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
-        assertThat(numberOfSuccessFulConversion, is(equalTo(expectedNumberOfSuccessfulConversion)));
+        var expectedNumberOfSuccessfulConversions = 1;
+        var numberOfSuccessfulConversions = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        assertThat(numberOfSuccessfulConversions, is(equalTo(expectedNumberOfSuccessfulConversions)));
     }
 
     @ParameterizedTest(name = "Should handle katsys codes differently")
