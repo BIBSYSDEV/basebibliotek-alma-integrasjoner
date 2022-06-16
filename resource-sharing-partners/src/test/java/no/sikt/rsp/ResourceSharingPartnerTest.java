@@ -181,10 +181,23 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldSkipWhenCannotBeConvertedToBaseBibliotek() throws IOException {
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
+                                  .withBibnr("1")
+                                  .withLandkode("1")
+                                  .withEpostBest(EMAIL_BEST)
+                                  .withEpostAdr(EMAIL_ADR)
+                                  .build();
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var bibNr = record.getBibnr();
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
         WireMocker.mockBasebibliotekXml(INVALID_BASEBIBLIOTEK_XML_STRING, BIBNR_RESOLVABLE_TO_ALMA_CODE);
-        var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
+
+        var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE + "\n" + bibNr);
         var s3Event = createS3Event(uri);
-        var expectedSuccessfulConversion = 0;
+        var expectedSuccessfulConversion = 1;
         var numberOfSuccessfulConversion = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         assertThat(numberOfSuccessfulConversion, is(equalTo(expectedSuccessfulConversion)));
     }
@@ -623,11 +636,23 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldSkipWhenBasebibliotekFails() throws IOException {
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
+                                  .withBibnr("1")
+                                  .withLandkode("1")
+                                  .withEpostBest(EMAIL_BEST)
+                                  .withEpostAdr(EMAIL_ADR)
+                                  .build();
+
+        var basebibliotekGenerator = new BasebibliotekGenerator(record);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var bibNrSucess = record.getBibnr();
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNrSucess);
         var bibNr = randomString();
-        var uri = s3Driver.insertFile(randomS3Path(), bibNr);
+        var uri = s3Driver.insertFile(randomS3Path(), bibNr + "\n" + bibNrSucess);
         var s3Event = createS3Event(uri);
         WireMocker.mockBassebibliotekFailure(bibNr);
-        var expectedNumberOfSuccessfulConversion = 0;
+        var expectedNumberOfSuccessfulConversion = 1;
         var numberOfSuccessFulConversion = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         assertThat(numberOfSuccessFulConversion, is(equalTo(expectedNumberOfSuccessfulConversion)));
     }
