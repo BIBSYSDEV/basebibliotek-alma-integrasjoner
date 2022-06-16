@@ -66,6 +66,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mockito;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
@@ -182,11 +183,15 @@ public class ResourceSharingPartnerTest {
     @Test
     public void shouldSkipWhenCannotBeConvertedToBaseBibliotek() throws IOException {
         WireMocker.mockBasebibliotekXml(INVALID_BASEBIBLIOTEK_XML_STRING, BIBNR_RESOLVABLE_TO_ALMA_CODE);
-        var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        var s3path = randomS3Path();
+        var uri = s3Driver.insertFile(s3path, BIBNR_RESOLVABLE_TO_ALMA_CODE);
         var s3Event = createS3Event(uri);
         var expectedSuccessfulConversion = 0;
         var numberOfSuccessfulConversion = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         assertThat(numberOfSuccessfulConversion, is(equalTo(expectedSuccessfulConversion)));
+        var reports3Driver = new S3Driver(s3Client, "reportBucket");
+        var report = reports3Driver.getFile(UnixPath.of("report-" + s3path.toString()));
+        assertThat(report, containsString(ResourceSharingPartnerHandler.COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE));
     }
 
     @Test

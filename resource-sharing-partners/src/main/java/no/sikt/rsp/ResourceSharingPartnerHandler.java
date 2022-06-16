@@ -1,6 +1,5 @@
 package no.sikt.rsp;
 
-import static java.lang.Math.toIntExact;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
@@ -19,6 +18,7 @@ import no.sikt.alma.generated.Partner;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.StringUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
@@ -31,6 +31,12 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     public static final int SINGLE_EXPECTED_RECORD = 0;
     private static final String EVENT = "event";
     public static final String ALMA_API_HOST = "ALMA_API_HOST";
+    public static final String COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE = " could not contact Alma\n";
+    public static final String COULD_NOT_CONVERT_TO_PARTNER_ERROR_MESSAGE = " Could not convert to partner";
+    public static final String COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE = " could not convert to partner\n";
+    public static final String COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE = " could not fetch basebibliotek\n";
+    public static final String COULD_NOT_FETCH_BASEBIBLIOTEK_ERROR_MESSAGE = " Could not fetch basebibliotek";
+    public static final String OK_REPORT_MESSAGE = "OK\n";
     private final transient Gson gson = new Gson();
 
     public static final String S3_URI_TEMPLATE = "s3://%s/%s";
@@ -87,28 +93,47 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
 
             var basebiblioteks = new ArrayList<BaseBibliotek>();
             var bibnrList = getBibNrList(bibNrFile);
+            var reportString = new StringBuilder();
             for (String bibnr : bibnrList) {
                 try {
                     basebiblioteks.add(basebibliotekConnection.getBasebibliotek(bibnr));
                 } catch (Exception e) {
-                    logger.info("Could not fetch basebibliotek", e);
+                    logger.info(COULD_NOT_FETCH_BASEBIBLIOTEK_ERROR_MESSAGE, e);
+                    reportString.append(bibnr + COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE);
                 }
             }
             for (BaseBibliotek baseBibliotek : basebiblioteks) {
                 try {
                     partners.addAll(new PartnerConverter(almaCodeProvider, illServer, baseBibliotek).toPartners());
                 } catch (Exception e) {
-                    logger.info("Could not convert to partner", e);
+                    logger.info(COULD_NOT_CONVERT_TO_PARTNER_ERROR_MESSAGE, e);
+                    reportString.append(baseBibliotek
+                                            .getRecord()
+                                            .get(0)
+                                            .getBibnr()
+                                        + COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE);
                 }
             }
             var counter = 0;
             for (Partner partner : partners) {
+                var charIndexStartOfBibNrInPartnerCode = 2;
+                var bibNr = partner
+                                .getPartnerDetails()
+                                .getCode()
+                                .substring(charIndexStartOfBibNrInPartnerCode);
                 try {
                     if (sendToAlma(partner)) {
                         counter++;
+                        reportString.append(bibNr + StringUtils.SPACE + OK_REPORT_MESSAGE);
+                    }else {
+                        reportString.append(bibNr
+                                            + StringUtils.SPACE + COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE );
                     }
                 } catch (Exception e) {
                     logger.info("Could not contact Alma", e);
+                    reportString.append(bibNr
+                                        + COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE );
+
                 }
             }
 
