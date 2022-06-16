@@ -107,7 +107,6 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
                     if (sendToAlma(partner)) {
                         counter++;
                     }
-                    sendToAlma(partner);
                 } catch (Exception e) {
                     logger.info("Could not contact Alma", e);
                 }
