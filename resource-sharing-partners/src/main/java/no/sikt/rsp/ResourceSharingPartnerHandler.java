@@ -11,6 +11,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import no.nb.basebibliotek.generated.BaseBibliotek;
@@ -25,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
 
+@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, Integer> {
 
     private static final Logger logger = LoggerFactory.getLogger(ResourceSharingPartnerHandler.class);
@@ -53,7 +55,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     private final transient Environment environment;
     public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_REST_URL";
 
-    private transient final String reportS3BucketName;
+    private final transient String reportS3BucketName;
     public static final String REPORT_BUCKET_ENVIRONMENT_NAME = "REPORT_BUCKET";
 
     private final transient BasebibliotekConnection basebibliotekConnection;
@@ -94,57 +96,77 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
 
             final String instRegAsJson = driver.getFile(UnixPath.of(libCodeToAlmaCodeMappingFilePath));
             logger.info("done collecting instreg");
-            AlmaCodeProvider almaCodeProvider = new AlmaCodeProvider(instRegAsJson);
 
-            var basebiblioteks = new ArrayList<BaseBibliotek>();
+            AlmaCodeProvider almaCodeProvider = new AlmaCodeProvider(instRegAsJson);
             var bibnrList = getBibNrList(bibNrFile);
             var reportStringBuilder = new StringBuilder();
-            for (String bibnr : bibnrList) {
-                try {
-                    basebiblioteks.add(basebibliotekConnection.getBasebibliotek(bibnr));
-                } catch (Exception e) {
-                    logger.info(COULD_NOT_FETCH_BASEBIBLIOTEK_ERROR_MESSAGE, e);
-                    reportStringBuilder.append(bibnr + COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE);
-                }
-            }
-            for (BaseBibliotek baseBibliotek : basebiblioteks) {
-                try {
-                    partners.addAll(new PartnerConverter(almaCodeProvider, illServer, baseBibliotek).toPartners());
-                } catch (Exception e) {
-                    logger.info(COULD_NOT_CONVERT_TO_PARTNER_ERROR_MESSAGE, e);
-                    reportStringBuilder.append(baseBibliotek
-                                                   .getRecord()
-                                                   .get(0)
-                                                   .getBibnr()
-                                               + COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE);
-                }
-            }
-            var counter = 0;
-            for (Partner partner : partners) {
-                var charIndexStartOfBibNrInPartnerCode = 3;
-                var bibNr = partner
-                                .getPartnerDetails()
-                                .getCode()
-                                .substring(charIndexStartOfBibNrInPartnerCode);
-                try {
-                    if (sendToAlma(partner)) {
-                        counter++;
-                        reportStringBuilder.append(bibNr + StringUtils.SPACE + OK_REPORT_MESSAGE);
-                    } else {
-                        reportStringBuilder.append(bibNr
-                                                   + StringUtils.SPACE + COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE);
-                    }
-                } catch (Exception e) {
-                    logger.info("Could not contact Alma", e);
-                    reportStringBuilder.append(bibNr
-                                               + COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE);
-                }
-            }
+            var basebiblioteks = generateBasebibliotek(bibnrList, reportStringBuilder);
+            partners.addAll(generatePartners(basebiblioteks, reportStringBuilder, almaCodeProvider, illServer));
+            int counter = sendToAlmaAndCountSuccess(partners, reportStringBuilder);
             reportToS3Bucket(reportStringBuilder, s3event);
             return counter;
         } catch (Exception exception) {
             throw logErrorAndThrowException(exception);
         }
+    }
+
+    private int sendToAlmaAndCountSuccess(List<Partner> partners, StringBuilder reportStringBuilder) {
+        var counter = 0;
+        for (Partner partner : partners) {
+            var charIndexStartOfBibNrInPartnerCode = 3;
+            var bibNr = partner
+                            .getPartnerDetails()
+                            .getCode()
+                            .substring(charIndexStartOfBibNrInPartnerCode);
+            try {
+                if (sendToAlma(partner)) {
+                    counter++;
+                    reportStringBuilder
+                        .append(bibNr)
+                        .append(StringUtils.SPACE)
+                        .append(OK_REPORT_MESSAGE);
+                }
+            } catch (Exception e) {
+                //Errors in individual libraries should not cause crash in entire execution.
+                logger.info("Could not contact Alma", e);
+                reportStringBuilder
+                    .append(bibNr)
+                    .append(COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE);
+            }
+        }
+        return counter;
+    }
+
+    private Collection<? extends Partner> generatePartners(List<BaseBibliotek> basebiblioteks, StringBuilder reportStringBuilder, AlmaCodeProvider almaCodeProvider, String illServer) {
+        var partners = new ArrayList<Partner>();
+        for (BaseBibliotek baseBibliotek : basebiblioteks) {
+            try {
+                partners.addAll(new PartnerConverter(almaCodeProvider, illServer, baseBibliotek).toPartners());
+            } catch (Exception e) {
+                //Errors in individual libraries should not cause crash in entire execution.
+                logger.info(COULD_NOT_CONVERT_TO_PARTNER_ERROR_MESSAGE, e);
+                reportStringBuilder
+                    .append(baseBibliotek.getRecord().get(0).getBibnr())
+                    .append(COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE);
+            }
+        }
+        return partners;
+    }
+
+    private List<BaseBibliotek> generateBasebibliotek(List<String> bibnrList, StringBuilder reportStringBuilder) {
+        var basebiblioteks = new ArrayList<BaseBibliotek>();
+        for (String bibnr : bibnrList) {
+            try {
+                basebiblioteks.add(basebibliotekConnection.getBasebibliotek(bibnr));
+            } catch (Exception e) {
+                //Errors in individual libraries should not cause crash in entire execution.
+                logger.info(COULD_NOT_FETCH_BASEBIBLIOTEK_ERROR_MESSAGE, e);
+                reportStringBuilder
+                    .append(bibnr)
+                    .append(COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE);
+            }
+        }
+        return basebiblioteks;
     }
 
     private void reportToS3Bucket(StringBuilder reportStringBuilder, S3Event s3Event) throws IOException {

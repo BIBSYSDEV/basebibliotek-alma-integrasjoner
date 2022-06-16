@@ -802,10 +802,7 @@ public class ResourceSharingPartnerTest {
                                   .withEpostBest(EMAIL_BEST)
                                   .withEpostAdr(EMAIL_ADR)
                                   .build();
-
-        var basebibliotekGenerator = new BasebibliotekGenerator(record);
-        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
-        var basebibliotekSucessXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var basebibliotekSucessXml = BasebibliotekGenerator.toXml(new BasebibliotekGenerator(record).generateBaseBibliotek());
         var bibNrSucess = record.getBibnr();
         WireMocker.mockBasebibliotekXml(basebibliotekSucessXml, bibNrSucess);
         // basebibliotekFailureLibrary
@@ -814,15 +811,14 @@ public class ResourceSharingPartnerTest {
 
         // Conversion failureLibrary
         var conversionFailureBibNr = "3";
+        // if landKode is null the conversion should fail.
         var conversionFailureRecord = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
                                              .withBibnr(conversionFailureBibNr)
                                              .withLandkode(null)
                                              .withEpostBest(EMAIL_BEST)
                                              .withEpostAdr(EMAIL_ADR)
                                              .build();
-        basebibliotekGenerator = new BasebibliotekGenerator(conversionFailureRecord);
-        basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
-        var conversionFailureLibraryXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var conversionFailureLibraryXml = BasebibliotekGenerator.toXml(new BasebibliotekGenerator(conversionFailureRecord).generateBaseBibliotek());
         WireMocker.mockBasebibliotekXml(conversionFailureLibraryXml, conversionFailureBibNr);
         // contact alma failure library
         var almaLibraryFailureBibNr = "1234567";
@@ -832,12 +828,11 @@ public class ResourceSharingPartnerTest {
                                      .withEpostBest(EMAIL_BEST)
                                      .withEpostAdr(EMAIL_ADR)
                                      .build();
-        basebibliotekGenerator = new BasebibliotekGenerator(almaFailureRecord);
-        basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
-        var almaFailureXml = BasebibliotekGenerator.toXml(basebibliotek);
+        var almaFailureXml = BasebibliotekGenerator.toXml(new BasebibliotekGenerator(almaFailureRecord).generateBaseBibliotek());
         WireMocker.mockBasebibliotekXml(almaFailureXml, almaLibraryFailureBibNr);
         WireMocker.mockAlmaForbiddenGetResponse("NO-" + almaLibraryFailureBibNr);
         WireMocker.mockAlmaForbiddenPostResponse("NO-" + almaLibraryFailureBibNr);
+        // done setup for alma failure
 
         var s3Path = randomS3Path();
         var rspInputFileContent = bibNrSucess + "\n" + basebibliotekFailureBibnr + "\n"
@@ -850,10 +845,11 @@ public class ResourceSharingPartnerTest {
                                                                                              mockedEnvironment,
                                                                           WireMocker.httpClient);
         var numberOfSucessFulLibraries = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
-        var expectedNumberOfSucessFulLibraries = 1;
-        assertThat(numberOfSucessFulLibraries, is(equalTo(expectedNumberOfSucessFulLibraries)));
+        var expectedNumberOfSuccessFulLibraries = 1;
+        assertThat(numberOfSucessFulLibraries, is(equalTo(expectedNumberOfSuccessFulLibraries)));
         var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
-        var report = reports3Driver.getFile(UnixPath.of("report-" + s3Path.toString()));
+        var report = reports3Driver.getFile(
+            UnixPath.of(ResourceSharingPartnerHandler.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
         assertThat(report,
                    containsString(
                        bibNrSucess
