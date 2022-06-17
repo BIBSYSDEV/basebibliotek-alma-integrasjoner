@@ -77,7 +77,7 @@ import test.utils.RecordBuilder;
 import test.utils.RecordSpecification;
 import test.utils.WireMocker;
 
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
+@SuppressWarnings({"PMD.DataflowAnomalyAnalysis", "PMD.AvoidDuplicateLiterals"})
 public class ResourceSharingPartnerTest {
 
     public static final RequestParametersEntity EMPTY_REQUEST_PARAMETERS = null;
