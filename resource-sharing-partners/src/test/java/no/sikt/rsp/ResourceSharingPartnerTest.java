@@ -117,22 +117,22 @@ public class ResourceSharingPartnerTest {
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
         WireMocker.startWiremockServer();
-        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_API_HOST))
-            .thenReturn(UriWrapper.fromUri(WireMocker.serverUri).toString());
-        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME))
-            .thenReturn(UriWrapper.fromUri(WireMocker.serverUri).addChild(BIBLIOTEK_REST_PATH).toString());
-        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.SHARED_CONFIG_BUCKET_NAME_ENV_NAME))
-            .thenReturn(SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
-        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY))
-            .thenReturn(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH);
-        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.REPORT_BUCKET_ENVIRONMENT_NAME))
-            .thenReturn(BASEBIBLIOTEK_REPORT);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_API_HOST)).thenReturn(
+            UriWrapper.fromUri(WireMocker.serverUri).toString());
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).thenReturn(
+            UriWrapper.fromUri(WireMocker.serverUri).addChild(BIBLIOTEK_REST_PATH).toString());
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.SHARED_CONFIG_BUCKET_NAME_ENV_NAME)).thenReturn(
+            SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
+        when(mockedEnvironment.readEnv(
+            ResourceSharingPartnerHandler.LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY)).thenReturn(
+            LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.REPORT_BUCKET_ENVIRONMENT_NAME)).thenReturn(
+            BASEBIBLIOTEK_REPORT);
 
         final String fullLibCodeToAlmaCodeMapping = IoUtils.stringFromResources(
             Path.of("fullLibCodeToAlmaCodeMapping.json"));
 
-        s3Driver.insertFile(UnixPath.of(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH),
-                            fullLibCodeToAlmaCodeMapping);
+        s3Driver.insertFile(UnixPath.of(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH), fullLibCodeToAlmaCodeMapping);
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment,
                                                                           WireMocker.httpClient);
@@ -187,8 +187,7 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldSkipWhenCannotBeConvertedToBaseBibliotek() throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
-                                  .withBibnr("1")
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr("1")
                                   .withLandkode("1")
                                   .withEpostBest(EMAIL_BEST)
                                   .withEpostAdr(EMAIL_ADR)
@@ -212,14 +211,8 @@ public class ResourceSharingPartnerTest {
     public void shouldExtractContactDetailsCorrectly() throws IOException {
         var withPaddr = true;
         var withVaddr = true;
-        var specification = new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE,
-                                                    true,
-                                                    null,
-                                                    randomBoolean(),
-                                                    randomBoolean(),
-                                                    withPaddr,
-                                                    withVaddr,
-                                                    randomBoolean(),
+        var specification = new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE, true, null, randomBoolean(),
+                                                    randomBoolean(), withPaddr, withVaddr, randomBoolean(),
                                                     randomString());
         var basebibliotekGenerator = new BasebibliotekGenerator(specification);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
@@ -234,10 +227,8 @@ public class ResourceSharingPartnerTest {
 
     @ParameterizedTest
     @MethodSource("provideIsilBibNRAndLandkodeSpecification")
-    public void shouldRecordHandleIsilBibNrAndLandKode(RecordSpecification recordSpecification,
-                                                       int expectedSize,
-                                                       boolean yieldsError,
-                                                       boolean withIsil) throws IOException {
+    public void shouldRecordHandleIsilBibNrAndLandKode(RecordSpecification recordSpecification, int expectedSize,
+                                                       boolean yieldsError, boolean withIsil) throws IOException {
         var appender = LogUtils.getTestingAppenderForRootLogger();
         var expectedLogMessage = "Could not convert record, missing landkode, record";
         var basebibliotekGenerator = new BasebibliotekGenerator(recordSpecification);
@@ -255,12 +246,11 @@ public class ResourceSharingPartnerTest {
             assertThat(appender.getMessages(), containsString(expectedLogMessage));
         } else {
             var recordWithoutIsilButContainingBibNrAndLandKode = basebibliotek.getRecord().get(0);
-            var expectedCraftedPartnerCode =
-                recordWithoutIsilButContainingBibNrAndLandKode.getLandkode().toUpperCase(Locale.ROOT)
-                + "-"
-                + recordWithoutIsilButContainingBibNrAndLandKode.getBibnr();
-            assertThat(partners.get(0).getPartnerDetails().getCode(),
-                       is(equalTo(expectedCraftedPartnerCode)));
+            var expectedCraftedPartnerCode = recordWithoutIsilButContainingBibNrAndLandKode.getLandkode()
+                                                 .toUpperCase(Locale.ROOT)
+                                             + "-"
+                                             + recordWithoutIsilButContainingBibNrAndLandKode.getBibnr();
+            assertThat(partners.get(0).getPartnerDetails().getCode(), is(equalTo(expectedCraftedPartnerCode)));
         }
     }
 
@@ -269,45 +259,23 @@ public class ResourceSharingPartnerTest {
         var withIsil = true;
         var yieldsError = true;
         var bibNr = randomString();
-        return Stream.of(
-            Arguments.of(new RecordSpecification(bibNr,
-                                                 !withLandkode,
-                                                 null,
-                                                 randomBoolean(),
-                                                 randomBoolean(),
-                                                 randomBoolean(),
-                                                 randomBoolean(),
-                                                 !withIsil,
-                                                 randomString()), 0, yieldsError, !withIsil),
-            Arguments.of(new RecordSpecification(bibNr,
-                                                 withLandkode,
-                                                 null,
-                                                 randomBoolean(),
-                                                 randomBoolean(),
-                                                 randomBoolean(),
-                                                 randomBoolean(),
-                                                 withIsil,
-                                                 randomString()), 1, !yieldsError, withIsil),
-            Arguments.of(new RecordSpecification(bibNr,
-                                                 withLandkode,
-                                                 null,
-                                                 randomBoolean(),
-                                                 randomBoolean(),
-                                                 randomBoolean(),
-                                                 randomBoolean(),
-                                                 !withIsil,
-                                                 randomString()), 1, !yieldsError, !withIsil));
+        return Stream.of(Arguments.of(
+                             new RecordSpecification(bibNr, !withLandkode, null, randomBoolean(), randomBoolean(),
+                                                     randomBoolean(),
+                                                     randomBoolean(), !withIsil, randomString()), 0, yieldsError,
+                             !withIsil),
+                         Arguments.of(
+                             new RecordSpecification(bibNr, withLandkode, null, randomBoolean(), randomBoolean(),
+                                                     randomBoolean(), randomBoolean(), withIsil, randomString()), 1,
+                             !yieldsError, withIsil), Arguments.of(
+                new RecordSpecification(bibNr, withLandkode, null, randomBoolean(), randomBoolean(), randomBoolean(),
+                                        randomBoolean(), !withIsil, randomString()), 1, !yieldsError, !withIsil));
     }
 
     @Test
     void shouldExtractBasicPartnerDetailsCorrectly() throws IOException {
-        var specifiation = new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE,
-                                                   true,
-                                                   null, randomBoolean(),
-                                                   randomBoolean(),
-                                                   randomBoolean(),
-                                                   randomBoolean(),
-                                                   randomBoolean(),
+        var specifiation = new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE, true, null, randomBoolean(),
+                                                   randomBoolean(), randomBoolean(), randomBoolean(), randomBoolean(),
                                                    randomString());
         var basebibliotekGenerator = new BasebibliotekGenerator(specifiation);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
@@ -318,8 +286,10 @@ public class ResourceSharingPartnerTest {
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var partners = resourceSharingPartnerHandler.getPartners();
 
-        var expectedName = Objects.nonNull(basebibliotek.getRecord().get(0).getInst())
-                               ? basebibliotek.getRecord().get(0).getInst().replaceAll("\n", " - ")
+        var expectedName = Objects.nonNull(basebibliotek.getRecord().get(0).getInst()) ? basebibliotek.getRecord()
+                                                                                             .get(0)
+                                                                                             .getInst()
+                                                                                             .replaceAll("\n", " - ")
                                : StringUtils.EMPTY_STRING;
         assertThat(partners.get(0).getPartnerDetails().getName(), is(equalTo(expectedName)));
         var expectedAvgSupplyTime = 1;
@@ -340,15 +310,9 @@ public class ResourceSharingPartnerTest {
     @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
     public void shouldExtractCertainDataIfAlmaOrBibsysLibrary(String katsys) throws IOException {
         var withLandkode = true;
-        var specification = new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE,
-                                                    withLandkode,
-                                                    NNCIP_SERVER,
-                                                    randomBoolean(),
-                                                    randomBoolean(),
-                                                    randomBoolean(),
-                                                    randomBoolean(),
-                                                    randomBoolean(),
-                                                    katsys);
+        var specification = new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE, withLandkode, NNCIP_SERVER,
+                                                    randomBoolean(), randomBoolean(), randomBoolean(), randomBoolean(),
+                                                    randomBoolean(), katsys);
         var basebibliotekGenerator = new BasebibliotekGenerator(specification);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
@@ -362,14 +326,13 @@ public class ResourceSharingPartnerTest {
 
         assertThat("Expected one mapped partner for katsyst " + katsys, partners, hasSize(1));
 
-        var expectedHoldingCode = isAlmaOrBibsys
-                                      ? basebibliotek.getRecord().get(0).getLandkode().toUpperCase(Locale.ROOT)
-                                        + BIBNR_RESOLVABLE_TO_ALMA_CODE
-                                      : null;
+        var expectedHoldingCode =
+            isAlmaOrBibsys ? basebibliotek.getRecord().get(0).getLandkode().toUpperCase(Locale.ROOT)
+                             + BIBNR_RESOLVABLE_TO_ALMA_CODE : null;
         assertThat(partners.get(0).getPartnerDetails().getHoldingCode(), is(equalTo(expectedHoldingCode)));
 
-        var expectedSystemTypeValueValue = isAlmaOrBibsys
-                                               ? ALMA.toUpperCase(Locale.ROOT) : OTHER.toUpperCase(Locale.ROOT);
+        var expectedSystemTypeValueValue =
+            isAlmaOrBibsys ? ALMA.toUpperCase(Locale.ROOT) : OTHER.toUpperCase(Locale.ROOT);
         assertThat(partners.get(0).getPartnerDetails().getSystemType().getValue(),
                    is(equalTo(expectedSystemTypeValueValue)));
 
@@ -382,10 +345,8 @@ public class ResourceSharingPartnerTest {
     @ParameterizedTest(name = "Should handle katsys codes differently when generating isoData")
     @ValueSource(strings = {ALMA, BIBSYS})
     public void shouldExtractPartnerDetailsProfileDataIsoCorrectly(final String katsys) throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys)
-                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode("1")
-                                  .build();
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys).withBibnr(
+            BIBNR_RESOLVABLE_TO_ALMA_CODE).withLandkode("1").build();
 
         var basebibliotekGenerator = new BasebibliotekGenerator(record);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
@@ -411,14 +372,11 @@ public class ResourceSharingPartnerTest {
     @Test
     public void shouldExtractPartnerDetailsProfileDataNncipCorrectlyPreferringEmailBest() throws IOException {
 
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
-                                  .withBibnr("1")
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr("1")
                                   .withLandkode("1")
                                   .withEpostBest(EMAIL_BEST)
                                   .withEpostAdr(EMAIL_ADR)
-                                  .withEressurser(
-                                      new EressurserBuilder().withNncipUri(NNCIP_SERVER)
-                                          .build())
+                                  .withEressurser(new EressurserBuilder().withNncipUri(NNCIP_SERVER).build())
                                   .build();
 
         var basebibliotekGenerator = new BasebibliotekGenerator(record);
@@ -448,13 +406,10 @@ public class ResourceSharingPartnerTest {
         throws IOException {
         final String emailAdr = "adr@example.com";
 
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
-                                  .withBibnr("1")
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr("1")
                                   .withLandkode("1")
                                   .withEpostAdr(emailAdr)
-                                  .withEressurser(
-                                      new EressurserBuilder().withNncipUri(NNCIP_SERVER)
-                                          .build())
+                                  .withEressurser(new EressurserBuilder().withNncipUri(NNCIP_SERVER).build())
                                   .build();
 
         var basebibliotekGenerator = new BasebibliotekGenerator(record);
@@ -483,14 +438,11 @@ public class ResourceSharingPartnerTest {
     public void shouldExtractPartnerDetailsProfileDataNncipCorrectlyIgnoringInvalidEmailAddresses() throws IOException {
         final String email = "invalid";
 
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
-                                  .withBibnr("1")
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr("1")
                                   .withLandkode("1")
                                   .withEpostAdr(email)
                                   .withEpostBest(email)
-                                  .withEressurser(
-                                      new EressurserBuilder().withNncipUri(NNCIP_SERVER)
-                                          .build())
+                                  .withEressurser(new EressurserBuilder().withNncipUri(NNCIP_SERVER).build())
                                   .build();
 
         var basebibliotekGenerator = new BasebibliotekGenerator(record);
@@ -517,8 +469,7 @@ public class ResourceSharingPartnerTest {
     @Test
     public void shouldExtractProfileDetailsEmailPreferringEmailBest() throws IOException {
 
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
-                                  .withBibnr("1")
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr("1")
                                   .withLandkode("1")
                                   .withEpostBest(EMAIL_BEST)
                                   .withEpostAdr(EMAIL_ADR)
@@ -548,8 +499,7 @@ public class ResourceSharingPartnerTest {
     public void shouldExtractProfileDetailsEmailFallingBackToEpostAdrIfBestIsMissing() throws IOException {
         final String email = "adr@example.com";
 
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
-                                  .withBibnr("1")
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr("1")
                                   .withLandkode("1")
                                   .withEpostAdr(email)
                                   .build();
@@ -577,8 +527,7 @@ public class ResourceSharingPartnerTest {
     public void shouldExtractProfileDetailsEmailCorrectlyIgnoringInvalidEmailAddresses() throws IOException {
         final String email = "invalid";
 
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
-                                  .withBibnr("1")
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr("1")
                                   .withLandkode("1")
                                   .withEpostBest(email)
                                   .withEpostAdr(email)
@@ -607,17 +556,9 @@ public class ResourceSharingPartnerTest {
     @MethodSource("provideStengtArguments")
     public void shouldCalculateStengtStatusCorrectly(String stengt, boolean withStengtFra, boolean withStengTil,
                                                      Status expectedStatus) throws IOException {
-        var specification = new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE,
-                                                    true,
-                                                    null,
-                                                    withStengtFra,
-                                                    withStengTil,
-                                                    randomBoolean(),
-                                                    randomBoolean(),
-                                                    randomBoolean(),
-                                                    randomString(),
-                                                    Collections.emptyList(),
-                                                    stengt);
+        var specification = new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE, true, null, withStengtFra,
+                                                    withStengTil, randomBoolean(), randomBoolean(), randomBoolean(),
+                                                    randomString(), Collections.emptyList(), stengt);
         var basebibliotekGenerator = new BasebibliotekGenerator(specification);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
@@ -630,20 +571,17 @@ public class ResourceSharingPartnerTest {
     }
 
     private static Stream<Arguments> provideStengtArguments() {
-        return Stream.of(
-            Arguments.of("U", false, false, Status.INACTIVE),
-            Arguments.of("X", false, false, Status.INACTIVE),
-            Arguments.of(null, true, false, Status.INACTIVE),
-            Arguments.of(null, false, true, Status.INACTIVE),
-            Arguments.of(null, true, true, Status.INACTIVE),
-            Arguments.of(null, false, false, Status.ACTIVE)
-        );
+        return Stream.of(Arguments.of("U", false, false, Status.INACTIVE),
+                         Arguments.of("X", false, false, Status.INACTIVE),
+                         Arguments.of(null, true, false, Status.INACTIVE),
+                         Arguments.of(null, false, true, Status.INACTIVE),
+                         Arguments.of(null, true, true, Status.INACTIVE),
+                         Arguments.of(null, false, false, Status.ACTIVE));
     }
 
     @Test
     public void shouldSkipWhenBasebibliotekFails() throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
-                                  .withBibnr("1")
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr("1")
                                   .withLandkode("1")
                                   .withEpostBest(EMAIL_BEST)
                                   .withEpostAdr(EMAIL_ADR)
@@ -666,10 +604,8 @@ public class ResourceSharingPartnerTest {
     @ParameterizedTest(name = "Should handle katsys codes differently when generating institution code")
     @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
     public void shouldExtractAlmaCodeInPartnerDetailsCorrectly(final String katsys) throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys)
-                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode("1")
-                                  .build();
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys).withBibnr(
+            BIBNR_RESOLVABLE_TO_ALMA_CODE).withLandkode("1").build();
 
         var basebibliotekGenerator = new BasebibliotekGenerator(record);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
@@ -677,8 +613,8 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
         var s3Event = createS3Event(uri);
 
-        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
-            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
         WireMocker.mockBasebibliotekXml(basebibliotekXml, BIBNR_RESOLVABLE_TO_ALMA_CODE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
@@ -699,10 +635,8 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldLogAndThrowExceptionWhenAlmaCodeLookupTableIsMissing() throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), ALMA)
-                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode("1")
-                                  .build();
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), ALMA).withBibnr(
+            BIBNR_RESOLVABLE_TO_ALMA_CODE).withLandkode("1").build();
 
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
@@ -713,8 +647,8 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), basebibliotekXml);
         var s3Event = createS3Event(uri);
 
-        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
-            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment,
                                                                           WireMocker.httpClient);
@@ -728,19 +662,18 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldLogAndThrowExceptionWhenAlmaCodeLookupTableIsEmpty() throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), ALMA)
-                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode("1")
-                                  .build();
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), ALMA).withBibnr(
+            BIBNR_RESOLVABLE_TO_ALMA_CODE).withLandkode("1").build();
 
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
 
-        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
-            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
 
-        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY))
-            .thenReturn(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH);
+        when(mockedEnvironment.readEnv(
+            ResourceSharingPartnerHandler.LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY)).thenReturn(
+            LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH);
 
         s3Driver.insertFile(UnixPath.of(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH),
                             IoUtils.stringFromResources(Path.of("emptyLibCodeToAlmaCodeMapping.json")));
@@ -763,19 +696,18 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldLogAndThrowExceptionWhenAlmaCodeLookupTableIsInvalidJson() throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), ALMA)
-                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode("1")
-                                  .build();
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), ALMA).withBibnr(
+            BIBNR_RESOLVABLE_TO_ALMA_CODE).withLandkode("1").build();
 
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
 
-        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
-            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
 
-        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY))
-            .thenReturn(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH);
+        when(mockedEnvironment.readEnv(
+            ResourceSharingPartnerHandler.LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY)).thenReturn(
+            LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH);
 
         s3Driver.insertFile(UnixPath.of(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH),
                             IoUtils.stringFromResources(Path.of("invalidLibCodeToAlmaCodeMapping.json")));
@@ -798,8 +730,7 @@ public class ResourceSharingPartnerTest {
 
     @Test
     void shouldReportSuccessfulWhenAllWorksProperly() throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
-                                  .withBibnr("1")
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr("1")
                                   .withLandkode(LANDKODE)
                                   .withEpostBest(EMAIL_BEST)
                                   .withEpostAdr(EMAIL_ADR)
@@ -812,8 +743,7 @@ public class ResourceSharingPartnerTest {
         var rspInputFileContent = bibNrSucess;
         var uri = s3Driver.insertFile(s3Path, rspInputFileContent);
         var s3Event = createS3Event(uri);
-        var resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client,
-                                                                              mockedEnvironment,
+        var resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment,
                                                                               WireMocker.httpClient);
         var numberOfSuccessFulLibraries = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var expectedNumberOfSuccessFulLibraries = 1;
@@ -822,41 +752,31 @@ public class ResourceSharingPartnerTest {
         var report = reports3Driver.getFile(
             UnixPath.of(ResourceSharingPartnerHandler.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
         assertThat(report,
-                   containsString(
-                       bibNrSucess
-                       + StringUtils.SPACE
-                       + ResourceSharingPartnerHandler.OK_REPORT_MESSAGE));
+                   containsString(bibNrSucess + StringUtils.SPACE + ResourceSharingPartnerHandler.OK_REPORT_MESSAGE));
     }
 
     @Test
     void shouldGenerateReportWhenAlmaContactFailure() throws IOException {
         var almaLibraryFailureBibNr = "1234567";
-        var almaFailureRecord = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
-                                    .withBibnr(almaLibraryFailureBibNr)
-                                    .withLandkode(LANDKODE)
-                                    .withEpostBest(EMAIL_BEST)
-                                    .withEpostAdr(EMAIL_ADR)
-                                    .build();
+        var almaFailureRecord = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr(
+            almaLibraryFailureBibNr).withLandkode(LANDKODE).withEpostBest(EMAIL_BEST).withEpostAdr(EMAIL_ADR).build();
         var almaFailureXml = BasebibliotekGenerator.toXml(
             new BasebibliotekGenerator(almaFailureRecord).generateBaseBibliotek());
         WireMocker.mockBasebibliotekXml(almaFailureXml, almaLibraryFailureBibNr);
         WireMocker.mockAlmaForbiddenGetResponse("NO-" + almaLibraryFailureBibNr);
         WireMocker.mockAlmaForbiddenPostResponse("NO-" + almaLibraryFailureBibNr);
         var s3Path = randomS3Path();
-        var rspInputFileContent =  almaLibraryFailureBibNr;
+        var rspInputFileContent = almaLibraryFailureBibNr;
         var uri = s3Driver.insertFile(s3Path, rspInputFileContent);
         var s3Event = createS3Event(uri);
-        var resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client,
-                                                                              mockedEnvironment,
+        var resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment,
                                                                               WireMocker.httpClient);
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
         var report = reports3Driver.getFile(
             UnixPath.of(ResourceSharingPartnerHandler.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
-        assertThat(report,
-                   containsString(
-                       almaLibraryFailureBibNr
-                       + ResourceSharingPartnerHandler.COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE));
+        assertThat(report, containsString(
+            almaLibraryFailureBibNr + ResourceSharingPartnerHandler.COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE));
     }
 
     @Test
@@ -867,28 +787,21 @@ public class ResourceSharingPartnerTest {
         var rspInputFileContent = basebibliotekFailureBibnr;
         var uri = s3Driver.insertFile(s3Path, rspInputFileContent);
         var s3Event = createS3Event(uri);
-        var resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client,
-                                                                              mockedEnvironment,
+        var resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment,
                                                                               WireMocker.httpClient);
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
         var report = reports3Driver.getFile(
             UnixPath.of(ResourceSharingPartnerHandler.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
-        assertThat(report,
-                   containsString(
-                       basebibliotekFailureBibnr
-                       + ResourceSharingPartnerHandler.COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE));
+        assertThat(report, containsString(
+            basebibliotekFailureBibnr + ResourceSharingPartnerHandler.COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE));
     }
 
     @Test
     void shouldGenerateReportWhenConversionToPartnerFailure() throws IOException {
         var conversionFailureBibNr = "3";
-        var conversionFailureRecord = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
-                                          .withBibnr(conversionFailureBibNr)
-                                          .withLandkode(null)
-                                          .withEpostBest(EMAIL_BEST)
-                                          .withEpostAdr(EMAIL_ADR)
-                                          .build();
+        var conversionFailureRecord = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr(
+            conversionFailureBibNr).withLandkode(null).withEpostBest(EMAIL_BEST).withEpostAdr(EMAIL_ADR).build();
         var conversionFailureLibraryXml = BasebibliotekGenerator.toXml(
             new BasebibliotekGenerator(conversionFailureRecord).generateBaseBibliotek());
         WireMocker.mockBasebibliotekXml(conversionFailureLibraryXml, conversionFailureBibNr);
@@ -896,26 +809,21 @@ public class ResourceSharingPartnerTest {
         var rspInputFileContent = conversionFailureBibNr;
         var uri = s3Driver.insertFile(s3Path, rspInputFileContent);
         var s3Event = createS3Event(uri);
-        var resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client,
-                                                                              mockedEnvironment,
+        var resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment,
                                                                               WireMocker.httpClient);
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
         var report = reports3Driver.getFile(
             UnixPath.of(ResourceSharingPartnerHandler.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
-        assertThat(report,
-                   containsString(
-                       conversionFailureBibNr
-                       + ResourceSharingPartnerHandler.COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE));
+        assertThat(report, containsString(
+            conversionFailureBibNr + ResourceSharingPartnerHandler.COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE));
     }
 
     @ParameterizedTest(name = "Should handle katsys codes differently when generating locateProfile")
     @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
     public void shouldPopulateLocateProfileInPartnerDetailsCorrectly(final String katsys) throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys)
-                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode("1")
-                                  .build();
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys).withBibnr(
+            BIBNR_RESOLVABLE_TO_ALMA_CODE).withLandkode("1").build();
 
         var basebibliotekGenerator = new BasebibliotekGenerator(record);
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
@@ -923,8 +831,8 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
         var s3Event = createS3Event(uri);
 
-        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME))
-            .thenReturn(ILL_SERVER_ENVIRONMENT_VALUE);
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
         WireMocker.mockBasebibliotekXml(basebibliotekXml, BIBNR_RESOLVABLE_TO_ALMA_CODE);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
@@ -995,14 +903,12 @@ public class ResourceSharingPartnerTest {
         assertThat(emails.getEmail(), hasSize(expectedEmailsSize));
         var emailBest = emails.getEmail()
                             .stream()
-                            .filter(email -> hasEmailAddressCorresponding(email,
-                                                                          record.getEpostBest()))
+                            .filter(email -> hasEmailAddressCorresponding(email, record.getEpostBest()))
                             .findFirst()
                             .orElse(null);
         var emailRegular = emails.getEmail()
                                .stream()
-                               .filter(email -> hasEmailAddressCorresponding(email,
-                                                                             record.getEpostAdr()))
+                               .filter(email -> hasEmailAddressCorresponding(email, record.getEpostAdr()))
                                .findFirst()
                                .orElse(null);
         if (emailBestShouldExist) {
@@ -1018,8 +924,8 @@ public class ResourceSharingPartnerTest {
         assertThat(email, is(IsNull.notNullValue()));
         var expectedEmailTypes = List.of("claimMail", "orderMail", "paymentMail", "queries", "returnsMail");
         assertThat(email.getEmailTypes().getEmailType(), hasSize(expectedEmailTypes.size()));
-        expectedEmailTypes.forEach(emailType -> assertThat(email.getEmailTypes().getEmailType(),
-                                                           hasItem(containsString(emailType))));
+        expectedEmailTypes.forEach(
+            emailType -> assertThat(email.getEmailTypes().getEmailType(), hasItem(containsString(emailType))));
         var expectedEmailAddress = Objects.nonNull(emailAddress) ? emailAddress : StringUtils.EMPTY_STRING;
         assertThat(email.getEmailAddress(), is(equalTo(expectedEmailAddress)));
         assertThat(email.isPreferred(), is(equalTo(shouldBePreferred)));
@@ -1049,34 +955,26 @@ public class ResourceSharingPartnerTest {
         var visitationAddressShouldExist = Objects.nonNull(record.getVadr());
         var expectedAddressSize = (postAddressShouldExist ? 1 : 0) + (visitationAddressShouldExist ? 1 : 0);
         assertThat(addresses, hasSize(expectedAddressSize));
-        var postAddress =
-            addresses.stream()
-                .filter(address -> hasLine1CorrespondingToRecord(address, record.getPadr()))
-                .findFirst()
-                .orElse(null);
-        var visitationAddress =
-            addresses.stream()
-                .filter(address -> hasLine1CorrespondingToRecord(address, record.getVadr()))
-                .findFirst()
-                .orElse(null);
+        var postAddress = addresses.stream()
+                              .filter(address -> hasLine1CorrespondingToRecord(address, record.getPadr()))
+                              .findFirst()
+                              .orElse(null);
+        var visitationAddress = addresses.stream()
+                                    .filter(address -> hasLine1CorrespondingToRecord(address, record.getVadr()))
+                                    .findFirst()
+                                    .orElse(null);
         if (postAddressShouldExist) {
             assertAddress(postAddress, record.getPadr(), record.getBibnr(), record.getPpoststed(), record.getPpostnr(),
                           record.getLandkode(), true);
         }
         if (visitationAddressShouldExist) {
-            assertAddress(visitationAddress,
-                          record.getVadr(),
-                          record.getBibnr(),
-                          record.getVpoststed(),
-                          record.getVpostnr(),
-                          record.getLandkode(),
-                          !postAddressShouldExist);
+            assertAddress(visitationAddress, record.getVadr(), record.getBibnr(), record.getVpoststed(),
+                          record.getVpostnr(), record.getLandkode(), !postAddressShouldExist);
         }
     }
 
-    private void assertAddress(Address address, String expectedLine1, String expectedLine5,
-                               String expectedCity, String expectedPostalCode, String expectedCountry,
-                               boolean expectedPreferred) {
+    private void assertAddress(Address address, String expectedLine1, String expectedLine5, String expectedCity,
+                               String expectedPostalCode, String expectedCountry, boolean expectedPreferred) {
         assertThat(address, is(IsNull.notNullValue()));
         assertThat(address.getLine1(), is(equalTo(expectedLine1)));
         assertThat(address.getLine5(), is(equalTo(expectedLine5)));
@@ -1103,15 +1001,10 @@ public class ResourceSharingPartnerTest {
     }
 
     private S3Event createS3Event(String expectedObjectKey) {
-        var eventNotification = new S3EventNotificationRecord(randomString(),
-                                                              randomString(),
-                                                              randomString(),
-                                                              randomDate(),
-                                                              randomString(),
-                                                              EMPTY_REQUEST_PARAMETERS,
+        var eventNotification = new S3EventNotificationRecord(randomString(), randomString(), randomString(),
+                                                              randomDate(), randomString(), EMPTY_REQUEST_PARAMETERS,
                                                               EMPTY_RESPONSE_ELEMENTS,
-                                                              createS3Entity(expectedObjectKey),
-                                                              EMPTY_USER_IDENTITY);
+                                                              createS3Entity(expectedObjectKey), EMPTY_USER_IDENTITY);
         return new S3Event(List.of(eventNotification));
     }
 
