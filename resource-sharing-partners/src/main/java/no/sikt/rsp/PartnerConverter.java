@@ -69,8 +69,7 @@ public class PartnerConverter {
         return baseBibliotek
                    .getRecord()
                    .stream()
-                   .map(this::convertRecordToPartnerOptional)
-                   .flatMap(Optional::stream)
+                   .map(this::convertRecordToPartnerWhenConstraintsSatisfied)
                    .collect(Collectors.toList());
     }
 
@@ -80,10 +79,13 @@ public class PartnerConverter {
         return xmlWriter.toString();
     }
 
-    private Optional<Partner> convertRecordToPartnerOptional(Record record) {
-        return satisfiesConstraints(record)
-                   ? Optional.of(convertRecordToPartner(record))
-                   : returnEmptyAndLogProblem(record);
+    private Partner convertRecordToPartnerWhenConstraintsSatisfied(Record record) {
+        if (satisfiesConstraints(record)) {
+            return convertRecordToPartner(record);
+        } else {
+            logProblemAndThrowException(record);
+            return null;
+        }
     }
 
     private Partner convertRecordToPartner(Record record) {
@@ -93,10 +95,10 @@ public class PartnerConverter {
         return partner;
     }
 
-    private Optional<Partner> returnEmptyAndLogProblem(Record record) {
+    private void logProblemAndThrowException(Record record) {
         var missingParameters = Objects.nonNull(record.getLandkode()) ? StringUtils.EMPTY_STRING : "landkode";
         logger.info(String.format(COULD_NOT_CONVERT_RECORD, missingParameters, toXml(record)));
-        return Optional.empty();
+        throw new RuntimeException(String.format(COULD_NOT_CONVERT_RECORD, missingParameters, toXml(record)));
     }
 
     private boolean satisfiesConstraints(Record record) {

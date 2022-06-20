@@ -1,5 +1,6 @@
 package test.utils;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.forbidden;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.notFound;
@@ -7,10 +8,12 @@ import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static nva.commons.core.StringUtils.EMPTY_STRING;
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.http.Fault;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
@@ -60,6 +63,16 @@ public class WireMocker {
                     .willReturn(ok().withBody(responseBody)));
     }
 
+    public static void mockAlmaForbiddenGetResponse(String code) {
+        stubFor(get(urlPathEqualTo(URL_PATH_PARTNER + code))
+                    .willReturn(forbidden()));
+    }
+
+    public static void mockAlmaForbiddenPostResponse(String code) {
+        stubFor(post(urlPathEqualTo(URL_PATH_PARTNER + code))
+                    .willReturn(aResponse().withFault(Fault.MALFORMED_RESPONSE_CHUNK)));
+    }
+
     public static void mockBasebibliotekXml(String basebibliotek, String bibNr) {
         stubFor(get(urlPathMatching("/basebibliotek/rest/bibnr/" + bibNr)).willReturn(ok().withBody(basebibliotek)));
     }
@@ -67,6 +80,4 @@ public class WireMocker {
     public static void mockBassebibliotekFailure(String bibNr) {
         stubFor(get(urlPathMatching("/basebibliotek/rest/bibnr/" + bibNr)).willReturn(forbidden()));
     }
-
-
 }

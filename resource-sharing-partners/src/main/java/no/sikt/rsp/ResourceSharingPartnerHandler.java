@@ -1,6 +1,5 @@
 package no.sikt.rsp;
 
-import static java.lang.Math.toIntExact;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
@@ -12,6 +11,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import no.nb.basebibliotek.generated.BaseBibliotek;
@@ -19,6 +19,7 @@ import no.sikt.alma.generated.Partner;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.StringUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
@@ -31,6 +32,13 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     public static final int SINGLE_EXPECTED_RECORD = 0;
     private static final String EVENT = "event";
     public static final String ALMA_API_HOST = "ALMA_API_HOST";
+    public static final String COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE = " could not contact Alma\n";
+    public static final String COULD_NOT_CONVERT_TO_PARTNER_ERROR_MESSAGE = " Could not convert to partner";
+    public static final String COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE = " could not convert to partner\n";
+    public static final String COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE = " could not fetch basebibliotek\n";
+    public static final String COULD_NOT_FETCH_BASEBIBLIOTEK_ERROR_MESSAGE = " Could not fetch basebibliotek";
+    public static final String OK_REPORT_MESSAGE = "OK\n";
+    public static final String REPORT_FILE_NAME_PREFIX = "report-";
     private final transient Gson gson = new Gson();
 
     public static final String S3_URI_TEMPLATE = "s3://%s/%s";
@@ -45,6 +53,9 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
 
     private final transient Environment environment;
     public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_REST_URL";
+
+    private final transient String reportS3BucketName;
+    public static final String REPORT_BUCKET_ENVIRONMENT_NAME = "REPORT_BUCKET";
 
     private final transient BasebibliotekConnection basebibliotekConnection;
 
@@ -64,10 +75,10 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
                                                                                BASEBIBLIOTEK_URI_ENVIRONMENT_NAME))
                                                                        .getUri());
         this.partners = new ArrayList<>();
+        this.reportS3BucketName = environment.readEnv(REPORT_BUCKET_ENVIRONMENT_NAME);
     }
 
     @Override
-    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     public Integer handleRequest(S3Event s3event, Context context) {
         logger.info(EVENT + gson.toJson(s3event));
 
@@ -83,39 +94,87 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
 
             final String instRegAsJson = driver.getFile(UnixPath.of(libCodeToAlmaCodeMappingFilePath));
             logger.info("done collecting instreg");
+
             AlmaCodeProvider almaCodeProvider = new AlmaCodeProvider(instRegAsJson);
-
-            var basebiblioteks = new ArrayList<BaseBibliotek>();
             var bibnrList = getBibNrList(bibNrFile);
-            for (String bibnr : bibnrList) {
-                try {
-                    basebiblioteks.add(basebibliotekConnection.getBasebibliotek(bibnr));
-                } catch (Exception e) {
-                    logger.info("Could not fetch basebibliotek", e);
-                }
-            }
-            for (BaseBibliotek baseBibliotek : basebiblioteks) {
-                try {
-                    partners.addAll(new PartnerConverter(almaCodeProvider, illServer, baseBibliotek).toPartners());
-                } catch (Exception e) {
-                    logger.info("Could not convert to partner", e);
-                }
-            }
-            var counter = 0;
-            for (Partner partner : partners) {
-                try {
-                    if (sendToAlma(partner)) {
-                        counter++;
-                    }
-                } catch (Exception e) {
-                    logger.info("Could not contact Alma", e);
-                }
-            }
-
+            var reportStringBuilder = new StringBuilder();
+            var basebiblioteks = generateBasebibliotek(bibnrList, reportStringBuilder);
+            partners.addAll(generatePartners(basebiblioteks, reportStringBuilder, almaCodeProvider, illServer));
+            int counter = sendToAlmaAndCountSuccess(partners, reportStringBuilder);
+            reportToS3Bucket(reportStringBuilder, s3event);
             return counter;
         } catch (Exception exception) {
             throw logErrorAndThrowException(exception);
         }
+    }
+
+    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
+    private int sendToAlmaAndCountSuccess(List<Partner> partners, StringBuilder reportStringBuilder) {
+        var counter = 0;
+        for (Partner partner : partners) {
+            var charIndexStartOfBibNrInPartnerCode = 3;
+            var bibNr = partner
+                            .getPartnerDetails()
+                            .getCode()
+                            .substring(charIndexStartOfBibNrInPartnerCode);
+            try {
+                if (sendToAlma(partner)) {
+                    counter++;
+                    reportStringBuilder
+                        .append(bibNr)
+                        .append(StringUtils.SPACE)
+                        .append(OK_REPORT_MESSAGE);
+                }
+            } catch (Exception e) {
+                //Errors in individual libraries should not cause crash in entire execution.
+                logger.info("Could not contact Alma", e);
+                reportStringBuilder
+                    .append(bibNr)
+                    .append(COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE);
+            }
+        }
+        return counter;
+    }
+
+    private Collection<? extends Partner> generatePartners(List<BaseBibliotek> basebiblioteks,
+                                                           StringBuilder reportStringBuilder,
+                                                           AlmaCodeProvider almaCodeProvider,
+                                                           String illServer) {
+        var partners = new ArrayList<Partner>();
+        for (BaseBibliotek baseBibliotek : basebiblioteks) {
+            try {
+                partners.addAll(new PartnerConverter(almaCodeProvider, illServer, baseBibliotek).toPartners());
+            } catch (Exception e) {
+                //Errors in individual libraries should not cause crash in entire execution.
+                logger.info(COULD_NOT_CONVERT_TO_PARTNER_ERROR_MESSAGE, e);
+                reportStringBuilder
+                    .append(baseBibliotek.getRecord().get(0).getBibnr())
+                    .append(COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE);
+            }
+        }
+        return partners;
+    }
+
+    private List<BaseBibliotek> generateBasebibliotek(List<String> bibnrList, StringBuilder reportStringBuilder) {
+        var basebiblioteks = new ArrayList<BaseBibliotek>();
+        for (String bibnr : bibnrList) {
+            try {
+                basebiblioteks.add(basebibliotekConnection.getBasebibliotek(bibnr));
+            } catch (Exception e) {
+                //Errors in individual libraries should not cause crash in entire execution.
+                logger.info(COULD_NOT_FETCH_BASEBIBLIOTEK_ERROR_MESSAGE, e);
+                reportStringBuilder
+                    .append(bibnr)
+                    .append(COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE);
+            }
+        }
+        return basebiblioteks;
+    }
+
+    private void reportToS3Bucket(StringBuilder reportStringBuilder, S3Event s3Event) throws IOException {
+        var report = reportStringBuilder.toString();
+        var s3Driver = new S3Driver(s3Client, reportS3BucketName);
+        s3Driver.insertFile(UnixPath.of(REPORT_FILE_NAME_PREFIX + extractFilename(s3Event)), report);
     }
 
     private List<String> getBibNrList(String bibNrFile) {
