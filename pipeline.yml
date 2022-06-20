@@ -339,7 +339,7 @@ Resources:
       ServiceRole: !GetAtt 'CodeBuildRole.Arn'
       Source:
         Type: GITHUB
-        Location: https://github.com/BIBSYSDEV/alma-sru-proxy.git
+        Location: https://github.com/BIBSYSDEV/basebibliotek-alma-integrasjoner.git
       Triggers:
         Webhook: true
       TimeoutInMinutes: 10
