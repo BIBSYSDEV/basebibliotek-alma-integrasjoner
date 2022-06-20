@@ -69,7 +69,7 @@ public class PartnerConverter {
         return baseBibliotek
                    .getRecord()
                    .stream()
-                   .map(this::convertRecordToPartnerOptional)
+                   .map(this::convertRecordToPartnerWhenConstraintsSatisfied)
                    .collect(Collectors.toList());
     }
 
@@ -79,7 +79,7 @@ public class PartnerConverter {
         return xmlWriter.toString();
     }
 
-    private Partner convertRecordToPartnerOptional(Record record) {
+    private Partner convertRecordToPartnerWhenConstraintsSatisfied(Record record) {
         if (satisfiesConstraints(record)) {
             return convertRecordToPartner(record);
         } else {

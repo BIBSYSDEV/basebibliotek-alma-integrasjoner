@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
 
-@SuppressWarnings("PMD.DataflowAnomalyAnalysis")
 public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, Integer> {
 
     private static final Logger logger = LoggerFactory.getLogger(ResourceSharingPartnerHandler.class);
@@ -80,7 +79,6 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     }
 
     @Override
-    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     public Integer handleRequest(S3Event s3event, Context context) {
         logger.info(EVENT + gson.toJson(s3event));
 
@@ -110,6 +108,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
         }
     }
 
+    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     private int sendToAlmaAndCountSuccess(List<Partner> partners, StringBuilder reportStringBuilder) {
         var counter = 0;
         for (Partner partner : partners) {

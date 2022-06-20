@@ -199,8 +199,7 @@ public class ResourceSharingPartnerTest {
         var bibNr = record.getBibnr();
         WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
         WireMocker.mockBasebibliotekXml(INVALID_BASEBIBLIOTEK_XML_STRING, BIBNR_RESOLVABLE_TO_ALMA_CODE);
-        var s3path = randomS3Path();
-        var uri = s3Driver.insertFile(s3path, BIBNR_RESOLVABLE_TO_ALMA_CODE + "\n" + bibNr);
+        var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE + "\n" + bibNr);
         var s3Event = createS3Event(uri);
         var expectedSuccessfulConversion = 1;
         var numberOfSuccessfulConversion = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
