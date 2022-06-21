@@ -1,0 +1,13 @@
+{
+  "errorsExist": true,
+  "errorList": {
+    "error": [
+      {
+        "errorCode": "402118",
+        "errorMessage": "Partner not found",
+        "trackingId": "E01-1706130429-INBKB-AWAE2088348682"
+      }
+    ]
+  },
+  "result": null
+}

@@ -1,76 +1,68 @@
 package test.utils;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.badRequest;
 import static com.github.tomakehurst.wiremock.client.WireMock.forbidden;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.notFound;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static nva.commons.core.StringUtils.EMPTY_STRING;
-import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.http.Fault;
-import java.net.URI;
-import java.net.http.HttpClient;
 import java.nio.file.Path;
-import no.sikt.rsp.AlmaConnection;
-import no.unit.nva.stubs.WiremockHttpClient;
 import nva.commons.core.ioutils.IoUtils;
 
 public class WireMocker {
 
-    public static final String URL_PATH_PARTNER = "/" + AlmaConnection.PARTNERS_URL_PATH + "/";
-    public static final String LIBCODE_ID_REGEX = "[A-Z]{2}-[0-9]{7}";
-    private static WireMockServer httpServer;
-    public static HttpClient httpClient;
-    public static URI serverUri;
+    public static final String URL_PATH_PARTNER = "/partners";
 
-    public static void startWiremockServer() {
-        httpClient = WiremockHttpClient.create();
-        httpServer = new WireMockServer(options().dynamicHttpsPort());
-        httpServer.start();
-        serverUri = URI.create(httpServer.baseUrl());
-    }
-
-    public static void stopWiremockServer() {
-        httpServer.stop();
-    }
-
-    public static void mockAlmaGetResponse() {
+    public static void mockAlmaGetResponse(final String almaCode) {
         String responseBody = IoUtils.stringFromResources(Path.of(EMPTY_STRING, "rsp_0030100.json"));
-        stubFor(get(urlPathMatching(URL_PATH_PARTNER + LIBCODE_ID_REGEX))
+        stubFor(get(urlPathMatching(URL_PATH_PARTNER + "/" + almaCode))
                     .willReturn(ok().withBody(responseBody)));
     }
 
-    public static void mockAlmaGetResponseNotFound() {
-        stubFor(get(urlPathMatching(URL_PATH_PARTNER + LIBCODE_ID_REGEX))
-                    .willReturn(notFound()));
+    public static void mockAlmaGetResponsePartnerNotFound(final String almaCode) {
+        String almaGetResponseBody = IoUtils.stringFromResources(Path.of("almaPartnerNotFound.json"));
+        stubFor(get(URL_PATH_PARTNER + "/" + almaCode).willReturn(badRequest().withBody(almaGetResponseBody)));
     }
 
-    public static void mockAlmaPutResponse() {
-        String responseBody = IoUtils.stringFromResources(Path.of(EMPTY_STRING, "rsp_0030100.json"));
-        stubFor(put(urlPathMatching(URL_PATH_PARTNER + LIBCODE_ID_REGEX))
-                    .willReturn(ok().withBody(responseBody)));
+    public static void mockAlmaGetResponseBadRequestNotPartnerNotFound(final String almaCode) {
+        String almaGetResponseBody = IoUtils.stringFromResources(Path.of("almaUserNotFoundError.json"));
+        stubFor(get(URL_PATH_PARTNER + "/" + almaCode).willReturn(badRequest().withBody(almaGetResponseBody)));
+    }
+
+    public static void mockAlmaPutResponse(final String almaCode) {
+        String responseBody = IoUtils.stringFromResources(Path.of("rsp_0030100.json"));
+        stubFor(put(URL_PATH_PARTNER + "/" + almaCode).willReturn(ok().withBody(responseBody)));
     }
 
     public static void mockAlmaPostResponse() {
-        String responseBody = IoUtils.stringFromResources(Path.of(EMPTY_STRING, "rsp_0030100.json"));
-        stubFor(post(urlPathMatching(URL_PATH_PARTNER + LIBCODE_ID_REGEX))
-                    .willReturn(ok().withBody(responseBody)));
+        String almaPostResponseBody = "DUMMY";
+        stubFor(post(URL_PATH_PARTNER).willReturn(ok().withBody(almaPostResponseBody)));
     }
 
     public static void mockAlmaForbiddenGetResponse(String code) {
-        stubFor(get(urlPathEqualTo(URL_PATH_PARTNER + code))
+        stubFor(get(urlPathEqualTo(URL_PATH_PARTNER + "/" + code))
                     .willReturn(forbidden()));
     }
 
     public static void mockAlmaForbiddenPostResponse(String code) {
-        stubFor(post(urlPathEqualTo(URL_PATH_PARTNER + code))
+        stubFor(post(urlPathEqualTo(URL_PATH_PARTNER + "/" + code))
                     .willReturn(aResponse().withFault(Fault.MALFORMED_RESPONSE_CHUNK)));
+    }
+
+    public static void mockAlmaPostResponseBadRequest() {
+        String almaGetResponseBody = IoUtils.stringFromResources(Path.of("almaUserNotFoundError.json"));
+        stubFor(post(URL_PATH_PARTNER).willReturn(badRequest().withBody(almaGetResponseBody)));
+    }
+
+    public static void mockAlmaPutResponseBadRequest(String code) {
+        String almaGetResponseBody = IoUtils.stringFromResources(Path.of("almaUserNotFoundError.json"));
+        stubFor(put(URL_PATH_PARTNER + "/" + code).willReturn(badRequest().withBody(almaGetResponseBody)));
     }
 
     public static void mockBasebibliotekXml(String basebibliotek, String bibNr) {
@@ -80,4 +72,5 @@ public class WireMocker {
     public static void mockBassebibliotekFailure(String bibNr) {
         stubFor(get(urlPathMatching("/basebibliotek/rest/bibnr/" + bibNr)).willReturn(forbidden()));
     }
+
 }
