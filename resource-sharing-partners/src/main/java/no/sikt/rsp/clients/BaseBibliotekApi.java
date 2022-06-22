@@ -5,5 +5,5 @@ import no.nb.basebibliotek.generated.BaseBibliotek;
 
 public interface BaseBibliotekApi {
 
-    Optional<BaseBibliotek> getBasebibliotek(String bibNr);
+    Optional<BaseBibliotek> fetchBasebibliotek(String bibNr);
 }

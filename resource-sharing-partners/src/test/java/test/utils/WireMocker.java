@@ -19,9 +19,11 @@ public class WireMocker {
 
     public static final String URL_PATH_PARTNER = "/partners";
 
+    private static final String SLASH = "/";
+
     public static void mockAlmaGetResponse(final String almaCode) {
         String responseBody = IoUtils.stringFromResources(Path.of(EMPTY_STRING, "rsp_0030100.json"));
-        stubFor(get(urlPathMatching(URL_PATH_PARTNER + "/" + almaCode))
+        stubFor(get(urlPathMatching(URL_PATH_PARTNER + SLASH + almaCode))
                     .willReturn(ok().withBody(responseBody)));
     }
 
@@ -32,12 +34,12 @@ public class WireMocker {
 
     public static void mockAlmaGetResponseBadRequestNotPartnerNotFound(final String almaCode) {
         String almaGetResponseBody = IoUtils.stringFromResources(Path.of("almaUserNotFoundError.json"));
-        stubFor(get(URL_PATH_PARTNER + "/" + almaCode).willReturn(badRequest().withBody(almaGetResponseBody)));
+        stubFor(get(URL_PATH_PARTNER + SLASH + almaCode).willReturn(badRequest().withBody(almaGetResponseBody)));
     }
 
     public static void mockAlmaPutResponse(final String almaCode) {
         String responseBody = IoUtils.stringFromResources(Path.of("rsp_0030100.json"));
-        stubFor(put(URL_PATH_PARTNER + "/" + almaCode).willReturn(ok().withBody(responseBody)));
+        stubFor(put(URL_PATH_PARTNER + SLASH + almaCode).willReturn(ok().withBody(responseBody)));
     }
 
     public static void mockAlmaPostResponse() {
@@ -46,12 +48,12 @@ public class WireMocker {
     }
 
     public static void mockAlmaForbiddenGetResponse(String code) {
-        stubFor(get(urlPathEqualTo(URL_PATH_PARTNER + "/" + code))
+        stubFor(get(urlPathEqualTo(URL_PATH_PARTNER + SLASH + code))
                     .willReturn(forbidden()));
     }
 
     public static void mockAlmaForbiddenPostResponse(String code) {
-        stubFor(post(urlPathEqualTo(URL_PATH_PARTNER + "/" + code))
+        stubFor(post(urlPathEqualTo(URL_PATH_PARTNER + SLASH + code))
                     .willReturn(aResponse().withFault(Fault.MALFORMED_RESPONSE_CHUNK)));
     }
 
@@ -62,7 +64,7 @@ public class WireMocker {
 
     public static void mockAlmaPutResponseBadRequest(String code) {
         String almaGetResponseBody = IoUtils.stringFromResources(Path.of("almaUserNotFoundError.json"));
-        stubFor(put(URL_PATH_PARTNER + "/" + code).willReturn(badRequest().withBody(almaGetResponseBody)));
+        stubFor(put(URL_PATH_PARTNER + SLASH + code).willReturn(badRequest().withBody(almaGetResponseBody)));
     }
 
     public static void mockBasebibliotekXml(String basebibliotek, String bibNr) {

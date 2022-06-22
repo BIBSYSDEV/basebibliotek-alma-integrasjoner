@@ -27,7 +27,7 @@ public class HttpUrlConnectionBaseBibliotekApi extends AbstractHttpUrlConnection
     }
 
     @Override
-    public Optional<BaseBibliotek> getBasebibliotek(String bibNr) {
+    public Optional<BaseBibliotek> fetchBasebibliotek(String bibNr) {
         HttpRequest request = HttpRequest.newBuilder()
                                   .GET()
                                   .uri(UriWrapper.fromUri(host).addChild(bibNr).getUri())

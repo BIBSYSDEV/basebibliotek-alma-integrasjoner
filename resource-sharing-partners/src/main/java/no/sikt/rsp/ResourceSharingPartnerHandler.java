@@ -13,9 +13,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.sikt.alma.generated.Partner;
-import no.sikt.rsp.clients.AlmaPartnerUpdater;
+import no.sikt.rsp.clients.AlmaPartnerUpserter;
 import no.sikt.rsp.clients.BaseBibliotekApi;
-import no.sikt.rsp.clients.alma.HttpUrlConnectionAlmaPartnerUpdater;
+import no.sikt.rsp.clients.alma.HttpUrlConnectionAlmaPartnerUpserter;
 import no.sikt.rsp.clients.basebibliotek.HttpUrlConnectionBaseBibliotekApi;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
@@ -48,7 +48,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
         "LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH";
     private static final String ALMA_API_KEY_ENV_KEY = "ALMA_APIKEY";
     private final transient S3Client s3Client;
-    private final transient AlmaPartnerUpdater almaPartnerUpdater;
+    private final transient AlmaPartnerUpserter almaPartnerUpserter;
     private final transient List<Partner> partners;
 
     private final transient Environment environment;
@@ -70,7 +70,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
 
         final String almaApiKey = environment.readEnv(ALMA_API_KEY_ENV_KEY);
         final URI almaUri = UriWrapper.fromUri(environment.readEnv(ALMA_API_HOST)).getUri();
-        this.almaPartnerUpdater = new HttpUrlConnectionAlmaPartnerUpdater(almaApiKey, almaUri);
+        this.almaPartnerUpserter = new HttpUrlConnectionAlmaPartnerUpserter(almaApiKey, almaUri);
 
         final URI basebibliotekUri =
             UriWrapper.fromUri(environment.readEnv(BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).getUri();
@@ -156,7 +156,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     private List<BaseBibliotek> generateBasebibliotek(List<String> bibnrList, StringBuilder reportStringBuilder) {
         final List<BaseBibliotek> basebiblioteks = new ArrayList<>();
         for (final String bibnr : bibnrList) {
-            baseBibliotekApi.getBasebibliotek(bibnr)
+            baseBibliotekApi.fetchBasebibliotek(bibnr)
                 .ifPresentOrElse(basebiblioteks::add, () ->
                                                           reportStringBuilder
                                                               .append(bibnr)
@@ -177,7 +177,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     }
 
     private boolean sendToAlma(Partner partner) {
-        return almaPartnerUpdater.upsertPartner(partner);
+        return almaPartnerUpserter.upsertPartner(partner);
     }
 
     public List<Partner> getPartners() {

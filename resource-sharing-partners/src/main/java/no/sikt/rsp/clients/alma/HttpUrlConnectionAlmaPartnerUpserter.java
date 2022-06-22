@@ -16,25 +16,41 @@ import java.util.List;
 import java.util.Optional;
 import no.sikt.alma.generated.Partner;
 import no.sikt.rsp.clients.AbstractHttpUrlConnectionApi;
-import no.sikt.rsp.clients.AlmaPartnerUpdater;
+import no.sikt.rsp.clients.AlmaPartnerUpserter;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpUrlConnectionAlmaPartnerUpdater extends AbstractHttpUrlConnectionApi implements AlmaPartnerUpdater {
+public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnectionApi implements AlmaPartnerUpserter {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpUrlConnectionAlmaPartnerUpserter.class);
 
     public static final String LOG_MESSAGE_COMMUNICATION_PROBLEM = "Problems communicating with Alma!";
-    private static final Logger LOGGER = LoggerFactory.getLogger(HttpUrlConnectionAlmaPartnerUpdater.class);
+    public static final String CONTENT_TYPE_HEADER_NAME = "Content-Type";
+    public static final String APPLICATION_JSON = "application/json";
+    public static final String APPLICATION_XML = "application/xml";
+    public static final String PARTNERS_URL_PATH = "partners";
+    public static final String UNEXPECTED_RESPONSE_UPDATING_PARTNER_LOG_MESSAGE_PREFIX = "Unexpected response "
+                                                                                         + "updating partner";
+    public static final String UNEXPECTED_RESPONSE_CREATING_PARTNER_LOG_MESSAGE_PREFIX = "Unexpected response "
+                                                                                         + "creating partner";
+    public static final String UNEXPECTED_RESPONSE_FETCHING_PARTNER_LOG_MESSAGE_PREFIX = "Unexpected response "
+                                                                                         + "fetching partner";
 
     private static final String ALMA_ERROR_CODE_PARTNER_NOT_FOUND = "402118";
     private static final String AUTHORIZATION_HEADER_NAME = "Authorization";
     private static final String ACCEPT_HEADER_NAME = "Accept";
-    public static final String CONTENT_TYPE_HEADER_NAME = "Content-Type";
     private static final String APIKEY_KEY = "apikey";
     private static final String SPACE_KEY = " ";
-    public static final String APPLICATION_JSON = "application/json";
-    public static final String APPLICATION_XML = "application/xml";
-    public static final String PARTNERS_URL_PATH = "partners";
+    private static final String UNEXPECTED_RESPONSE_UPDATING_PARTNER_MESSAGE_FORMAT =
+        UNEXPECTED_RESPONSE_UPDATING_PARTNER_LOG_MESSAGE_PREFIX + " '%s' in Alma:\n%s\nStatus code: "
+        + "%d\nResponse body: %s";
+    private static final String UNEXPECTED_RESPONSE_CREATING_PARTNER_MESSAGE_FORMAT =
+        UNEXPECTED_RESPONSE_CREATING_PARTNER_LOG_MESSAGE_PREFIX + " '%s' in Alma.\n%s\nStatus code: "
+        + "%d\nResponse body: %s";
+    private static final String UNEXPECTED_RESPONSE_FETCHING_PARTNER_MESSAGE_FORMAT =
+        UNEXPECTED_RESPONSE_FETCHING_PARTNER_LOG_MESSAGE_PREFIX + " '%s' from Alma.\nStatus code: "
+        + "%d\nResponse body: %s";
 
     private final transient String almaApikey;
     private final transient URI almaApiHost;
@@ -42,18 +58,18 @@ public class HttpUrlConnectionAlmaPartnerUpdater extends AbstractHttpUrlConnecti
                                                          .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
                                                                     false);
 
-    public HttpUrlConnectionAlmaPartnerUpdater(final String almaApiKey, final URI almaApiHost) {
+    public HttpUrlConnectionAlmaPartnerUpserter(final String almaApiKey, final URI almaApiHost) {
         this(HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build(), almaApiKey, almaApiHost);
     }
 
-    public HttpUrlConnectionAlmaPartnerUpdater(final HttpClient httpClient, final String almaApiKey,
-                                               final URI almaApiHost) {
+    public HttpUrlConnectionAlmaPartnerUpserter(final HttpClient httpClient, final String almaApiKey,
+                                                final URI almaApiHost) {
         super(httpClient);
         this.almaApikey = almaApiKey;
         this.almaApiHost = almaApiHost;
     }
 
-    private Optional<String> getPartner(final String code) {
+    private Optional<String> fetchPartner(final String code) {
         final HttpRequest request = HttpRequest.newBuilder()
                                         .GET()
                                         .uri(UriWrapper.fromUri(almaApiHost)
@@ -73,7 +89,7 @@ public class HttpUrlConnectionAlmaPartnerUpdater extends AbstractHttpUrlConnecti
                     return Optional.empty();
                 } else {
                     final String message = String.format(
-                        "Unexpected error response getting partner '%s' from Alma. Status code %d, body '%s'.",
+                        UNEXPECTED_RESPONSE_FETCHING_PARTNER_MESSAGE_FORMAT,
                         code,
                         response.statusCode(),
                         response.body());
@@ -81,7 +97,7 @@ public class HttpUrlConnectionAlmaPartnerUpdater extends AbstractHttpUrlConnecti
                 }
             } else {
                 final String message = String.format(
-                    "Unexpected response getting partner '%s' from Alma. Status code %d, body '%s'.",
+                    UNEXPECTED_RESPONSE_FETCHING_PARTNER_MESSAGE_FORMAT,
                     code,
                     response.statusCode(),
                     response.body());
@@ -99,8 +115,7 @@ public class HttpUrlConnectionAlmaPartnerUpdater extends AbstractHttpUrlConnecti
     }
 
     private void updatePartner(final Partner partner) {
-        try {
-            final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             JAXB.marshal(partner, outputStream);
             final String partnerAsString = outputStream.toString(StandardCharsets.UTF_8);
 
@@ -116,7 +131,7 @@ public class HttpUrlConnectionAlmaPartnerUpdater extends AbstractHttpUrlConnecti
             final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
             if (!successfulResponse(response)) {
                 final String message = String.format(
-                    "Unexpected response updating partner '%s' in Alma:\n%s\nStatus code: %d\nResponse body: %s",
+                    UNEXPECTED_RESPONSE_UPDATING_PARTNER_MESSAGE_FORMAT,
                     partner.getPartnerDetails().getCode(),
                     partnerAsString,
                     response.statusCode(),
@@ -129,8 +144,7 @@ public class HttpUrlConnectionAlmaPartnerUpdater extends AbstractHttpUrlConnecti
     }
 
     private void createPartner(final Partner partner) {
-        try {
-            final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             JAXB.marshal(partner, outputStream);
             final String partnerAsString = outputStream.toString(StandardCharsets.UTF_8);
 
@@ -147,7 +161,7 @@ public class HttpUrlConnectionAlmaPartnerUpdater extends AbstractHttpUrlConnecti
             final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
             if (response.statusCode() != HttpURLConnection.HTTP_OK) {
                 final String message = String.format(
-                    "Unexpected response creating partner '%s' in Alma.\n%s\nStatus code: %d\nResponse body: %s",
+                    UNEXPECTED_RESPONSE_CREATING_PARTNER_MESSAGE_FORMAT,
                     partner.getPartnerDetails().getCode(),
                     partnerAsString,
                     response.statusCode(),
@@ -162,7 +176,7 @@ public class HttpUrlConnectionAlmaPartnerUpdater extends AbstractHttpUrlConnecti
     @Override
     public boolean upsertPartner(final Partner partner) {
         try {
-            final Optional<String> almaPartner = getPartner(partner.getPartnerDetails().getCode());
+            final Optional<String> almaPartner = fetchPartner(partner.getPartnerDetails().getCode());
             almaPartner.ifPresentOrElse(currentPartner -> updatePartner(partner), () -> createPartner(partner));
             return true;
         } catch (Exception e) {
