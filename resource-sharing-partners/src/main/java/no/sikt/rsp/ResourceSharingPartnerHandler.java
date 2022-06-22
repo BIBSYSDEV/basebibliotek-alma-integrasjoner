@@ -5,10 +5,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.google.gson.Gson;
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -16,6 +13,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.sikt.alma.generated.Partner;
+import no.sikt.rsp.clients.AlmaPartnerUpserter;
+import no.sikt.rsp.clients.BaseBibliotekApi;
+import no.sikt.rsp.clients.alma.HttpUrlConnectionAlmaPartnerUpserter;
+import no.sikt.rsp.clients.basebibliotek.HttpUrlConnectionBaseBibliotekApi;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -36,7 +37,6 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     public static final String COULD_NOT_CONVERT_TO_PARTNER_ERROR_MESSAGE = " Could not convert to partner";
     public static final String COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE = " could not convert to partner\n";
     public static final String COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE = " could not fetch basebibliotek\n";
-    public static final String COULD_NOT_FETCH_BASEBIBLIOTEK_ERROR_MESSAGE = " Could not fetch basebibliotek";
     public static final String OK_REPORT_MESSAGE = "OK\n";
     public static final String REPORT_FILE_NAME_PREFIX = "report-";
     private final transient Gson gson = new Gson();
@@ -46,9 +46,9 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     public static final String SHARED_CONFIG_BUCKET_NAME_ENV_NAME = "SHARED_CONFIG_BUCKET";
     public static final String LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY =
         "LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH";
+    private static final String ALMA_API_KEY_ENV_KEY = "ALMA_APIKEY";
     private final transient S3Client s3Client;
-    private final transient AlmaConnection connection;
-
+    private final transient AlmaPartnerUpserter almaPartnerUpserter;
     private final transient List<Partner> partners;
 
     private final transient Environment environment;
@@ -57,23 +57,24 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     private final transient String reportS3BucketName;
     public static final String REPORT_BUCKET_ENVIRONMENT_NAME = "REPORT_BUCKET";
 
-    private final transient BasebibliotekConnection basebibliotekConnection;
+    private final transient BaseBibliotekApi baseBibliotekApi;
 
     @JacocoGenerated
     public ResourceSharingPartnerHandler() {
-        this(S3Driver.defaultS3Client().build(), new Environment(), HttpClient.newHttpClient());
+        this(S3Driver.defaultS3Client().build(), new Environment());
     }
 
-    public ResourceSharingPartnerHandler(S3Client s3Client, Environment environment, HttpClient httpClient) {
+    public ResourceSharingPartnerHandler(S3Client s3Client, Environment environment) {
         this.s3Client = s3Client;
         this.environment = environment;
-        this.connection = new AlmaConnection(httpClient,
-                                             UriWrapper.fromUri(environment.readEnv(ALMA_API_HOST)).getUri());
-        this.basebibliotekConnection = new BasebibliotekConnection(httpClient,
-                                                                   UriWrapper.fromUri(
-                                                                           environment.readEnv(
-                                                                               BASEBIBLIOTEK_URI_ENVIRONMENT_NAME))
-                                                                       .getUri());
+
+        final String almaApiKey = environment.readEnv(ALMA_API_KEY_ENV_KEY);
+        final URI almaUri = UriWrapper.fromUri(environment.readEnv(ALMA_API_HOST)).getUri();
+        this.almaPartnerUpserter = new HttpUrlConnectionAlmaPartnerUpserter(almaApiKey, almaUri);
+
+        final URI basebibliotekUri =
+            UriWrapper.fromUri(environment.readEnv(BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).getUri();
+        this.baseBibliotekApi = new HttpUrlConnectionBaseBibliotekApi(basebibliotekUri);
         this.partners = new ArrayList<>();
         this.reportS3BucketName = environment.readEnv(REPORT_BUCKET_ENVIRONMENT_NAME);
     }
@@ -117,17 +118,14 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
                             .getPartnerDetails()
                             .getCode()
                             .substring(charIndexStartOfBibNrInPartnerCode);
-            try {
-                if (sendToAlma(partner)) {
-                    counter++;
-                    reportStringBuilder
-                        .append(bibNr)
-                        .append(StringUtils.SPACE)
-                        .append(OK_REPORT_MESSAGE);
-                }
-            } catch (Exception e) {
-                //Errors in individual libraries should not cause crash in entire execution.
-                logger.info("Could not contact Alma", e);
+
+            if (sendToAlma(partner)) {
+                counter++;
+                reportStringBuilder
+                    .append(bibNr)
+                    .append(StringUtils.SPACE)
+                    .append(OK_REPORT_MESSAGE);
+            } else {
                 reportStringBuilder
                     .append(bibNr)
                     .append(COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE);
@@ -156,17 +154,14 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     }
 
     private List<BaseBibliotek> generateBasebibliotek(List<String> bibnrList, StringBuilder reportStringBuilder) {
-        var basebiblioteks = new ArrayList<BaseBibliotek>();
-        for (String bibnr : bibnrList) {
-            try {
-                basebiblioteks.add(basebibliotekConnection.getBasebibliotek(bibnr));
-            } catch (Exception e) {
-                //Errors in individual libraries should not cause crash in entire execution.
-                logger.info(COULD_NOT_FETCH_BASEBIBLIOTEK_ERROR_MESSAGE, e);
-                reportStringBuilder
-                    .append(bibnr)
-                    .append(COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE);
-            }
+        final List<BaseBibliotek> basebiblioteks = new ArrayList<>();
+        for (final String bibnr : bibnrList) {
+            baseBibliotekApi.fetchBasebibliotek(bibnr)
+                .ifPresentOrElse(basebiblioteks::add, () ->
+                                                          reportStringBuilder
+                                                              .append(bibnr)
+                                                              .append(COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE)
+                );
         }
         return basebiblioteks;
     }
@@ -182,20 +177,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     }
 
     private boolean sendToAlma(Partner partner) {
-        try {
-            HttpResponse<String> httpResponse = connection.sendGet(partner.getPartnerDetails().getCode());
-            logger.info(String.format("Read partner %s successfully.", partner.getPartnerDetails().getCode()));
-            if (httpResponse.statusCode() <= HttpURLConnection.HTTP_MULT_CHOICE) {
-                connection.sendPut(partner);
-                logger.info(String.format("Updated partner %s successfully.", partner.getPartnerDetails().getCode()));
-            } else {
-                connection.sendPost(partner);
-                logger.info(String.format("Created partner %s successfully.", partner.getPartnerDetails().getCode()));
-            }
-        } catch (IOException | InterruptedException e) {
-            throw logErrorAndThrowException(e);
-        }
-        return true;
+        return almaPartnerUpserter.upsertPartner(partner);
     }
 
     public List<Partner> getPartners() {

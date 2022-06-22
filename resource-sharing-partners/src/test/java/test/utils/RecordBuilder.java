@@ -14,6 +14,13 @@ public class RecordBuilder {
     private transient String epostBest;
     private transient String epostAdr;
     private transient Eressurser eressurser;
+    private transient String pAddr;
+    private transient String pPostNr;
+    private transient String pPostSted;
+    private transient String vAddr;
+    private transient String vPostNr;
+    private transient String vPostSted;
+    private transient String inst;
 
     public RecordBuilder(BigInteger rid, LocalDate timestamp, String katsyst) {
         this.rid = rid;
@@ -41,8 +48,27 @@ public class RecordBuilder {
         return this;
     }
 
+    public RecordBuilder withPaddr(String addr, String postNr, String postSted) {
+        this.pAddr = addr;
+        this.pPostNr = postNr;
+        this.pPostSted = postSted;
+        return this;
+    }
+
+    public RecordBuilder withVaddr(String addr, String postNr, String postSted) {
+        this.vAddr = addr;
+        this.vPostNr = postNr;
+        this.vPostSted = postSted;
+        return this;
+    }
+
     public RecordBuilder withEressurser(Eressurser eressurser) {
         this.eressurser = eressurser;
+        return this;
+    }
+
+    public RecordBuilder withInst(String inst) {
+        this.inst = inst;
         return this;
     }
 
@@ -57,7 +83,15 @@ public class RecordBuilder {
         record.setEpostBest(epostBest);
         record.setEpostAdr(epostAdr);
         record.setEressurser(eressurser);
+        record.setPadr(pAddr);
+        record.setPpostnr(pPostNr);
+        record.setPpoststed(pPostSted);
+        record.setVadr(vAddr);
+        record.setVpostnr(vPostNr);
+        record.setVpoststed(vPostSted);
+        record.setInst(inst);
 
         return record;
     }
+
 }
