@@ -222,6 +222,7 @@ public class PartnerConverter {
             return record.getEressurser().getOAIOrSRUOrArielIp().stream()
                        .filter(element -> NNCIP_URI.equals(element.getName().getLocalPart()))
                        .map(JAXBElement::getValue)
+                       .filter(StringUtils::isNotEmpty)
                        .findFirst();
         }
     }
