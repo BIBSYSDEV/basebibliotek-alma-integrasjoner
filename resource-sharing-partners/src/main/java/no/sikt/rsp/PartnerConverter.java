@@ -243,8 +243,8 @@ public class PartnerConverter {
     }
 
     private Optional<String> extractHoldingCodeIfAlmaOrBibsysLibrary(Record record) {
-        return BaseBibliotekUtils.isAlmaOrBibsysLibrary(record) ?
-                   Optional.of(extractHoldingCode(record)) : Optional.empty();
+        return BaseBibliotekUtils.isAlmaOrBibsysLibrary(record)
+                   ? Optional.of(extractHoldingCode(record)) : Optional.empty();
     }
 
     private String extractHoldingCode(Record record) {
