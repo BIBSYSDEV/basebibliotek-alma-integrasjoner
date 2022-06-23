@@ -919,8 +919,8 @@ public class ResourceSharingPartnerTest {
 
         final Partner partner = resourceSharingPartnerHandler.getPartners().get(0);
 
-        final String expectedEmail = "biblioteket@krodsherad.kommune.no";
-        assertEmailProfileDetailsPopulatedCorrectly(partner, expectedEmail);
+        final String emailIn2062200xml = "biblioteket@krodsherad.kommune.no";
+        assertEmailProfileDetailsPopulatedCorrectly(partner, emailIn2062200xml);
     }
 
     private S3Event prepareBaseBibliotekFromRecords(final UnixPath s3Path, final Record... records) throws IOException {
