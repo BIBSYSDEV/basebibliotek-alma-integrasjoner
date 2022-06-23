@@ -97,14 +97,9 @@ public class ResourceSharingPartnerTest {
     public static final long SOME_FILE_SIZE = 100L;
     private static final String BASEBIBLIOTEK_0030100_XML = "bb_0030100.xml";
     private static final String BASEBIBLIOTEK_2062200_XML = "bb_2062200.xml";
-    private transient ResourceSharingPartnerHandler resourceSharingPartnerHandler;
     private static final String LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH = "/libCodeToAlmaCodeMapping.json";
     private static final String NO_0030100_ID = "NO-0030100";
     private static final String INVALID_BASEBIBLIOTEK_XML_STRING = "invalid";
-    public static final String ALMA = "alma";
-    public static final String BIBSYS = "bibsys";
-    public static final String TIDEMANN = "Tidemann";
-    public static final String OTHER = "other";
     private static final String SHARED_CONFIG_BUCKET_NAME_ENV_VALUE = "SharedConfigBucket";
 
     private static final String ILL_SERVER_ENVIRONMENT_VALUE = "eu01.alma.exlibrisgroup.com";
@@ -114,13 +109,13 @@ public class ResourceSharingPartnerTest {
     private static final String EMAIL_ADR = "adr@example.com";
     private static final String EMAIL_BEST = "best@example.com";
     public static final String BASEBIBLIOTEK_REPORT = "basebibliotek-report";
-    public static final String LANDKODE_NORWAY = "no";
     public static final String BIBLIOTEK_REST_PATH = "/basebibliotek/rest/bibnr/";
     public static final Context CONTEXT = mock(Context.class);
     private static final String BIBNR_RESOLVABLE_TO_ALMA_CODE = "0030100";
     private static final String INSTITUTION_CODE = "47BIBSYS_NB";
     private transient FakeS3Client s3Client;
     private transient S3Driver s3Driver;
+    private transient ResourceSharingPartnerHandler resourceSharingPartnerHandler;
 
     private static final Environment mockedEnvironment = mock(Environment.class);
 
@@ -312,21 +307,25 @@ public class ResourceSharingPartnerTest {
     }
 
     @ParameterizedTest(name = "Should handle katsys codes differently when generating systemtype")
-    @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
-    public void shouldExtractCertainDataIfAlmaOrBibsysLibrary(String katsys) throws IOException {
+    @ValueSource(strings = {
+        BaseBibliotekUtils.KATSYST_ALMA,
+        BaseBibliotekUtils.KATSYST_BIBSYS,
+        BaseBibliotekUtils.KATSYST_TIDEMANN
+    })
+    public void shouldExtractCertainDataIfAlmaOrBibsysLibrary(String katsyst) throws IOException {
         var withLandkode = true;
         var specification = new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE, withLandkode, NNCIP_SERVER,
                                                     randomBoolean(), randomBoolean(), randomBoolean(), randomBoolean(),
-                                                    randomBoolean(), katsys);
+                                                    randomBoolean(), katsyst);
 
         final List<Record> generatedRecords = new ArrayList<>();
         var s3Event = prepareBaseBibliotekFromRecordSpecifications(generatedRecords, specification);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var partners = resourceSharingPartnerHandler.getPartners();
-        var isAlmaOrBibsys = BIBSYS.equals(katsys) || ALMA.equals(katsys);
+        var isAlmaOrBibsys = BaseBibliotekUtils.isAlmaOrBibsysLibrary(katsyst);
 
-        assertThat("Expected one mapped partner for katsyst " + katsys, partners, hasSize(1));
+        assertThat("Expected one mapped partner for katsyst " + katsyst, partners, hasSize(1));
 
         var expectedHoldingCode =
             isAlmaOrBibsys ? generatedRecords.get(0).getLandkode().toUpperCase(Locale.ROOT)
@@ -334,20 +333,23 @@ public class ResourceSharingPartnerTest {
         assertThat(partners.get(0).getPartnerDetails().getHoldingCode(), is(equalTo(expectedHoldingCode)));
 
         var expectedSystemTypeValueValue =
-            isAlmaOrBibsys ? ALMA.toUpperCase(Locale.ROOT) : OTHER.toUpperCase(Locale.ROOT);
+            isAlmaOrBibsys ? PartnerConverter.SYSTEM_TYPE_VALUE_ALMA : PartnerConverter.SYSTEM_TYPE_VALUE_OTHER;
         assertThat(partners.get(0).getPartnerDetails().getSystemType().getValue(),
                    is(equalTo(expectedSystemTypeValueValue)));
 
-        var expectedSystemTypeValueDesc = isAlmaOrBibsys ? ALMA : OTHER;
+        var expectedSystemTypeValueDesc = isAlmaOrBibsys ? PartnerConverter.SYSTEM_TYPE_DESC_ALMA
+                                              : PartnerConverter.SYSTEM_TYPE_DESC_OTHER;
         assertThat(partners.get(0).getPartnerDetails().getSystemType().getDesc(),
                    is(equalTo(expectedSystemTypeValueDesc)));
     }
 
     @ParameterizedTest(name = "Should handle katsys codes differently when generating isoData")
-    @ValueSource(strings = {ALMA, BIBSYS})
-    public void shouldExtractPartnerDetailsProfileDataIsoCorrectly(final String katsys) throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys).withBibnr(
-            BIBNR_RESOLVABLE_TO_ALMA_CODE).withLandkode(LANDKODE_NORWAY).build();
+    @ValueSource(strings = {BaseBibliotekUtils.KATSYST_ALMA, BaseBibliotekUtils.KATSYST_BIBSYS})
+    public void shouldExtractPartnerDetailsProfileDataIsoCorrectly(final String katsyst) throws IOException {
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsyst)
+                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+                                  .build();
 
         final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
 
@@ -367,12 +369,14 @@ public class ResourceSharingPartnerTest {
     @Test
     public void shouldExtractPartnerDetailsProfileDataNncipCorrectlyPreferringEmailBest() throws IOException {
 
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr("1000000")
-                                  .withLandkode(LANDKODE_NORWAY)
-                                  .withEpostBest(EMAIL_BEST)
-                                  .withEpostAdr(EMAIL_ADR)
-                                  .withEressurser(new EressurserBuilder().withNncipUri(NNCIP_SERVER).build())
-                                  .build();
+        final Record record =
+            new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
+                .withBibnr("1000000")
+                .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+                .withEpostBest(EMAIL_BEST)
+                .withEpostAdr(EMAIL_ADR)
+                .withEressurser(new EressurserBuilder().withNncipUri(NNCIP_SERVER).build())
+                .build();
 
         final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
 
@@ -394,8 +398,9 @@ public class ResourceSharingPartnerTest {
         throws IOException {
 
         final String emailAdr = "adr@example.com";
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr("1000000")
-                                  .withLandkode(LANDKODE_NORWAY)
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
+                                  .withBibnr("1000000")
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
                                   .withEpostAdr(emailAdr)
                                   .withEressurser(new EressurserBuilder().withNncipUri(NNCIP_SERVER).build())
                                   .build();
@@ -419,8 +424,9 @@ public class ResourceSharingPartnerTest {
     public void shouldExtractPartnerDetailsProfileDataNncipCorrectlyIgnoringInvalidEmailAddresses() throws IOException {
         final String email = "invalid";
 
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr("1000000")
-                                  .withLandkode(LANDKODE_NORWAY)
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
+                                  .withBibnr("1000000")
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
                                   .withEpostAdr(email)
                                   .withEpostBest(email)
                                   .withEressurser(new EressurserBuilder().withNncipUri(NNCIP_SERVER).build())
@@ -442,9 +448,60 @@ public class ResourceSharingPartnerTest {
     }
 
     @Test
+    public void foreignNonAlmaOrBibsysLibrariesWithNncipShouldHavePartnerProfileTypeEmail() throws IOException {
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
+                                  .withBibnr("1000000")
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_GERMAN)
+                                  .withEpostAdr(EMAIL_ADR)
+                                  .withEressurser(new EressurserBuilder().withNncipUri(NNCIP_SERVER).build())
+                                  .build();
+
+        final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
+
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
+
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+
+        final List<Partner> partners = resourceSharingPartnerHandler.getPartners();
+
+        // we should have only ony partner from the one record we have:
+        final Partner partner = partners.get(0);
+
+        assertEmailProfileDetailsPopulatedCorrectly(partner, EMAIL_ADR);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {BaseBibliotekUtils.KATSYST_ALMA, BaseBibliotekUtils.KATSYST_BIBSYS})
+    public void nonNorwegianAlmaOrBibsysLibrariesShouldHavePartnerProfileTypeEmail(final String katsyst)
+        throws IOException {
+        final String email = "adr@example.com";
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsyst)
+                                  .withBibnr("1000000")
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_GERMAN)
+                                  .withEpostAdr(email)
+                                  .withEpostBest(email)
+                                  .build();
+
+        final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
+
+        when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
+            ILL_SERVER_ENVIRONMENT_VALUE);
+
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+
+        final List<Partner> partners = resourceSharingPartnerHandler.getPartners();
+
+        final Partner partner = partners.get(0);
+
+        assertEmailProfileDetailsPopulatedCorrectly(partner, email);
+    }
+
+    @Test
     public void shouldExtractProfileDetailsEmailPreferringEmailBest() throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr("10000000")
-                                  .withLandkode(LANDKODE_NORWAY)
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
+                                  .withBibnr("10000000")
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
                                   .withEpostBest(EMAIL_BEST)
                                   .withEpostAdr(EMAIL_ADR)
                                   .build();
@@ -466,8 +523,9 @@ public class ResourceSharingPartnerTest {
     @Test
     public void shouldExtractProfileDetailsEmailFallingBackToEpostAdrIfBestIsMissing() throws IOException {
         final String email = "adr@example.com";
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr("1")
-                                  .withLandkode("1")
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
+                                  .withBibnr("1")
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
                                   .withEpostAdr(email)
                                   .build();
 
@@ -489,8 +547,9 @@ public class ResourceSharingPartnerTest {
     @Test
     public void shouldExtractProfileDetailsEmailCorrectlyIgnoringInvalidEmailAddresses() throws IOException {
         final String email = "invalid";
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr("1")
-                                  .withLandkode("1")
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
+                                  .withBibnr("1")
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
                                   .withEpostBest(email)
                                   .withEpostAdr(email)
                                   .build();
@@ -542,8 +601,9 @@ public class ResourceSharingPartnerTest {
     @Test
     public void shouldSkipWhenBasebibliotekFails() throws IOException {
         final String bibNrSuccess = "1000000";
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr(bibNrSuccess)
-                                  .withLandkode(LANDKODE_NORWAY)
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
+                                  .withBibnr(bibNrSuccess)
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
                                   .withEpostBest(EMAIL_BEST)
                                   .withEpostAdr(EMAIL_ADR)
                                   .build();
@@ -565,10 +625,14 @@ public class ResourceSharingPartnerTest {
     }
 
     @ParameterizedTest(name = "Should handle katsys codes differently when generating institution code")
-    @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
-    public void shouldExtractAlmaCodeInPartnerDetailsCorrectly(final String katsys) throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys).withBibnr(
-            BIBNR_RESOLVABLE_TO_ALMA_CODE).withLandkode(LANDKODE_NORWAY).build();
+    @ValueSource(strings = {
+        BaseBibliotekUtils.KATSYST_ALMA,
+        BaseBibliotekUtils.KATSYST_BIBSYS,
+        BaseBibliotekUtils.KATSYST_TIDEMANN
+    })
+    public void shouldExtractAlmaCodeInPartnerDetailsCorrectly(final String katsyst) throws IOException {
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsyst).withBibnr(
+            BIBNR_RESOLVABLE_TO_ALMA_CODE).withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN).build();
 
         final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
 
@@ -583,7 +647,7 @@ public class ResourceSharingPartnerTest {
         final Partner partner = partners.get(0);
 
         final String expectedInstitutionCode;
-        if (ALMA.equals(katsys) || BIBSYS.equals(katsys)) {
+        if (BaseBibliotekUtils.isAlmaOrBibsysLibrary(katsyst)) {
             expectedInstitutionCode = INSTITUTION_CODE;
         } else {
             expectedInstitutionCode = "";
@@ -593,8 +657,10 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldLogAndThrowExceptionWhenAlmaCodeLookupTableIsMissing() throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), ALMA).withBibnr(
-            BIBNR_RESOLVABLE_TO_ALMA_CODE).withLandkode("1").build();
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_ALMA)
+                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+                                  .build();
 
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
@@ -615,8 +681,10 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldLogAndThrowExceptionWhenAlmaCodeLookupTableIsEmpty() throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), ALMA).withBibnr(
-            BIBNR_RESOLVABLE_TO_ALMA_CODE).withLandkode("1").build();
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_ALMA)
+                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+                                  .build();
 
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
@@ -644,8 +712,10 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldLogAndThrowExceptionWhenAlmaCodeLookupTableIsInvalidJson() throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), ALMA).withBibnr(
-            BIBNR_RESOLVABLE_TO_ALMA_CODE).withLandkode("1").build();
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_ALMA)
+                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+                                  .build();
 
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
@@ -674,8 +744,9 @@ public class ResourceSharingPartnerTest {
     @Test
     void shouldReportSuccessfulWhenAllWorksProperly() throws IOException {
         final String bibNr = "1000000";
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN).withBibnr(bibNr)
-                                  .withLandkode(LANDKODE_NORWAY)
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
+                                  .withBibnr(bibNr)
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
                                   .withEpostBest(EMAIL_BEST)
                                   .withEpostAdr(EMAIL_ADR)
                                   .build();
@@ -700,19 +771,19 @@ public class ResourceSharingPartnerTest {
 
     @Test
     void shouldGenerateReportWhenAlmaContactFailure() throws IOException {
-        var almaLibraryFailureBibNr = "1234567";
-        var almaFailureRecord = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
-                                    .withBibnr(almaLibraryFailureBibNr)
-                                    .withLandkode(LANDKODE_NORWAY)
-                                    .withEpostBest(EMAIL_BEST)
-                                    .withEpostAdr(EMAIL_ADR)
-                                    .build();
+        var bibNr = "1234567";
+        var record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
+                         .withBibnr(bibNr)
+                         .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+                         .withEpostBest(EMAIL_BEST)
+                         .withEpostAdr(EMAIL_ADR)
+                         .build();
 
         var s3Path = randomS3Path();
-        var s3Event = prepareBaseBibliotekFromRecords(s3Path, almaFailureRecord);
+        var s3Event = prepareBaseBibliotekFromRecords(s3Path, record);
 
-        WireMocker.mockAlmaForbiddenGetResponse("NO-" + almaLibraryFailureBibNr);
-        WireMocker.mockAlmaForbiddenPostResponse("NO-" + almaLibraryFailureBibNr);
+        WireMocker.mockAlmaForbiddenGetResponse("NO-" + bibNr);
+        WireMocker.mockAlmaForbiddenPostResponse("NO-" + bibNr);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -721,7 +792,7 @@ public class ResourceSharingPartnerTest {
             UnixPath.of(ResourceSharingPartnerHandler.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
 
         assertThat(report, containsString(
-            almaLibraryFailureBibNr + ResourceSharingPartnerHandler.COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE));
+            bibNr + ResourceSharingPartnerHandler.COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE));
     }
 
     @Test
@@ -745,16 +816,16 @@ public class ResourceSharingPartnerTest {
 
     @Test
     void shouldGenerateReportWhenConversionToPartnerFailure() throws IOException {
-        var conversionFailureBibNr = "3";
-        var conversionFailureRecord = new RecordBuilder(BigInteger.ONE, LocalDate.now(), TIDEMANN)
-                                          .withBibnr(conversionFailureBibNr)
-                                          .withLandkode(null)
-                                          .withEpostBest(EMAIL_BEST)
-                                          .withEpostAdr(EMAIL_ADR)
-                                          .build();
+        var bibNr = "3";
+        var record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
+                         .withBibnr(bibNr)
+                         .withLandkode(null)
+                         .withEpostBest(EMAIL_BEST)
+                         .withEpostAdr(EMAIL_ADR)
+                         .build();
 
         var s3Path = randomS3Path();
-        var s3Event = prepareBaseBibliotekFromRecords(s3Path, conversionFailureRecord);
+        var s3Event = prepareBaseBibliotekFromRecords(s3Path, record);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -763,15 +834,19 @@ public class ResourceSharingPartnerTest {
             UnixPath.of(ResourceSharingPartnerHandler.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
 
         assertThat(report, containsString(
-            conversionFailureBibNr + ResourceSharingPartnerHandler.COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE));
+            bibNr + ResourceSharingPartnerHandler.COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE));
     }
 
     @ParameterizedTest(name = "Should handle katsys codes differently when generating locateProfile")
-    @ValueSource(strings = {ALMA, BIBSYS, TIDEMANN})
-    public void shouldPopulateLocateProfileInPartnerDetailsCorrectly(final String katsys) throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsys)
+    @ValueSource(strings = {
+        BaseBibliotekUtils.KATSYST_ALMA,
+        BaseBibliotekUtils.KATSYST_BIBSYS,
+        BaseBibliotekUtils.KATSYST_TIDEMANN
+    })
+    public void shouldPopulateLocateProfileInPartnerDetailsCorrectly(final String katsyst) throws IOException {
+        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsyst)
                                   .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode(LANDKODE_NORWAY)
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
                                   .build();
 
         final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
@@ -787,7 +862,7 @@ public class ResourceSharingPartnerTest {
         final Partner partner = partners.get(0);
 
         final LocateProfile locateProfile = partner.getPartnerDetails().getLocateProfile();
-        if (ALMA.equals(katsys) || BIBSYS.equals(katsys)) {
+        if (BaseBibliotekUtils.isAlmaOrBibsysLibrary(katsyst)) {
             assertThat(locateProfile, notNullValue());
             final String expectedLocateProfile = "LOCATE_NB";
             assertThat(locateProfile.getValue(), is(expectedLocateProfile));
@@ -818,7 +893,7 @@ public class ResourceSharingPartnerTest {
     public void shouldIgnorePartnerAndLogProblemIfAlmaIsNotAvailable() throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), "BIBSYS")
                                   .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode(LANDKODE_NORWAY)
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
                                   .build();
 
         var s3Event = prepareBaseBibliotekFromRecords(record);
@@ -843,7 +918,7 @@ public class ResourceSharingPartnerTest {
 
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), "BIBSYS")
                                   .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode(LANDKODE_NORWAY)
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
                                   .build();
 
         var s3Event = prepareBaseBibliotekFromRecords(record);
@@ -865,7 +940,7 @@ public class ResourceSharingPartnerTest {
         throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), "BIBSYS")
                                   .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode(LANDKODE_NORWAY)
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
                                   .build();
 
         var s3Event = prepareBaseBibliotekFromRecords(record);
@@ -889,7 +964,7 @@ public class ResourceSharingPartnerTest {
 
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), "BIBSYS")
                                   .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode(LANDKODE_NORWAY)
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
                                   .build();
 
         var s3Event = prepareBaseBibliotekFromRecords(record);
