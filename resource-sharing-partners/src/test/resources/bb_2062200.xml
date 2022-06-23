@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<BaseBibliotek xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://nb.no/BaseBibliotek https://www.nb.no/baser/bibliotek/eksport/basebibliotek.xsd" xmlns="http://nb.no/BaseBibliotek">
+  <record rid="672" tstamp="2022-06-15 15:06:48">
+    <bibnr>2062200</bibnr>
+    <isil>NO-2062200</isil>
+    <bibkode>KRØDSHER</bibkode>
+    <bibltype>FBI</bibltype>
+    <aut encrypted="true">***masked***</aut>
+    <katsyst>Mikromarc 3</katsyst>
+    <kommnr>3046</kommnr>
+    <overordnet>2060000</overordnet>
+    <inst>Midt-Buskerud bibliotek Krødsherad</inst>
+    <inst_eng>Krødsherad Public Library</inst_eng>
+    <padr>Postboks 24</padr>
+    <ppostnr>3537</ppostnr>
+    <ppoststed>KRØDEREN</ppoststed>
+    <vadr>Krøderen samfunnshus</vadr>
+    <vpostnr>3535</vpostnr>
+    <vpoststed>KRØDEREN</vpoststed>
+    <landkode>NO</landkode>
+    <tlf>99 88 99 88</tlf>
+    <epost_adr>biblioteket@krodsherad.kommune.no</epost_adr>
+    <url_hjem>http://midtfylkebiblioteket.no</url_hjem>
+    <andre_navn>Krødsherad bibliotek</andre_navn>
+    <fakt_orgnr>970491589</fakt_orgnr>
+    <bibleder>Kari Nordmann</bibleder>
+    <fj_leder>Ola Nordmann</fj_leder>
+    <eressurser>
+      <io_ws/>
+      <z_target/>
+      <z_info/>
+      <nncip_uri/>
+    </eressurser>
+  </record>
+</BaseBibliotek>

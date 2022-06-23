@@ -96,6 +96,8 @@ public class ResourceSharingPartnerTest {
     public static final UserIdentityEntity EMPTY_USER_IDENTITY = null;
     public static final long SOME_FILE_SIZE = 100L;
     private static final String BASEBIBLIOTEK_0030100_XML = "bb_0030100.xml";
+    private static final String BASEBIBLIOTEK_2062200_XML = "bb_2062200.xml";
+    private transient ResourceSharingPartnerHandler resourceSharingPartnerHandler;
     private static final String LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH = "/libCodeToAlmaCodeMapping.json";
     private static final String NO_0030100_ID = "NO-0030100";
     private static final String INVALID_BASEBIBLIOTEK_XML_STRING = "invalid";
@@ -113,7 +115,6 @@ public class ResourceSharingPartnerTest {
     private static final String EMAIL_BEST = "best@example.com";
     public static final String BASEBIBLIOTEK_REPORT = "basebibliotek-report";
     public static final String LANDKODE_NORWAY = "no";
-    private transient ResourceSharingPartnerHandler resourceSharingPartnerHandler;
     public static final String BIBLIOTEK_REST_PATH = "/basebibliotek/rest/bibnr/";
     public static final Context CONTEXT = mock(Context.class);
     private static final String BIBNR_RESOLVABLE_TO_ALMA_CODE = "0030100";
@@ -905,6 +906,23 @@ public class ResourceSharingPartnerTest {
                        HttpUrlConnectionAlmaPartnerUpserter.UNEXPECTED_RESPONSE_UPDATING_PARTNER_LOG_MESSAGE_PREFIX));
     }
 
+    @Test
+    public void shouldUseProfileTypeEmailInProfileDetailsWhenNncipUriHasNoValueInEressurser() throws IOException {
+        final String bibNr = "2062200";
+        final Map<String, String> bibNrToXmlMap = Collections.singletonMap(bibNr,
+                                                                           IoUtils.stringFromResources(
+                                                                               Path.of(BASEBIBLIOTEK_2062200_XML)));
+
+        final S3Event s3Event = prepareBaseBibliotekFromXml(bibNrToXmlMap);
+
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+
+        final Partner partner = resourceSharingPartnerHandler.getPartners().get(0);
+
+        final String emailIn2062200xml = "biblioteket@krodsherad.kommune.no";
+        assertEmailProfileDetailsPopulatedCorrectly(partner, emailIn2062200xml);
+    }
+
     private S3Event prepareBaseBibliotekFromRecords(final UnixPath s3Path, final Record... records) throws IOException {
         return prepareBaseBibliotekFromRecords(s3Path, null, records);
     }
@@ -964,7 +982,9 @@ public class ResourceSharingPartnerTest {
         return createS3Event(uri);
     }
 
-    private S3Event prepareBaseBibliotekFromXml(final UnixPath s3Path, final Map<String, String> bibNrToXmlMap) throws IOException {
+    private S3Event prepareBaseBibliotekFromXml(final UnixPath s3Path, final Map<String, String> bibNrToXmlMap)
+        throws IOException {
+
         final String fileContent = String.join("\n", bibNrToXmlMap.keySet());
 
         // prepare mocks:
