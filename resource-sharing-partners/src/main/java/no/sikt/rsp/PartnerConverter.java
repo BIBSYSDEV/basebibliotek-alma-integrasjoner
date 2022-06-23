@@ -44,15 +44,18 @@ public class PartnerConverter {
     private static final String BORROWING_WORKFLOW = "Borrowing";
     private static final boolean LENDING_IS_SUPPORTED = true;
     private static final String ISIL_CODE_SEPARATOR = "-";
-    private static final String BIBSYS = "bibsys";
-    private static final String ALMA = "alma";
-    public static final String OTHER = "OTHER";
     public static final int RESENDING_OVERDUE_MESSAGE_INTERVAL = 7;
     public static final String NNCIP_URI = "nncip_uri";
     public static final String TEMPORARILY_CLOSED = "U";
     public static final String PERMANENTLY_CLOSED = "X";
     private static final String INSTITUTION_CODE_PREFIX = "47BIBSYS_";
     private static final String LOCATE_PROFILE_VALUE_PREFIX = "LOCATE_";
+
+    // System type constants:
+    public static final String SYSTEM_TYPE_VALUE_ALMA = "ALMA";
+    public static final String SYSTEM_TYPE_VALUE_OTHER = "OTHER";
+    public static final String SYSTEM_TYPE_DESC_ALMA = "alma";
+    public static final String SYSTEM_TYPE_DESC_OTHER = "other";
 
     private final transient AlmaCodeProvider almaCodeProvider;
     private final transient String interLibraryLoanServer;
@@ -139,7 +142,7 @@ public class PartnerConverter {
         partnerDetails.setStatus(extractStatus(record));
 
         final String almaCode = almaCodeProvider.getAlmaCode(record.getBibnr()).orElse("");
-        if (isAlmaOrBibsysLibrary(record) && StringUtils.isNotEmpty(almaCode)) {
+        if (BaseBibliotekUtils.isAlmaOrBibsysLibrary(record) && StringUtils.isNotEmpty(almaCode)) {
             partnerDetails.setInstitutionCode(INSTITUTION_CODE_PREFIX + almaCode);
             final LocateProfile locateProfile = generateLocateProfile(almaCode);
             partnerDetails.setLocateProfile(locateProfile);
@@ -165,7 +168,7 @@ public class PartnerConverter {
 
         Optional<String> email = extractEmail(record);
 
-        if (isAlmaOrBibsysLibrary(record)) {
+        if (BaseBibliotekUtils.isAlmaOrBibsysLibrary(record) && BaseBibliotekUtils.isNorwegian(record)) {
             details.setProfileType(ProfileType.ISO);
 
             final IsoDetails isoDetails = new IsoDetails();
@@ -175,7 +178,7 @@ public class PartnerConverter {
             isoDetails.setSharedBarcodes(true);
 
             details.setIsoDetails(isoDetails);
-        } else if (nncipUri.isPresent()) {
+        } else if (nncipUri.isPresent() && BaseBibliotekUtils.isNorwegian(record)) {
             details.setProfileType(ProfileType.NCIP_P_2_P);
 
             final NcipP2PDetails ncipP2PDetails = new NcipP2PDetails();
@@ -229,31 +232,19 @@ public class PartnerConverter {
 
     private SystemType extractSystemType(Record record) {
         PartnerDetails.SystemType systemTypeValue = new PartnerDetails.SystemType();
-        systemTypeValue.setValue(isAlmaOrBibsysLibrary(record)
-                                     ? ALMA.toUpperCase(Locale.ROOT)
-                                     : OTHER);
+        systemTypeValue.setValue(BaseBibliotekUtils.isAlmaOrBibsysLibrary(record)
+                                     ? SYSTEM_TYPE_VALUE_ALMA
+                                     : SYSTEM_TYPE_VALUE_OTHER);
         systemTypeValue.setDesc(
-            isAlmaOrBibsysLibrary(record)
-                ? ALMA.toLowerCase(Locale.ROOT)
-                : OTHER.toLowerCase(Locale.ROOT));
+            BaseBibliotekUtils.isAlmaOrBibsysLibrary(record)
+                ? SYSTEM_TYPE_DESC_ALMA
+                : SYSTEM_TYPE_DESC_OTHER);
         return systemTypeValue;
     }
 
     private Optional<String> extractHoldingCodeIfAlmaOrBibsysLibrary(Record record) {
-        return isAlmaOrBibsysLibrary(record) ? Optional.of(extractHoldingCode(record)) : Optional.empty();
-    }
-
-    private boolean isAlmaOrBibsysLibrary(Record record) {
-        if (Objects.nonNull(record.getKatsyst())) {
-            return record.getKatsyst()
-                       .toLowerCase(Locale.ROOT)
-                       .contains(BIBSYS)
-                   || record.getKatsyst()
-                          .toLowerCase(Locale.ROOT)
-                          .contains(ALMA);
-        } else {
-            return false;
-        }
+        return BaseBibliotekUtils.isAlmaOrBibsysLibrary(record) ?
+                   Optional.of(extractHoldingCode(record)) : Optional.empty();
     }
 
     private String extractHoldingCode(Record record) {
@@ -278,13 +269,13 @@ public class PartnerConverter {
     }
 
     private static boolean currentDateIsInStengtInterval(Record record) {
-        var stengFraIsInTheFuture = isDateInTheFuture(record.getStengtFra());
-        var stengTilIsIntheFuture = isDateInTheFuture(record.getStengtTil());
-        var stengFraIsNotSet = Objects.isNull(record.getStengtFra());
-        var stengTilisNotSet = Objects.isNull(record.getStengtTil());
-        return !stengFraIsInTheFuture && stengTilIsIntheFuture
-               || !stengFraIsInTheFuture && stengTilisNotSet
-               || stengFraIsNotSet && !stengTilisNotSet && stengTilIsIntheFuture;
+        var stengtFraIsInTheFuture = isDateInTheFuture(record.getStengtFra());
+        var stengtTilIsIntheFuture = isDateInTheFuture(record.getStengtTil());
+        var stengtFraIsNotSet = Objects.isNull(record.getStengtFra());
+        var stengtTilisNotSet = Objects.isNull(record.getStengtTil());
+        return !stengtFraIsInTheFuture && stengtTilIsIntheFuture
+               || !stengtFraIsInTheFuture && stengtTilisNotSet
+               || stengtFraIsNotSet && !stengtTilisNotSet && stengtTilIsIntheFuture;
     }
 
     private static boolean hasTemporaryOrPermanentlyClosedStatus(Record record) {
