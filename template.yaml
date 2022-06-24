@@ -60,7 +60,7 @@ Resources:
       Role: !GetAtt ResourceSharingPartnerHandlerRole.Arn
       Environment:
         Variables:
-          REPORT_BUCKET: !Sub 'arn:aws:s3:eu-west-1:${AWS::AccountId}:accesspoint/${ReportBucketName}-${AWS::AccountId}'
+          REPORT_BUCKET: !Sub '${ReportBucketName}-${AWS::AccountId}'
           BASEBIBLIOTEK_REST_URL: !Ref BasebibliotekRestUrl
           SHARED_CONFIG_BUCKET: !Ref SharedConfigBucketName
           LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH: !Ref LibCodeToAlmaCodeFilePath
@@ -168,7 +168,6 @@ Resources:
             Resource:
               -  !Sub "arn:aws:s3:::${SharedConfigBucketName}*"
 
-
   ReportBucketAccessPolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -183,6 +182,7 @@ Resources:
               - 's3:*'
             Resource:
               - !Sub 'arn:aws:s3:::${ReportBucketName}-${AWS::AccountId}*'
+
   BasebibliotekXmlBucket:
     Type: AWS::S3::Bucket
     Properties:
