@@ -101,7 +101,7 @@ public class ResourceSharingPartnerTest {
     private static final String NO_0030100_ID = "NO-0030100";
     private static final String INVALID_BASEBIBLIOTEK_XML_STRING = "invalid";
     private static final String SHARED_CONFIG_BUCKET_NAME_ENV_VALUE = "SharedConfigBucket";
-
+    private static final String HYPHEN = "-";
     private static final String ILL_SERVER_ENVIRONMENT_VALUE = "eu01.alma.exlibrisgroup.com";
     public static final int ILL_SERVER_PORT = 9001;
 
@@ -328,8 +328,7 @@ public class ResourceSharingPartnerTest {
         assertThat("Expected one mapped partner for katsyst " + katsyst, partners, hasSize(1));
 
         var expectedHoldingCode =
-            isAlmaOrBibsys ? generatedRecords.get(0).getLandkode().toUpperCase(Locale.ROOT)
-                             + BIBNR_RESOLVABLE_TO_ALMA_CODE : null;
+            isAlmaOrBibsys ? BIBNR_RESOLVABLE_TO_ALMA_CODE : null;
         assertThat(partners.get(0).getPartnerDetails().getHoldingCode(), is(equalTo(expectedHoldingCode)));
 
         var expectedSystemTypeValueValue =
@@ -363,7 +362,7 @@ public class ResourceSharingPartnerTest {
         // we should have only ony partner from the one record we have:
         final Partner partner = partners.get(0);
 
-        assertIsoProfileDetailsPopulatedCorrectly(partner, record.getBibnr());
+        assertIsoProfileDetailsPopulatedCorrectly(partner, record.getLandkode(), record.getBibnr());
     }
 
     @Test
@@ -390,7 +389,7 @@ public class ResourceSharingPartnerTest {
         // we should have only ony partner from the one record we have:
         final Partner partner = partners.get(0);
 
-        assertNncipProfileDetailsPopulatedCorrectly(partner, record.getBibnr(), EMAIL_BEST);
+        assertNncipProfileDetailsPopulatedCorrectly(partner, record.getLandkode(), record.getBibnr(), EMAIL_BEST);
     }
 
     @Test
@@ -417,7 +416,7 @@ public class ResourceSharingPartnerTest {
         // we should have only ony partner from the one record we have:
         Partner partner = partners.get(0);
 
-        assertNncipProfileDetailsPopulatedCorrectly(partner, record.getBibnr(), emailAdr);
+        assertNncipProfileDetailsPopulatedCorrectly(partner, record.getLandkode(), record.getBibnr(), emailAdr);
     }
 
     @Test
@@ -444,7 +443,7 @@ public class ResourceSharingPartnerTest {
         // we should have only ony partner from the one record we have:
         Partner partner = partners.get(0);
 
-        assertNncipProfileDetailsPopulatedCorrectly(partner, record.getBibnr(), null);
+        assertNncipProfileDetailsPopulatedCorrectly(partner, record.getLandkode(), record.getBibnr(), null);
     }
 
     @Test
@@ -1008,11 +1007,13 @@ public class ResourceSharingPartnerTest {
 
     private S3Event prepareBaseBibliotekFromRecords(final String failingBibNr, final Record... records)
         throws IOException {
+
         return prepareBaseBibliotekFromRecords(null, failingBibNr, records);
     }
 
     private S3Event prepareBaseBibliotekFromRecords(final UnixPath s3Path, final String failingBibNr,
                                                     final Record... records) throws IOException {
+
         String fileContent = Arrays.stream(records).map(Record::getBibnr).collect(Collectors.joining("\n"));
         if (failingBibNr != null) {
             fileContent += ("\n" + failingBibNr);
@@ -1075,27 +1076,37 @@ public class ResourceSharingPartnerTest {
         return prepareBaseBibliotekFromXml(null, bibNrToXmlMap);
     }
 
-    private void assertIsoProfileDetailsPopulatedCorrectly(final Partner partner, final String bibnr) {
+    private void assertIsoProfileDetailsPopulatedCorrectly(final Partner partner,
+                                                           final String landkode,
+                                                           final String bibnr) {
 
         IsoDetails details = partner.getPartnerDetails().getProfileDetails().getIsoDetails();
 
+        final String expectedIsoSymbol = landkode.toUpperCase(Locale.ROOT) + HYPHEN + bibnr;
+
         assertThat(details.getIllPort(), is(ILL_SERVER_PORT));
-        assertThat(details.getIsoSymbol(), is(bibnr));
+        assertThat(details.getIsoSymbol(), is(expectedIsoSymbol));
         assertThat(details.getIllServer(), is(ILL_SERVER_ENVIRONMENT_VALUE));
         assertThat(details.isSharedBarcodes(), is(true));
     }
 
-    private void assertNncipProfileDetailsPopulatedCorrectly(Partner partner, String bibnr, String expectedEmail) {
+    private void assertNncipProfileDetailsPopulatedCorrectly(Partner partner,
+                                                             String landkode,
+                                                             String bibnr,
+                                                             String expectedEmail) {
+
         final ProfileType profileType = partner.getPartnerDetails().getProfileDetails().getProfileType();
 
         assertThat(profileType, is(ProfileType.NCIP_P_2_P));
 
         final NcipP2PDetails details = partner.getPartnerDetails().getProfileDetails().getNcipP2PDetails();
 
+        final String expectedPartnerSymbol = landkode.toUpperCase(Locale.ROOT) + HYPHEN + bibnr;
+
         assertThat(details.getRequestExpiryType().getDesc(), is("No expiry"));
         assertThat(details.getRequestExpiryType().getValue(), is("NO_EXPIRY"));
         assertThat(details.getIllServer(), is(NNCIP_SERVER));
-        assertThat(details.getPartnerSymbol(), is(bibnr));
+        assertThat(details.getPartnerSymbol(), is(expectedPartnerSymbol));
         assertThat(details.getGeneralUserIdType().getDesc(), is("barcode"));
         assertThat(details.getGeneralUserIdType().getValue(), is("BARCODE"));
         assertThat(details.getEmailAddress(), is(expectedEmail));
