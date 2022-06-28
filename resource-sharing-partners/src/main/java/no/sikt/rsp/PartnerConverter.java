@@ -36,6 +36,7 @@ public class PartnerConverter {
 
     private static final Logger logger = LoggerFactory.getLogger(PartnerConverter.class);
     private static final String EMAIL_PATTERN = ".+@.+";
+    private static final String HYPHEN = "-";
     private static final String COULD_NOT_CONVERT_RECORD = "Could not convert record, missing %s, record: %s";
     private static final int AVG_SUPPLY_TIME = 1;
     private static final int DELIVERY_DELAY = 0;
@@ -160,6 +161,10 @@ public class PartnerConverter {
         return locateProfile;
     }
 
+    private String extractSymbol(final Record record) {
+        return record.getLandkode().toUpperCase(Locale.ROOT) + HYPHEN + record.getBibnr();
+    }
+
     @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     private ProfileDetails extractProfileDetails(Record record) {
         ProfileDetails details = new ProfileDetails();
@@ -174,7 +179,7 @@ public class PartnerConverter {
             final IsoDetails isoDetails = new IsoDetails();
             isoDetails.setIllPort(9001);
             isoDetails.setIllServer(interLibraryLoanServer);
-            isoDetails.setIsoSymbol(record.getBibnr());
+            isoDetails.setIsoSymbol(extractSymbol(record));
             isoDetails.setSharedBarcodes(true);
 
             details.setIsoDetails(isoDetails);
@@ -188,7 +193,7 @@ public class PartnerConverter {
             expiryType.setValue("NO_EXPIRY");
             ncipP2PDetails.setRequestExpiryType(expiryType);
             ncipP2PDetails.setIllServer(nncipUri.get());
-            ncipP2PDetails.setPartnerSymbol(record.getBibnr());
+            ncipP2PDetails.setPartnerSymbol(extractSymbol(record));
             GeneralUserIdType generalUserIdType = new GeneralUserIdType();
             generalUserIdType.setDesc("barcode");
             generalUserIdType.setValue("BARCODE");
@@ -248,7 +253,7 @@ public class PartnerConverter {
     }
 
     private String extractHoldingCode(Record record) {
-        return record.getLandkode().toUpperCase(Locale.ROOT) + record.getBibnr();
+        return record.getBibnr();
     }
 
     private String extractName(Record record) {
