@@ -9,9 +9,9 @@ Parameters:
     Default: "basebibliotek-txt-files"
     Description: Name of bucket for basebibliotek txt file
   SharedConfigBucketName:
-    Type: String
-    Default: 'shared-config-bucket-dev'
-    Description: 'Bucket name for shared, persistent configuration files. Created manually before deploying pipeline.'
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: "shared-config-bucket-name"
+    Description: Parameter should be set manually in systems-manager
   LibCodeToAlmaCodeFilePath:
     Type: String
     Default: 'fullLibCodeToAlmaCodeMapping.json'
