@@ -10,6 +10,7 @@ Parameters:
     Description: Name of bucket for basebibliotek txt file
   SharedConfigBucketName:
     Type: AWS::SSM::Parameter::Value<String>
+    Default: "shared-config-bucket"
     Description: Parameter should be set manually in systems-manager
   LibCodeToAlmaCodeFilePath:
     Type: String
