@@ -1198,12 +1198,24 @@ public class ResourceSharingPartnerTest {
                                     .findFirst()
                                     .orElse(null);
         if (postAddressShouldExist) {
-            assertAddress(postAddress, record.getPadr(), record.getBibnr(), record.getPpoststed(), record.getPpostnr(),
-                          record.getLandkode(), true);
+            final String expectedLine5 = record.getLandkode().toUpperCase(Locale.ROOT) + HYPHEN + record.getBibnr();
+            assertAddress(postAddress,
+                          record.getPadr(),
+                          expectedLine5,
+                          record.getPpoststed(),
+                          record.getPpostnr(),
+                          record.getLandkode(),
+                          true);
         }
         if (visitationAddressShouldExist) {
-            assertAddress(visitationAddress, record.getVadr(), record.getBibnr(), record.getVpoststed(),
-                          record.getVpostnr(), record.getLandkode(), !postAddressShouldExist);
+            final String expectedLine5 = record.getLandkode().toUpperCase(Locale.ROOT) + HYPHEN + record.getBibnr();
+            assertAddress(visitationAddress,
+                          record.getVadr(),
+                          expectedLine5,
+                          record.getVpoststed(),
+                          record.getVpostnr(),
+                          record.getLandkode(),
+                          !postAddressShouldExist);
         }
     }
 

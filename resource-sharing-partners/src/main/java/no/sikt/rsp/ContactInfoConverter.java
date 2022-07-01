@@ -24,6 +24,7 @@ public final class ContactInfoConverter {
     private static final boolean BEST_EMAIL_IS_ALWAYS_PREFERRED = true;
     private static final boolean THERE_IS_ONLY_ONE_PHONE_SO_IT_IS_ALWAYS_PREFERRED = true;
     private static final boolean P_ADDRESS_IS_ALWAYS_PREFERRED = true;
+    private static final String HYPHEN = "-";
     private static final List<String> PHONE_TYPES = List.of("claimPhone", "orderPhone", "paymentPhone", "returnsPhone");
     private static final List<String> ADDRESS_TYPES = List.of("billing", "claim", "order", "payment", "returns",
                                                               "shipping");
@@ -137,9 +138,12 @@ public final class ContactInfoConverter {
                                          String postnr,
                                          String landkode,
                                          boolean isPreferred) {
+
+        final String line5 = landkode.toUpperCase(Locale.ROOT) + HYPHEN + bibnr;
+
         var address = new Address();
         address.setLine1(adr);
-        address.setLine5(bibnr);
+        address.setLine5(line5);
         address.setCity(poststed);
         address.setPostalCode(postnr);
         address.setCountry(createCountry(landkode));
