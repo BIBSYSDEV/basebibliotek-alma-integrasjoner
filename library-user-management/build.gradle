@@ -1,0 +1,19 @@
+
+group 'no.sikt'
+version '1.0-SNAPSHOT'
+
+dependencies {
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.8.2'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.8.2'
+    testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.8.2'
+}
+
+test {
+//    environment "ALMA_API_HOST", "https://localhost:63535"
+//    environment "ALMA_APIKEY", "apiKeyNZ"
+//    environment "API_HOST", "api.localhost.nva.aws.unit.no"
+
+    useJUnitPlatform()
+    failFast = true
+    finalizedBy jacocoTestReport
+}

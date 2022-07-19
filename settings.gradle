@@ -3,4 +3,5 @@ include 'resource-sharing-partners'
 include 'basebibliotek-generated'
 include 'alma-generated'
 include 'basebibliotek-fetch-cronjob'
+include 'library-user-management'
 
