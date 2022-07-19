@@ -14,7 +14,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
-import no.sikt.alma.generated.Partner;
+import no.sikt.alma.partners.generated.Partner;
 import no.sikt.rsp.clients.AbstractHttpUrlConnectionApi;
 import no.sikt.rsp.clients.AlmaPartnerUpserter;
 import nva.commons.core.paths.UriWrapper;

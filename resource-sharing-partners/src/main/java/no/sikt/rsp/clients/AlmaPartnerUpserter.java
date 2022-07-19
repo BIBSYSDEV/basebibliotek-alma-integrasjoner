@@ -1,6 +1,6 @@
 package no.sikt.rsp.clients;
 
-import no.sikt.alma.generated.Partner;
+import no.sikt.alma.partners.generated.Partner;
 
 public interface AlmaPartnerUpserter {
 

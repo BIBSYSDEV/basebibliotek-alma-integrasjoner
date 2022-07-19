@@ -12,7 +12,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import no.nb.basebibliotek.generated.BaseBibliotek;
-import no.sikt.alma.generated.Partner;
+import no.sikt.alma.partners.generated.Partner;
 import no.sikt.rsp.clients.AlmaPartnerUpserter;
 import no.sikt.rsp.clients.BaseBibliotekApi;
 import no.sikt.rsp.clients.alma.HttpUrlConnectionAlmaPartnerUpserter;
