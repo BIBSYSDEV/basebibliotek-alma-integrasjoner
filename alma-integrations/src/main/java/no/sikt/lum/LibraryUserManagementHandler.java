@@ -63,6 +63,6 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         logger.info("done setting up drivers and reading environment");
         logger.info(sharedConfigBucketName);
 
-        return null;
+        return 1;
     }
 }
