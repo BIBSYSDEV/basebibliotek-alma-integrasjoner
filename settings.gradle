@@ -1,7 +1,6 @@
 rootProject.name = 'basebibliotek-alma-integrations'
-include 'resource-sharing-partners'
-include 'basebibliotek-generated'
 include 'alma-generated'
+include 'alma-integrations'
 include 'basebibliotek-fetch-cronjob'
-include 'library-user-management'
+include 'basebibliotek-generated'
 
