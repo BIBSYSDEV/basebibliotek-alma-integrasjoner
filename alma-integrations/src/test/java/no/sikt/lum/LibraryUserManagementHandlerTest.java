@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
+import no.sikt.rsp.ResourceSharingPartnerHandler;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
@@ -59,6 +60,9 @@ class LibraryUserManagementHandlerTest {
             SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
         when(mockedEnvironment.readEnv(LibraryUserManagementHandler.REPORT_BUCKET_ENVIRONMENT_NAME)).thenReturn(
             BASEBIBLIOTEK_REPORT);
+        when(mockedEnvironment.readEnv(
+                 LibraryUserManagementHandler.LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY)).thenReturn(
+            LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH);
         final String fullLibCodeToAlmaCodeMapping = IoUtils.stringFromResources(
             Path.of(FULL_LIB_CODE_TO_ALMA_CODE_MAPPING_JSON));
         s3Driver.insertFile(UnixPath.of(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH), fullLibCodeToAlmaCodeMapping);
@@ -78,8 +82,8 @@ class LibraryUserManagementHandlerTest {
         WireMocker.mockAlmaGetResponseUserNotFound(NO_0030100_ID);
         WireMocker.mockAlmaPostResponse();
         Integer response = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
-//        verify(getRequestedFor(urlPathEqualTo(WireMocker.URL_PATH_PARTNER + "/" + NO_0030100_ID)));
-//        verify(postRequestedFor(urlPathEqualTo(WireMocker.URL_PATH_PARTNER)));
+        verify(getRequestedFor(urlPathEqualTo(WireMocker.URL_PATH_USERS + "/" + NO_0030100_ID)));
+        verify(postRequestedFor(urlPathEqualTo(WireMocker.URL_PATH_USERS)));
         assertThat(response, is(notNullValue()));
         assertThat(response, is(1));
     }

@@ -18,6 +18,7 @@ import nva.commons.core.ioutils.IoUtils;
 public class WireMocker {
 
     public static final String URL_PATH_PARTNER = "/partners";
+    public static final String URL_PATH_USERS = "/users";
 
     private static final String SLASH = "/";
 
@@ -50,6 +51,7 @@ public class WireMocker {
     public static void mockAlmaPostResponse() {
         String almaPostResponseBody = "DUMMY";
         stubFor(post(URL_PATH_PARTNER).willReturn(ok().withBody(almaPostResponseBody)));
+        stubFor(post(URL_PATH_USERS).willReturn(ok().withBody(almaPostResponseBody)));
     }
 
     public static void mockAlmaForbiddenGetResponse(String code) {

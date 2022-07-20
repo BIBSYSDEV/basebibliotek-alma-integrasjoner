@@ -4,19 +4,17 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.google.gson.Gson;
-import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.sikt.alma.partners.generated.Partner;
 import no.sikt.clients.alma.AlmaPartnerUpserter;
 import no.sikt.clients.BaseBibliotekApi;
 import no.sikt.clients.alma.HttpUrlConnectionAlmaPartnerUpserter;
 import no.sikt.clients.basebibliotek.HttpUrlConnectionBaseBibliotekApi;
+import no.sikt.commons.HandlerUtils;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -30,7 +28,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, Integer> {
 
     private static final Logger logger = LoggerFactory.getLogger(ResourceSharingPartnerHandler.class);
-    public static final int SINGLE_EXPECTED_RECORD = 0;
     private static final String EVENT = "event";
     public static final String ALMA_API_HOST = "ALMA_API_HOST";
     public static final String COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE = " could not contact Alma\n";
@@ -41,7 +38,6 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     public static final String REPORT_FILE_NAME_PREFIX = "report-";
     private final transient Gson gson = new Gson();
 
-    public static final String S3_URI_TEMPLATE = "s3://%s/%s";
     public static final String ILL_SERVER_ENV_NAME = "ILL_SERVER";
     public static final String SHARED_CONFIG_BUCKET_NAME_ENV_NAME = "SHARED_CONFIG_BUCKET";
     public static final String LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY =
@@ -90,19 +86,19 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
         logger.info("done setting up drivers and reading environment");
         logger.info(sharedConfigBucketName);
         try {
-            var bibNrFile = readFile(s3event);
+            var bibNrFile = HandlerUtils.readFile(s3event, s3Client);
             logger.info("done collecting bibNrFile");
 
             final String instRegAsJson = driver.getFile(UnixPath.of(libCodeToAlmaCodeMappingFilePath));
             logger.info("done collecting instreg");
 
             AlmaCodeProvider almaCodeProvider = new AlmaCodeProvider(instRegAsJson);
-            var bibnrList = getBibNrList(bibNrFile);
+            var bibnrList = HandlerUtils.getBibNrList(bibNrFile);
             var reportStringBuilder = new StringBuilder();
-            var basebiblioteks = generateBasebibliotek(bibnrList, reportStringBuilder);
+            var basebiblioteks = HandlerUtils.generateBasebibliotek(bibnrList, reportStringBuilder, baseBibliotekApi);
             partners.addAll(generatePartners(basebiblioteks, reportStringBuilder, almaCodeProvider, illServer));
             int counter = sendToAlmaAndCountSuccess(partners, reportStringBuilder);
-            reportToS3Bucket(reportStringBuilder, s3event);
+            HandlerUtils.reportToS3Bucket(reportStringBuilder, s3event, s3Client, reportS3BucketName);
             return counter;
         } catch (Exception exception) {
             throw logErrorAndThrowException(exception);
@@ -153,29 +149,6 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
         return partners;
     }
 
-    private List<BaseBibliotek> generateBasebibliotek(List<String> bibnrList, StringBuilder reportStringBuilder) {
-        final List<BaseBibliotek> basebiblioteks = new ArrayList<>();
-        for (final String bibnr : bibnrList) {
-            baseBibliotekApi.fetchBasebibliotek(bibnr)
-                .ifPresentOrElse(basebiblioteks::add, () ->
-                                                          reportStringBuilder
-                                                              .append(bibnr)
-                                                              .append(COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE)
-                );
-        }
-        return basebiblioteks;
-    }
-
-    private void reportToS3Bucket(StringBuilder reportStringBuilder, S3Event s3Event) throws IOException {
-        var report = reportStringBuilder.toString();
-        var s3Driver = new S3Driver(s3Client, reportS3BucketName);
-        s3Driver.insertFile(UnixPath.of(REPORT_FILE_NAME_PREFIX + extractFilename(s3Event)), report);
-    }
-
-    private List<String> getBibNrList(String bibNrFile) {
-        return Arrays.stream(bibNrFile.split("\n")).map(String::trim).collect(Collectors.toList());
-    }
-
     private boolean sendToAlma(Partner partner) {
         return almaPartnerUpserter.upsertPartner(partner);
     }
@@ -191,21 +164,4 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
                    : new RuntimeException(exception);
     }
 
-    private String readFile(S3Event event) {
-        var s3Driver = new S3Driver(s3Client, extractBucketName(event));
-        var fileUri = createS3BucketUri(event);
-        return s3Driver.getFile(UriWrapper.fromUri(fileUri).toS3bucketPath());
-    }
-
-    private String extractBucketName(S3Event event) {
-        return event.getRecords().get(SINGLE_EXPECTED_RECORD).getS3().getBucket().getName();
-    }
-
-    private URI createS3BucketUri(S3Event s3Event) {
-        return URI.create(String.format(S3_URI_TEMPLATE, extractBucketName(s3Event), extractFilename(s3Event)));
-    }
-
-    private String extractFilename(S3Event event) {
-        return event.getRecords().get(SINGLE_EXPECTED_RECORD).getS3().getObject().getKey();
-    }
 }

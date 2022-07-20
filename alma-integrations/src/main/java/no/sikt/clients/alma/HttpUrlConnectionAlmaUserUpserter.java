@@ -13,41 +13,41 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
-import no.sikt.alma.partners.generated.Partner;
+import no.sikt.alma.user.generated.User;
 import no.sikt.clients.AbstractHttpUrlConnectionApi;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnectionApi implements AlmaPartnerUpserter {
+public class HttpUrlConnectionAlmaUserUpserter extends AbstractHttpUrlConnectionApi implements AlmaUserUpserter {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(HttpUrlConnectionAlmaPartnerUpserter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpUrlConnectionAlmaUserUpserter.class);
 
     public static final String LOG_MESSAGE_COMMUNICATION_PROBLEM = "Problems communicating with Alma!";
     public static final String CONTENT_TYPE_HEADER_NAME = "Content-Type";
     public static final String APPLICATION_JSON = "application/json";
     public static final String APPLICATION_XML = "application/xml";
-    public static final String PARTNERS_URL_PATH = "partners";
-    public static final String UNEXPECTED_RESPONSE_UPDATING_PARTNER_LOG_MESSAGE_PREFIX = "Unexpected response "
-                                                                                         + "updating partner";
-    public static final String UNEXPECTED_RESPONSE_CREATING_PARTNER_LOG_MESSAGE_PREFIX = "Unexpected response "
-                                                                                         + "creating partner";
-    public static final String UNEXPECTED_RESPONSE_FETCHING_PARTNER_LOG_MESSAGE_PREFIX = "Unexpected response "
-                                                                                         + "fetching partner";
+    public static final String USERS_URL_PATH = "users";
+    public static final String UNEXPECTED_RESPONSE_UPDATING_USER_LOG_MESSAGE_PREFIX = "Unexpected response "
+                                                                                      + "updating user";
+    public static final String UNEXPECTED_RESPONSE_CREATING_USER_LOG_MESSAGE_PREFIX = "Unexpected response "
+                                                                                      + "creating user";
+    public static final String UNEXPECTED_RESPONSE_FETCHING_USER_LOG_MESSAGE_PREFIX = "Unexpected response "
+                                                                                      + "fetching user";
 
-    private static final String ALMA_ERROR_CODE_PARTNER_NOT_FOUND = "402118";
+    private static final String ALMA_ERROR_CODE_USER_NOT_FOUND = "401861";
     private static final String AUTHORIZATION_HEADER_NAME = "Authorization";
     private static final String ACCEPT_HEADER_NAME = "Accept";
     private static final String APIKEY_KEY = "apikey";
     private static final String SPACE_KEY = " ";
-    private static final String UNEXPECTED_RESPONSE_UPDATING_PARTNER_MESSAGE_FORMAT =
-        UNEXPECTED_RESPONSE_UPDATING_PARTNER_LOG_MESSAGE_PREFIX + " '%s' in Alma:\n%s\nStatus code: "
+    private static final String UNEXPECTED_RESPONSE_UPDATING_USER_MESSAGE_FORMAT =
+        UNEXPECTED_RESPONSE_UPDATING_USER_LOG_MESSAGE_PREFIX + " '%s' in Alma:\n%s\nStatus code: "
         + "%d\nResponse body: %s";
-    private static final String UNEXPECTED_RESPONSE_CREATING_PARTNER_MESSAGE_FORMAT =
-        UNEXPECTED_RESPONSE_CREATING_PARTNER_LOG_MESSAGE_PREFIX + " '%s' in Alma.\n%s\nStatus code: "
+    private static final String UNEXPECTED_RESPONSE_CREATING_USER_MESSAGE_FORMAT =
+        UNEXPECTED_RESPONSE_CREATING_USER_LOG_MESSAGE_PREFIX + " '%s' in Alma.\n%s\nStatus code: "
         + "%d\nResponse body: %s";
-    private static final String UNEXPECTED_RESPONSE_FETCHING_PARTNER_MESSAGE_FORMAT =
-        UNEXPECTED_RESPONSE_FETCHING_PARTNER_LOG_MESSAGE_PREFIX + " '%s' from Alma.\nStatus code: "
+    private static final String UNEXPECTED_RESPONSE_FETCHING_USER_MESSAGE_FORMAT =
+        UNEXPECTED_RESPONSE_FETCHING_USER_LOG_MESSAGE_PREFIX + " '%s' from Alma.\nStatus code: "
         + "%d\nResponse body: %s";
 
     private final transient String almaApikey;
@@ -56,23 +56,23 @@ public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnect
                                                          .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
                                                                     false);
 
-    public HttpUrlConnectionAlmaPartnerUpserter(final String almaApiKey, final URI almaApiHost) {
+    public HttpUrlConnectionAlmaUserUpserter(final String almaApiKey, final URI almaApiHost) {
         this(HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build(), almaApiKey, almaApiHost);
     }
 
-    public HttpUrlConnectionAlmaPartnerUpserter(final HttpClient httpClient, final String almaApiKey,
-                                                final URI almaApiHost) {
+    public HttpUrlConnectionAlmaUserUpserter(final HttpClient httpClient, final String almaApiKey,
+                                             final URI almaApiHost) {
         super(httpClient);
         this.almaApikey = almaApiKey;
         this.almaApiHost = almaApiHost;
     }
 
-    private Optional<String> fetchPartner(final String code) {
+    private Optional<String> fetchUser(final String userID) {
         final HttpRequest request = HttpRequest.newBuilder()
                                         .GET()
                                         .uri(UriWrapper.fromUri(almaApiHost)
-                                                 .addChild(PARTNERS_URL_PATH)
-                                                 .addChild(code).getUri())
+                                                 .addChild(USERS_URL_PATH)
+                                                 .addChild(userID).getUri())
                                         .setHeader(AUTHORIZATION_HEADER_NAME, APIKEY_KEY + SPACE_KEY + almaApikey)
                                         .setHeader(ACCEPT_HEADER_NAME, APPLICATION_JSON)
                                         .build();
@@ -83,20 +83,20 @@ public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnect
             } else if (HttpURLConnection.HTTP_BAD_REQUEST == response.statusCode()) {
                 final AlmaErrorResponse almaErrorResponse = objectMapper.readValue(response.body(),
                                                                                    AlmaErrorResponse.class);
-                if (partnerNotFound(almaErrorResponse)) {
+                if (userNotFound(almaErrorResponse)) {
                     return Optional.empty();
                 } else {
                     final String message = String.format(
-                        UNEXPECTED_RESPONSE_FETCHING_PARTNER_MESSAGE_FORMAT,
-                        code,
+                        UNEXPECTED_RESPONSE_FETCHING_USER_MESSAGE_FORMAT,
+                        userID,
                         response.statusCode(),
                         response.body());
                     throw new RuntimeException(message);
                 }
             } else {
                 final String message = String.format(
-                    UNEXPECTED_RESPONSE_FETCHING_PARTNER_MESSAGE_FORMAT,
-                    code,
+                    UNEXPECTED_RESPONSE_FETCHING_USER_MESSAGE_FORMAT,
+                    userID,
                     response.statusCode(),
                     response.body());
                 throw new RuntimeException(message);
@@ -106,22 +106,22 @@ public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnect
         }
     }
 
-    private boolean partnerNotFound(final AlmaErrorResponse almaErrorResponse) {
+    private boolean userNotFound(final AlmaErrorResponse almaErrorResponse) {
         return almaErrorResponse.isErrorsExist() && almaErrorResponse.getErrorList().getError().stream()
-                                                        .anyMatch(almaError -> ALMA_ERROR_CODE_PARTNER_NOT_FOUND.equals(
+                                                        .anyMatch(almaError -> ALMA_ERROR_CODE_USER_NOT_FOUND.equals(
                                                             almaError.getErrorCode()));
     }
 
-    private void updatePartner(final Partner partner) {
+    private void updateUser(final User user) {
         try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            JAXB.marshal(partner, outputStream);
-            final String partnerAsString = outputStream.toString(StandardCharsets.UTF_8);
+            JAXB.marshal(user, outputStream);
+            final String userAsString = outputStream.toString(StandardCharsets.UTF_8);
 
             final HttpRequest request = HttpRequest.newBuilder()
-                                            .PUT(HttpRequest.BodyPublishers.ofString(partnerAsString))
+                                            .PUT(HttpRequest.BodyPublishers.ofString(userAsString))
                                             .uri(UriWrapper.fromUri(almaApiHost)
-                                                     .addChild(PARTNERS_URL_PATH)
-                                                     .addChild(partner.getPartnerDetails().getCode()).getUri())
+                                                     .addChild(USERS_URL_PATH)
+                                                     .addChild(user.getPrimaryId()).getUri())
                                             .setHeader(AUTHORIZATION_HEADER_NAME, APIKEY_KEY + SPACE_KEY + almaApikey)
                                             .header(CONTENT_TYPE_HEADER_NAME, APPLICATION_XML)
                                             .build();
@@ -129,9 +129,9 @@ public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnect
             final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
             if (!successfulResponse(response)) {
                 final String message = String.format(
-                    UNEXPECTED_RESPONSE_UPDATING_PARTNER_MESSAGE_FORMAT,
-                    partner.getPartnerDetails().getCode(),
-                    partnerAsString,
+                    UNEXPECTED_RESPONSE_UPDATING_USER_MESSAGE_FORMAT,
+                    user.getPrimaryId(),
+                    userAsString,
                     response.statusCode(),
                     response.body());
                 throw new RuntimeException(message);
@@ -141,16 +141,16 @@ public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnect
         }
     }
 
-    private void createPartner(final Partner partner) {
+    private void createUser(final User user) {
         try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            JAXB.marshal(partner, outputStream);
-            final String partnerAsString = outputStream.toString(StandardCharsets.UTF_8);
+            JAXB.marshal(user, outputStream);
+            final String userAsString = outputStream.toString(StandardCharsets.UTF_8);
 
             final HttpRequest request = HttpRequest.newBuilder()
                                             .POST(
-                                                HttpRequest.BodyPublishers.ofString(partnerAsString))
+                                                HttpRequest.BodyPublishers.ofString(userAsString))
                                             .uri(UriWrapper.fromUri(almaApiHost)
-                                                     .addChild(PARTNERS_URL_PATH)
+                                                     .addChild(USERS_URL_PATH)
                                                      .getUri())
                                             .setHeader(AUTHORIZATION_HEADER_NAME, APIKEY_KEY + SPACE_KEY + almaApikey)
                                             .header(CONTENT_TYPE_HEADER_NAME, APPLICATION_XML)
@@ -159,9 +159,9 @@ public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnect
             final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
             if (response.statusCode() != HttpURLConnection.HTTP_OK) {
                 final String message = String.format(
-                    UNEXPECTED_RESPONSE_CREATING_PARTNER_MESSAGE_FORMAT,
-                    partner.getPartnerDetails().getCode(),
-                    partnerAsString,
+                    UNEXPECTED_RESPONSE_CREATING_USER_MESSAGE_FORMAT,
+                    user.getPrimaryId(),
+                    userAsString,
                     response.statusCode(),
                     response.body());
                 throw new RuntimeException(message);
@@ -172,10 +172,10 @@ public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnect
     }
 
     @Override
-    public boolean upsertPartner(final Partner partner) {
+    public boolean upsertUser(final User user) {
         try {
-            final Optional<String> almaPartner = fetchPartner(partner.getPartnerDetails().getCode());
-            almaPartner.ifPresentOrElse(currentPartner -> updatePartner(partner), () -> createPartner(partner));
+            final Optional<String> almaUser = fetchUser(user.getPrimaryId());
+            almaUser.ifPresentOrElse(currentPartner -> updateUser(user), () -> createUser(user));
             return true;
         } catch (Exception e) {
             LOGGER.warn(LOG_MESSAGE_COMMUNICATION_PROBLEM, e);
@@ -187,5 +187,4 @@ public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnect
     protected Logger getLogger() {
         return LOGGER;
     }
-
 }
