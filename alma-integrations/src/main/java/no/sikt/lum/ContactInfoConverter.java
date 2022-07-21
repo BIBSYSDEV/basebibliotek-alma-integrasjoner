@@ -1,7 +1,11 @@
 package no.sikt.lum;
 
+import static no.sikt.commons.HandlerUtils.HYPHEN;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.MissingResourceException;
 import java.util.Objects;
 import java.util.Optional;
 import no.nb.basebibliotek.generated.Record;
@@ -24,12 +28,23 @@ public final class ContactInfoConverter {
     private static final boolean BEST_EMAIL_IS_ALWAYS_PREFERRED = true;
     private static final boolean THERE_IS_ONLY_ONE_PHONE_SO_IT_IS_ALWAYS_PREFERRED = true;
     private static final boolean P_ADDRESS_IS_ALWAYS_PREFERRED = true;
-    private static final String HYPHEN = "-";
-    private static final List<String> PHONE_TYPES = List.of("claimPhone", "orderPhone", "paymentPhone", "returnsPhone");
-    private static final List<String> ADDRESS_TYPES = List.of("billing", "claim", "order", "payment", "returns",
-                                                              "shipping");
     public static final String WORK = "Work";
     public static final String OFFICE = "Office";
+
+    static final Map<String, String> twoToThreeMap = new HashMap<>();
+
+
+    static {
+        Locale[] availableLocales = Locale.getAvailableLocales();
+        for (Locale l : availableLocales) {
+            try {
+                twoToThreeMap.put(l.getCountry(), l.getISO3Country());
+            } catch (MissingResourceException e) {
+                System.out.println(e.getMessage());
+                // ignore, is useless anyway
+            }
+        }
+    }
 
     @JacocoGenerated
     private ContactInfoConverter() {
@@ -144,7 +159,6 @@ public final class ContactInfoConverter {
                                          boolean isPreferred) {
 
         final String line5 = landkode.toUpperCase(Locale.ROOT) + HYPHEN + bibnr;
-
         var address = new Address();
         address.setLine1(adr);
         address.setLine5(line5);
@@ -166,10 +180,14 @@ public final class ContactInfoConverter {
     }
 
     private static Country createCountry(String landkode) {
+        String land = twoToThreeMap.get(landkode.toUpperCase(Locale.ROOT));
         var country = new Country();
-        if (!StringUtils.isEmpty(landkode)) {
-            country.setValue(landkode.toUpperCase(Locale.ROOT));
+        if (!StringUtils.isEmpty(land)) {
+            country.setValue(land);
+        } else {
+            country.setValue(landkode);
         }
         return country;
     }
+
 }

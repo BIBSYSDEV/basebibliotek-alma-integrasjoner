@@ -3,7 +3,6 @@ package no.sikt.lum;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -21,6 +20,8 @@ import no.sikt.alma.user.generated.User.Gender;
 import no.sikt.alma.user.generated.User.PreferredLanguage;
 import no.sikt.alma.user.generated.User.RecordType;
 import no.sikt.alma.user.generated.User.Status;
+import no.sikt.alma.user.generated.UserIdentifier;
+import no.sikt.alma.user.generated.UserIdentifiers;
 import no.sikt.alma.user.generated.UserRole;
 import no.sikt.alma.user.generated.UserRoles;
 import no.sikt.alma.user.generated.UserStatistic;
@@ -84,6 +85,11 @@ public class UserConverter extends AlmaConverter {
     public static final String STATISTICS_TYPE_BRUKEROPPDATERING = "Brukeroppdatering";
     public static final String EXTERNAL_ID_SIS = "SIS";
     public static final String ACCOUNT_TYPE_EXTERNAL = "EXTERNAL";
+    public static final String LIB_USER_PREFIX = "lib";
+    public static final String EXTERNAL = "External";
+    public static final String UNIV_ID = "UNIV_ID";
+    public static final String UNIVERSITY_ID = "University ID";
+    private static final String BIBSYS_FEIDE_REALM = "@bibsys.no";
     private final transient String targetAlmaCode;
 
     public UserConverter(AlmaCodeProvider almaCodeProvider, BaseBibliotek baseBibliotek, String targetAlmaCode) {
@@ -145,6 +151,8 @@ public class UserConverter extends AlmaConverter {
         user.setAccountType(defaultAccountType());
         user.setPassword(extractPassword(record));
         user.setContactInfo(ContactInfoConverter.extractContactInfo(record));
+        user.setPrimaryId(extractPrimaryID(record));
+        user.setUserIdentifiers(extractUserIdentifiers(record));
         return user;
     }
 
@@ -258,7 +266,6 @@ public class UserConverter extends AlmaConverter {
         throw new RuntimeException(String.format(COULD_NOT_GENERATE_A_CAMPUS_CODE_FOR, targetAlmaCode));
     }
 
-
     private Optional<RsLibraries> defineRSLibaries() {
         //Todo: is that sufficient? Same issue as with campusCode @Audun
         Optional<RsLibraries> rsLibraries = Optional.of(new RsLibraries());
@@ -300,6 +307,28 @@ public class UserConverter extends AlmaConverter {
     private String extractPassword(Record record) {
         return Optional.ofNullable(Optional.ofNullable(record.getAut()).orElse(new Aut()).getContent()).orElse(
             StringUtils.EMPTY_STRING);
+    }
+
+    private String extractPrimaryID(Record record) {
+        return LIB_USER_PREFIX + getLibraryNumber(record);
+    }
+
+    private UserIdentifiers extractUserIdentifiers(Record record) {
+        UserIdentifier userIdentifier = new UserIdentifier();
+        userIdentifier.setValue(getLibraryNumber(record) + BIBSYS_FEIDE_REALM);
+        userIdentifier.setStatus(ACTIVE.toUpperCase(Locale.ROOT));
+        userIdentifier.setSegmentType(EXTERNAL);
+        UserIdentifier.IdType value = new UserIdentifier.IdType();
+        value.setValue(UNIV_ID);
+        value.setDesc(UNIVERSITY_ID);
+        userIdentifier.setIdType(value);
+        UserIdentifiers userIdentifiers = new UserIdentifiers();
+        userIdentifiers.getUserIdentifier().add(userIdentifier);
+        return userIdentifiers;
+    }
+
+    private String getLibraryNumber(Record record) {
+        return record.getBibnr().replaceAll("\\w+-", StringUtils.EMPTY_STRING);
     }
 }
 
