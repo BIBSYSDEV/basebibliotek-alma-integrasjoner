@@ -753,7 +753,7 @@ public class ResourceSharingPartnerTest {
 
         var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
         var report = reports3Driver.getFile(
-            UnixPath.of(ResourceSharingPartnerHandler.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
+            UnixPath.of(no.sikt.commons.HandlerUtils.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
         assertThat(report,
                    containsString(bibNr + StringUtils.SPACE + ResourceSharingPartnerHandler.OK_REPORT_MESSAGE));
     }
@@ -778,7 +778,7 @@ public class ResourceSharingPartnerTest {
 
         var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
         var report = reports3Driver.getFile(
-            UnixPath.of(ResourceSharingPartnerHandler.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
+            UnixPath.of(no.sikt.commons.HandlerUtils.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
 
         assertThat(report, containsString(
             bibNr + ResourceSharingPartnerHandler.COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE));
@@ -798,9 +798,9 @@ public class ResourceSharingPartnerTest {
 
         var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
         var report = reports3Driver.getFile(
-            UnixPath.of(ResourceSharingPartnerHandler.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
+            UnixPath.of(no.sikt.commons.HandlerUtils.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
         assertThat(report, containsString(
-            basebibliotekFailureBibnr + ResourceSharingPartnerHandler.COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE));
+            basebibliotekFailureBibnr + no.sikt.commons.HandlerUtils.COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE));
     }
 
     @Test
@@ -820,7 +820,7 @@ public class ResourceSharingPartnerTest {
 
         var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
         var report = reports3Driver.getFile(
-            UnixPath.of(ResourceSharingPartnerHandler.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
+            UnixPath.of(no.sikt.commons.HandlerUtils.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
 
         assertThat(report, containsString(
             bibNr + ResourceSharingPartnerHandler.COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE));

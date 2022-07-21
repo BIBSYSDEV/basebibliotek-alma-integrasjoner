@@ -5,7 +5,6 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.sikt.alma.user.generated.User;
@@ -35,16 +34,18 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         "LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH";
     public static final String OK_REPORT_MESSAGE = "OK\n";
     public static final String COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE = " could not contact Alma\n";
+    public static final String COULD_NOT_CONVERT_TO_USER_ERROR_MESSAGE = " Could not convert to user";
+    public static final String COULD_NOT_CONVERT_TO_USER_REPORT_MESSAGE = " could not convert to user\n";
     public static final String ALMA_API_HOST = "ALMA_API_HOST";
     public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_REST_URL";
     private static final String ALMA_API_KEY_ENV_KEY = "ALMA_APIKEY";
     private static final String EVENT = "event";
+    public static final String HANDLER_NAME = "lum";
     private final transient S3Client s3Client;
     private final transient Environment environment;
     private final transient String reportS3BucketName;
     private final transient Gson gson = new Gson();
 
-    private final transient List<User> users;
     private final transient BaseBibliotekApi baseBibliotekApi;
     private final transient AlmaUserUpserter almaUserUpserter;
 
@@ -64,7 +65,6 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         final URI basebibliotekUri =
             UriWrapper.fromUri(environment.readEnv(BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).getUri();
         this.baseBibliotekApi = new HttpUrlConnectionBaseBibliotekApi(basebibliotekUri);
-        this.users = new ArrayList<>();
         this.reportS3BucketName = environment.readEnv(REPORT_BUCKET_ENVIRONMENT_NAME);
     }
 
@@ -85,19 +85,40 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
             var reportStringBuilder = new StringBuilder();
             var baseBibliotekList =
                 HandlerUtils.generateBasebibliotek(bibnrList, reportStringBuilder, baseBibliotekApi);
-            users.addAll(generateUsers(baseBibliotekList, reportStringBuilder, almaCodeProvider));
-            int counter = sendToAlmaAndCountSuccess(users, reportStringBuilder);
-            HandlerUtils.reportToS3Bucket(reportStringBuilder, s3event, s3Client, reportS3BucketName);
+            int counter = sendUsersToAlma(almaCodeProvider, reportStringBuilder, baseBibliotekList);
+            HandlerUtils.reportToS3Bucket(reportStringBuilder, s3event, s3Client, reportS3BucketName, HANDLER_NAME);
             return counter;
         } catch (Exception exception) {
             throw logErrorAndThrowException(exception);
         }
     }
 
-    private Collection<? extends User> generateUsers(List<BaseBibliotek> baseBibliotekList,
+    private int sendUsersToAlma(AlmaCodeProvider almaCodeProvider, StringBuilder reportStringBuilder,
+                                List<BaseBibliotek> baseBibliotekList) {
+        int counter = 0;
+        for (String almaCode : almaCodeProvider.getAvailableAlmaCodes()) {
+            counter += sendToAlmaAndCountSuccess(
+                generateUsers(baseBibliotekList, reportStringBuilder, almaCode), reportStringBuilder);
+        }
+        return counter;
+    }
+
+    private List<User> generateUsers(List<BaseBibliotek> baseBibliotekList,
                                                      StringBuilder reportStringBuilder,
-                                                     AlmaCodeProvider almaCodeProvider) {
-        return new ArrayList<>();
+                                                     String targetAlmaCode) {
+        var users = new ArrayList<User>();
+        for (BaseBibliotek baseBibliotek : baseBibliotekList) {
+            try {
+                users.addAll(new UserConverter(baseBibliotek, targetAlmaCode).toUser());
+            } catch (Exception e) {
+                //Errors in individual libraries should not cause crash in entire execution.
+                logger.info(COULD_NOT_CONVERT_TO_USER_ERROR_MESSAGE, e);
+                reportStringBuilder
+                    .append(baseBibliotek.getRecord().get(0).getBibnr())
+                    .append(COULD_NOT_CONVERT_TO_USER_REPORT_MESSAGE);
+            }
+        }
+        return users;
     }
 
     @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
@@ -130,5 +151,4 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
                    ? (RuntimeException) exception
                    : new RuntimeException(exception);
     }
-
 }

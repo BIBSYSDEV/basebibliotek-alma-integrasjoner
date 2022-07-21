@@ -3,7 +3,9 @@ package no.sikt.rsp;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,5 +55,9 @@ public class AlmaCodeProvider {
         } else {
             return Optional.of(almaCode);
         }
+    }
+
+    public List<String> getAvailableAlmaCodes() {
+        return new ArrayList<>(libCodeToAlmaCodeMap.keySet());
     }
 }

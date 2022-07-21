@@ -25,7 +25,8 @@ public class HandlerUtils {
     public static final UserIdentityEntity EMPTY_USER_IDENTITY = null;
     public static final long SOME_FILE_SIZE = 100L;
 
-    public static S3Event prepareBaseBibliotekFromXml(final Map<String, String> bibNrToXmlMap, S3Driver s3Driver) throws IOException {
+    public static S3Event prepareBaseBibliotekFromXml(final Map<String, String> bibNrToXmlMap, S3Driver s3Driver)
+        throws IOException {
         return prepareBaseBibliotekFromXml(null, bibNrToXmlMap, s3Driver);
     }
 

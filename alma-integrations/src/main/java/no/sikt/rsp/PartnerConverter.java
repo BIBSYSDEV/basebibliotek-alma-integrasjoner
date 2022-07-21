@@ -1,8 +1,6 @@
 package no.sikt.rsp;
 
-import jakarta.xml.bind.JAXB;
 import jakarta.xml.bind.JAXBElement;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -27,18 +25,16 @@ import no.sikt.alma.partners.generated.ProfileType;
 import no.sikt.alma.partners.generated.RequestExpiryType;
 import no.sikt.alma.partners.generated.Status;
 import no.sikt.clients.basebibliotek.BaseBibliotekUtils;
+import no.sikt.commons.AlmaConverter;
 import nva.commons.core.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 //TODO: refactor and remove supress pmd.godclass warning
 @SuppressWarnings({"PMD.GodClass", "PMD.AvoidCalendarDateCreation"})
-public class PartnerConverter {
+public class PartnerConverter extends AlmaConverter {
 
     private static final Logger logger = LoggerFactory.getLogger(PartnerConverter.class);
-    private static final String EMAIL_PATTERN = ".+@.+";
-    private static final String HYPHEN = "-";
-    private static final String COULD_NOT_CONVERT_RECORD = "Could not convert record, missing %s, record: %s";
     private static final int AVG_SUPPLY_TIME = 1;
     private static final int DELIVERY_DELAY = 0;
     private static final String LENDING_WORKFLOW = "Lending";
@@ -49,9 +45,8 @@ public class PartnerConverter {
     public static final int RESENDING_OVERDUE_MESSAGE_INTERVAL = 7;
     public static final String NNCIP_URI = "nncip_uri";
     public static final String TEMPORARILY_CLOSED = "U";
-    public static final String PERMANENTLY_CLOSED = "X";
-    private static final String INSTITUTION_CODE_PREFIX = "47BIBSYS_";
     private static final String LOCATE_PROFILE_VALUE_PREFIX = "LOCATE_";
+    public static final String LANDKODE = "landkode";
 
     // System type constants:
     public static final String SYSTEM_TYPE_VALUE_ALMA = "ALMA";
@@ -59,15 +54,14 @@ public class PartnerConverter {
     public static final String SYSTEM_TYPE_DESC_ALMA = "alma";
     public static final String SYSTEM_TYPE_DESC_OTHER = "other";
 
-    private final transient AlmaCodeProvider almaCodeProvider;
+    protected final transient AlmaCodeProvider almaCodeProvider;
     private final transient String interLibraryLoanServer;
-    private final transient BaseBibliotek baseBibliotek;
 
     public PartnerConverter(AlmaCodeProvider almaCodeProvider, String interLibraryLoanServer,
                             BaseBibliotek baseBibliotek) {
+        super(baseBibliotek);
         this.almaCodeProvider = almaCodeProvider;
         this.interLibraryLoanServer = interLibraryLoanServer;
-        this.baseBibliotek = baseBibliotek;
     }
 
     public List<Partner> toPartners() {
@@ -76,12 +70,6 @@ public class PartnerConverter {
                    .stream()
                    .map(this::convertRecordToPartnerWhenConstraintsSatisfied)
                    .collect(Collectors.toList());
-    }
-
-    private String toXml(Record record) {
-        StringWriter xmlWriter = new StringWriter();
-        JAXB.marshal(record, xmlWriter);
-        return xmlWriter.toString();
     }
 
     private Partner convertRecordToPartnerWhenConstraintsSatisfied(Record record) {
@@ -93,6 +81,13 @@ public class PartnerConverter {
         }
     }
 
+    @Override
+    protected void logProblemAndThrowException(Record record) {
+        var missingParameters = Objects.nonNull(record.getLandkode()) ? StringUtils.EMPTY_STRING : LANDKODE;
+        logger.info(String.format(COULD_NOT_CONVERT_RECORD, missingParameters, toXml(record)));
+        throw new RuntimeException(String.format(COULD_NOT_CONVERT_RECORD, missingParameters, toXml(record)));
+    }
+
     private Partner convertRecordToPartner(Record record) {
         var partner = new Partner();
         partner.setPartnerDetails(extractPartnerDetailsFromRecord(record));
@@ -100,22 +95,8 @@ public class PartnerConverter {
         return partner;
     }
 
-    private void logProblemAndThrowException(Record record) {
-        var missingParameters = Objects.nonNull(record.getLandkode()) ? StringUtils.EMPTY_STRING : "landkode";
-        logger.info(String.format(COULD_NOT_CONVERT_RECORD, missingParameters, toXml(record)));
-        throw new RuntimeException(String.format(COULD_NOT_CONVERT_RECORD, missingParameters, toXml(record)));
-    }
-
-    private boolean satisfiesConstraints(Record record) {
-        List<String> missingFields = findMissingRequiredFields(record);
-        if (!missingFields.isEmpty()) {
-            logger.warn(String.format(COULD_NOT_CONVERT_RECORD, missingFields, toXml(record)));
-        }
-
-        return missingFields.isEmpty();
-    }
-
-    private List<String> findMissingRequiredFields(Record record) {
+    @Override
+    protected List<String> findMissingRequiredFields(Record record) {
         final List<String> missingFields = new ArrayList<>();
 
         if (StringUtils.isEmpty(record.getBibnr())) {
@@ -160,10 +141,6 @@ public class PartnerConverter {
         final LocateProfile locateProfile = new LocateProfile();
         locateProfile.setValue(LOCATE_PROFILE_VALUE_PREFIX + almaCode);
         return locateProfile;
-    }
-
-    private String extractSymbol(final Record record) {
-        return record.getLandkode().toUpperCase(Locale.ROOT) + HYPHEN + record.getBibnr();
     }
 
     @SuppressWarnings("PMD.DataflowAnomalyAnalysis")

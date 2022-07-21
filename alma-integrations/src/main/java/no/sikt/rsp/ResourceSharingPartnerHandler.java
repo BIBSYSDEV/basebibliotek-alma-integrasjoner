@@ -33,9 +33,8 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     public static final String COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE = " could not contact Alma\n";
     public static final String COULD_NOT_CONVERT_TO_PARTNER_ERROR_MESSAGE = " Could not convert to partner";
     public static final String COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE = " could not convert to partner\n";
-    public static final String COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE = " could not fetch basebibliotek\n";
     public static final String OK_REPORT_MESSAGE = "OK\n";
-    public static final String REPORT_FILE_NAME_PREFIX = "report-";
+    public static final String HANDLER_NAME = "rsp";
     private final transient Gson gson = new Gson();
 
     public static final String ILL_SERVER_ENV_NAME = "ILL_SERVER";
@@ -95,10 +94,11 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
             AlmaCodeProvider almaCodeProvider = new AlmaCodeProvider(instRegAsJson);
             var bibnrList = HandlerUtils.getBibNrList(bibNrFile);
             var reportStringBuilder = new StringBuilder();
-            var basebiblioteks = HandlerUtils.generateBasebibliotek(bibnrList, reportStringBuilder, baseBibliotekApi);
+            var basebiblioteks = HandlerUtils
+                .generateBasebibliotek(bibnrList, reportStringBuilder, baseBibliotekApi);
             partners.addAll(generatePartners(basebiblioteks, reportStringBuilder, almaCodeProvider, illServer));
             int counter = sendToAlmaAndCountSuccess(partners, reportStringBuilder);
-            HandlerUtils.reportToS3Bucket(reportStringBuilder, s3event, s3Client, reportS3BucketName);
+            HandlerUtils.reportToS3Bucket(reportStringBuilder, s3event, s3Client, reportS3BucketName, HANDLER_NAME);
             return counter;
         } catch (Exception exception) {
             throw logErrorAndThrowException(exception);
