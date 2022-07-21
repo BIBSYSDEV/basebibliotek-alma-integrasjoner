@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 import no.sikt.json.AnnotatedDeserializer;
 import nva.commons.core.StringUtils;
 import org.slf4j.Logger;
@@ -57,7 +58,20 @@ public class AlmaCodeProvider {
         }
     }
 
+    public Optional<String> getLibCode(final String almaCode) {
+        Stream<String> libCodeKeyStream = keys(libCodeToAlmaCodeMap, almaCode);
+        return libCodeKeyStream.findFirst();
+    }
+
+    private <K, V> Stream<K> keys(Map<K, V> map, V value) {
+        return map
+            .entrySet()
+            .stream()
+            .filter(entry -> value.equals(entry.getValue()))
+            .map(Map.Entry::getKey);
+    }
+
     public List<String> getAvailableAlmaCodes() {
-        return new ArrayList<>(libCodeToAlmaCodeMap.keySet());
+        return new ArrayList<>(libCodeToAlmaCodeMap.values());
     }
 }

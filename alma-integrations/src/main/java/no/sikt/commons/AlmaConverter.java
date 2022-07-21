@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Locale;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.nb.basebibliotek.generated.Record;
+import no.sikt.rsp.AlmaCodeProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,9 +18,11 @@ public abstract class AlmaConverter {
     public static final String PERMANENTLY_CLOSED = "X";
     public static final String LINEFEED = "\n";
     public static final String INSTITUTION_CODE_PREFIX = "47BIBSYS_";
+    protected final transient AlmaCodeProvider almaCodeProvider;
     protected final transient BaseBibliotek baseBibliotek;
 
-    public AlmaConverter(BaseBibliotek baseBibliotek) {
+    public AlmaConverter(AlmaCodeProvider almaCodeProvider, BaseBibliotek baseBibliotek) {
+        this.almaCodeProvider = almaCodeProvider;
         this.baseBibliotek = baseBibliotek;
     }
 

@@ -54,13 +54,11 @@ public class PartnerConverter extends AlmaConverter {
     public static final String SYSTEM_TYPE_DESC_ALMA = "alma";
     public static final String SYSTEM_TYPE_DESC_OTHER = "other";
 
-    protected final transient AlmaCodeProvider almaCodeProvider;
     private final transient String interLibraryLoanServer;
 
     public PartnerConverter(AlmaCodeProvider almaCodeProvider, String interLibraryLoanServer,
                             BaseBibliotek baseBibliotek) {
-        super(baseBibliotek);
-        this.almaCodeProvider = almaCodeProvider;
+        super(almaCodeProvider, baseBibliotek);
         this.interLibraryLoanServer = interLibraryLoanServer;
     }
 
