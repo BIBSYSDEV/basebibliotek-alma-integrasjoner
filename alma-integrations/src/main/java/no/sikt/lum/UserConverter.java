@@ -144,6 +144,7 @@ public class UserConverter extends AlmaConverter {
         user.setExternalId(EXTERNAL_ID_SIS);
         user.setAccountType(defaultAccountType());
         user.setPassword(extractPassword(record));
+        user.setContactInfo(ContactInfoConverter.extractContactInfo(record));
         return user;
     }
 
@@ -243,9 +244,9 @@ public class UserConverter extends AlmaConverter {
         return userRoles;
     }
 
-    // Todo: this might be not precise enough. As it uses the libCode to the alma-instance the libUser is updated to
-    // (as defined in the libCodeToAlmaCode mapping config file used in RSP)
     private CampusCode defineCampusCode() {
+        // Todo: this might be not precise enough. As it uses the libCode to the alma-instance the libUser is updated to
+        // (as defined in the libCodeToAlmaCode mapping config file used in RSP)
         Optional<String> libCode = almaCodeProvider.getLibCode(targetAlmaCode);
         if (libCode.isPresent()) {
             User.CampusCode campusCode = new User.CampusCode();
@@ -257,9 +258,9 @@ public class UserConverter extends AlmaConverter {
         throw new RuntimeException(String.format(COULD_NOT_GENERATE_A_CAMPUS_CODE_FOR, targetAlmaCode));
     }
 
-    //Todo: is that sufficient? Same issue as with campusCode @Audun
 
     private Optional<RsLibraries> defineRSLibaries() {
+        //Todo: is that sufficient? Same issue as with campusCode @Audun
         Optional<RsLibraries> rsLibraries = Optional.of(new RsLibraries());
         Optional<String> libCode = almaCodeProvider.getLibCode(targetAlmaCode);
         if (libCode.isPresent()) {
