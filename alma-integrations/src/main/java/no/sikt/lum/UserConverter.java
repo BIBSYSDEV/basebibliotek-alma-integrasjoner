@@ -18,7 +18,6 @@ import no.sikt.alma.user.generated.User;
 import no.sikt.alma.user.generated.User.AccountType;
 import no.sikt.alma.user.generated.User.CampusCode;
 import no.sikt.alma.user.generated.User.Gender;
-import no.sikt.alma.user.generated.User.PreferredLanguage;
 import no.sikt.alma.user.generated.User.RecordType;
 import no.sikt.alma.user.generated.User.Status;
 import no.sikt.alma.user.generated.UserIdentifier;
@@ -27,14 +26,14 @@ import no.sikt.alma.user.generated.UserRole;
 import no.sikt.alma.user.generated.UserRoles;
 import no.sikt.alma.user.generated.UserStatistic;
 import no.sikt.alma.user.generated.UserStatistics;
-import no.sikt.commons.AlmaConverter;
+import no.sikt.commons.AlmaObjectConverter;
 import no.sikt.commons.HandlerUtils;
 import no.sikt.rsp.AlmaCodeProvider;
 import nva.commons.core.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UserConverter extends AlmaConverter {
+public class UserConverter extends AlmaObjectConverter {
 
     public static final String COUNTRYCODE_NORWAY = "NO";
     public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss",

@@ -10,9 +10,9 @@ import no.sikt.rsp.AlmaCodeProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class AlmaConverter {
+public abstract class AlmaObjectConverter {
 
-    private static final Logger logger = LoggerFactory.getLogger(AlmaConverter.class);
+    private static final Logger logger = LoggerFactory.getLogger(AlmaObjectConverter.class);
     protected static final String EMAIL_PATTERN = ".+@.+";
     protected static final String COULD_NOT_CONVERT_RECORD = "Could not convert record, missing %s, record: %s";
     public static final String PERMANENTLY_CLOSED = "X";
@@ -21,7 +21,7 @@ public abstract class AlmaConverter {
     protected final transient AlmaCodeProvider almaCodeProvider;
     protected final transient BaseBibliotek baseBibliotek;
 
-    public AlmaConverter(AlmaCodeProvider almaCodeProvider, BaseBibliotek baseBibliotek) {
+    public AlmaObjectConverter(AlmaCodeProvider almaCodeProvider, BaseBibliotek baseBibliotek) {
         this.almaCodeProvider = almaCodeProvider;
         this.baseBibliotek = baseBibliotek;
     }

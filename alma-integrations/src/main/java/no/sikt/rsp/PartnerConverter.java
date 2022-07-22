@@ -25,14 +25,14 @@ import no.sikt.alma.partners.generated.ProfileType;
 import no.sikt.alma.partners.generated.RequestExpiryType;
 import no.sikt.alma.partners.generated.Status;
 import no.sikt.clients.basebibliotek.BaseBibliotekUtils;
-import no.sikt.commons.AlmaConverter;
+import no.sikt.commons.AlmaObjectConverter;
 import nva.commons.core.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 //TODO: refactor and remove supress pmd.godclass warning
 @SuppressWarnings({"PMD.GodClass", "PMD.AvoidCalendarDateCreation"})
-public class PartnerConverter extends AlmaConverter {
+public class PartnerConverter extends AlmaObjectConverter {
 
     private static final Logger logger = LoggerFactory.getLogger(PartnerConverter.class);
     private static final int AVG_SUPPLY_TIME = 1;

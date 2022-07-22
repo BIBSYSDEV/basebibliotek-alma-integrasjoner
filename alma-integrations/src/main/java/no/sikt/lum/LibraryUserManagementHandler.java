@@ -85,7 +85,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
             var reportStringBuilder = new StringBuilder();
             var baseBibliotekList =
                 HandlerUtils.generateBasebibliotek(bibnrList, reportStringBuilder, baseBibliotekApi);
-            int counter = sendUsersToAlma(almaCodeProvider, reportStringBuilder, baseBibliotekList);
+            int counter = sendBaseBibliotekToAlma(almaCodeProvider, reportStringBuilder, baseBibliotekList);
             HandlerUtils.reportToS3Bucket(reportStringBuilder, s3event, s3Client, reportS3BucketName, HANDLER_NAME);
             return counter;
         } catch (Exception exception) {
@@ -93,8 +93,8 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         }
     }
 
-    private int sendUsersToAlma(AlmaCodeProvider almaCodeProvider, StringBuilder reportStringBuilder,
-                                List<BaseBibliotek> baseBibliotekList) {
+    private int sendBaseBibliotekToAlma(AlmaCodeProvider almaCodeProvider, StringBuilder reportStringBuilder,
+                                        List<BaseBibliotek> baseBibliotekList) {
         int counter = 0;
         for (String almaCode : almaCodeProvider.getAvailableAlmaCodes()) {
             counter += sendToAlmaAndCountSuccess(

@@ -17,13 +17,13 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
-import no.sikt.rsp.ResourceSharingPartnerHandler;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,13 +40,14 @@ class LibraryUserManagementHandlerTest {
     private static final String LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH = "/libCodeToAlmaCodeMapping.json";
     private static final String BIBNR_RESOLVABLE_TO_ALMA_CODE = "0030100";
     private static final String BASEBIBLIOTEK_0030100_XML = "bb_0030100.xml";
-    private static final String NO_0030100_ID = "NO-0030100";
+    private static final String LIB_0030100_ID = "lib0030100";
 
     public static final Context CONTEXT = mock(Context.class);
     private transient FakeS3Client s3Client;
     private transient S3Driver s3Driver;
     private transient LibraryUserManagementHandler libraryUserManagementHandler;
     private static final Environment mockedEnvironment = mock(Environment.class);
+    private int numberOfAlmaInstances;
 
     @BeforeEach
     public void init(final WireMockRuntimeInfo wmRuntimeInfo) throws IOException {
@@ -65,6 +66,7 @@ class LibraryUserManagementHandlerTest {
             LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH);
         final String fullLibCodeToAlmaCodeMapping = IoUtils.stringFromResources(
             Path.of(FULL_LIB_CODE_TO_ALMA_CODE_MAPPING_JSON));
+        numberOfAlmaInstances = StringUtils.countMatches(fullLibCodeToAlmaCodeMapping, "almaCode");
         s3Driver.insertFile(UnixPath.of(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH), fullLibCodeToAlmaCodeMapping);
         libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client, mockedEnvironment);
     }
@@ -79,12 +81,12 @@ class LibraryUserManagementHandlerTest {
                                                                            IoUtils.stringFromResources(
                                                                                Path.of(BASEBIBLIOTEK_0030100_XML)));
         final S3Event s3Event = HandlerUtils.prepareBaseBibliotekFromXml(bibNrToXmlMap, s3Driver);
-        WireMocker.mockAlmaGetResponseUserNotFound(NO_0030100_ID);
+        WireMocker.mockAlmaGetResponseUserNotFound(LIB_0030100_ID);
         WireMocker.mockAlmaPostResponse();
         Integer response = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
-        verify(getRequestedFor(urlPathEqualTo(WireMocker.URL_PATH_USERS + "/" + NO_0030100_ID)));
+        verify(getRequestedFor(urlPathEqualTo(WireMocker.URL_PATH_USERS + "/" + LIB_0030100_ID)));
         verify(postRequestedFor(urlPathEqualTo(WireMocker.URL_PATH_USERS)));
         assertThat(response, is(notNullValue()));
-        assertThat(response, is(1));
+        assertThat(response, is(numberOfAlmaInstances));
     }
 }

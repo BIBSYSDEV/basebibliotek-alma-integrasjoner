@@ -1,6 +1,8 @@
 package no.sikt.lum;
 
 import static no.sikt.commons.HandlerUtils.HYPHEN;
+import static org.apache.commons.lang3.StringUtils.join;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -30,20 +32,25 @@ public final class ContactInfoConverter {
     private static final boolean P_ADDRESS_IS_ALWAYS_PREFERRED = true;
     public static final String WORK = "Work";
     public static final String OFFICE = "Office";
+    public static final String COMMA_SEPARATOR = ", ";
+    public static final String LOCALES_WITHOUT_ISO_3_COUNTRY_CODES = "Locales without ISO3Country-codes: ";
 
     static final Map<String, String> twoToThreeMap = new HashMap<>();
 
 
+
     static {
         Locale[] availableLocales = Locale.getAvailableLocales();
-        for (Locale l : availableLocales) {
+        List<String> localesWithoutISO3Country = new ArrayList<>();
+        for (Locale locale : availableLocales) {
             try {
-                twoToThreeMap.put(l.getCountry(), l.getISO3Country());
+                twoToThreeMap.put(locale.getCountry(), locale.getISO3Country());
             } catch (MissingResourceException e) {
-                System.out.println(e.getMessage());
+                localesWithoutISO3Country.add(locale.toString());
                 // ignore, is useless anyway
             }
         }
+        System.out.println(LOCALES_WITHOUT_ISO_3_COUNTRY_CODES + join(localesWithoutISO3Country, COMMA_SEPARATOR));
     }
 
     @JacocoGenerated

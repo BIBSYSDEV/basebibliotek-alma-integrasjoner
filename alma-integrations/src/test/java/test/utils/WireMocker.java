@@ -28,14 +28,14 @@ public class WireMocker {
                     .willReturn(ok().withBody(responseBody)));
     }
 
-    public static void mockAlmaGetResponsePartnerNotFound(final String almaCode) {
+    public static void mockAlmaGetResponsePartnerNotFound(final String libCode) {
         String almaGetResponseBody = IoUtils.stringFromResources(Path.of("almaPartnerNotFound.json"));
-        stubFor(get(URL_PATH_PARTNER + "/" + almaCode).willReturn(badRequest().withBody(almaGetResponseBody)));
+        stubFor(get(URL_PATH_PARTNER + "/" + libCode).willReturn(badRequest().withBody(almaGetResponseBody)));
     }
 
-    public static void mockAlmaGetResponseUserNotFound(final String almaCode) {
+    public static void mockAlmaGetResponseUserNotFound(final String libUserID) {
         String almaGetResponseBody = IoUtils.stringFromResources(Path.of("almaUserNotFound.json"));
-        stubFor(get(URL_PATH_PARTNER + "/" + almaCode).willReturn(badRequest().withBody(almaGetResponseBody)));
+        stubFor(get(URL_PATH_USERS + "/" + libUserID).willReturn(badRequest().withBody(almaGetResponseBody)));
     }
 
     public static void mockAlmaGetResponseBadRequestNotPartnerNotFound(final String almaCode) {
