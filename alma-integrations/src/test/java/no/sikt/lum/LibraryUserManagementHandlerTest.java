@@ -27,7 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import test.utils.HandlerUtils;
+import test.utils.HandlerTestUtils;
 import test.utils.WireMocker;
 
 @WireMockTest
@@ -47,7 +47,7 @@ class LibraryUserManagementHandlerTest {
     private transient S3Driver s3Driver;
     private transient LibraryUserManagementHandler libraryUserManagementHandler;
     private static final Environment mockedEnvironment = mock(Environment.class);
-    private int numberOfAlmaInstances;
+    private transient int numberOfAlmaInstances;
 
     @BeforeEach
     public void init(final WireMockRuntimeInfo wmRuntimeInfo) throws IOException {
@@ -80,7 +80,7 @@ class LibraryUserManagementHandlerTest {
         final Map<String, String> bibNrToXmlMap = Collections.singletonMap(BIBNR_RESOLVABLE_TO_ALMA_CODE,
                                                                            IoUtils.stringFromResources(
                                                                                Path.of(BASEBIBLIOTEK_0030100_XML)));
-        final S3Event s3Event = HandlerUtils.prepareBaseBibliotekFromXml(bibNrToXmlMap, s3Driver);
+        final S3Event s3Event = HandlerTestUtils.prepareBaseBibliotekFromXml(bibNrToXmlMap, s3Driver);
         WireMocker.mockAlmaGetResponseUserNotFound(LIB_0030100_ID);
         WireMocker.mockAlmaPostResponse();
         Integer response = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);

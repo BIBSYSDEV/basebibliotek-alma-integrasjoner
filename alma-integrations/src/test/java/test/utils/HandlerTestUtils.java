@@ -18,7 +18,7 @@ import no.unit.nva.s3.S3Driver;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 
-public class HandlerUtils {
+public class HandlerTestUtils {
 
     public static final RequestParametersEntity EMPTY_REQUEST_PARAMETERS = null;
     public static final ResponseElementsEntity EMPTY_RESPONSE_ELEMENTS = null;
@@ -40,7 +40,7 @@ public class HandlerUtils {
         // prepare mocks:
         bibNrToXmlMap.forEach((key, value) -> WireMocker.mockBasebibliotekXml(value, key));
 
-        var path = (s3Path == null) ? HandlerUtils.randomS3Path() : s3Path;
+        var path = (s3Path == null) ? HandlerTestUtils.randomS3Path() : s3Path;
         var uri = s3Driver.insertFile(path, fileContent);
 
         return createS3Event(uri);

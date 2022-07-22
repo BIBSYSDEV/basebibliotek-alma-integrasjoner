@@ -51,8 +51,12 @@ public class HandlerUtils {
                                         String reportS3BucketName, String handlerName) throws IOException {
         var report = reportStringBuilder.toString();
         var s3Driver = new S3Driver(s3Client, reportS3BucketName);
-        s3Driver.insertFile(UnixPath.of(REPORT_FILE_NAME_PREFIX + handlerName + HYPHEN + extractFilename(s3Event)),
+        s3Driver.insertFile(UnixPath.of(extractReportFilename(s3Event, handlerName)),
                             report);
+    }
+
+    public static String extractReportFilename(S3Event s3Event, String handlerName) {
+        return REPORT_FILE_NAME_PREFIX + handlerName + HYPHEN + extractFilename(s3Event);
     }
 
     private static String extractBucketName(S3Event event) {

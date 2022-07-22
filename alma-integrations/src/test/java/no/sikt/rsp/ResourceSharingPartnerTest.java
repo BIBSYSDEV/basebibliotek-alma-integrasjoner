@@ -7,6 +7,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static no.sikt.clients.AbstractHttpUrlConnectionApi.LOG_MESSAGE_COMMUNICATION_PROBLEM;
+import static no.sikt.commons.HandlerUtils.COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -53,6 +54,7 @@ import no.sikt.alma.partners.generated.ProfileType;
 import no.sikt.alma.partners.generated.Status;
 import no.sikt.clients.alma.HttpUrlConnectionAlmaPartnerUpserter;
 import no.sikt.clients.basebibliotek.BaseBibliotekUtils;
+import no.sikt.commons.HandlerUtils;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
@@ -75,7 +77,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import test.utils.BasebibliotekGenerator;
 import test.utils.EressurserBuilder;
-import test.utils.HandlerUtils;
+import test.utils.HandlerTestUtils;
 import test.utils.RecordBuilder;
 import test.utils.RecordSpecification;
 import test.utils.WireMocker;
@@ -83,7 +85,6 @@ import test.utils.WireMocker;
 @SuppressWarnings({"PMD.DataflowAnomalyAnalysis", "PMD.AvoidDuplicateLiterals"})
 @WireMockTest
 public class ResourceSharingPartnerTest {
-
 
     private static final String BASEBIBLIOTEK_0030100_XML = "bb_0030100.xml";
     private static final String BASEBIBLIOTEK_2062200_XML = "bb_2062200.xml";
@@ -143,7 +144,7 @@ public class ResourceSharingPartnerTest {
                                                                            IoUtils.stringFromResources(
                                                                                Path.of(BASEBIBLIOTEK_0030100_XML)));
 
-        final S3Event s3Event = HandlerUtils.prepareBaseBibliotekFromXml(bibNrToXmlMap, s3Driver);
+        final S3Event s3Event = HandlerTestUtils.prepareBaseBibliotekFromXml(bibNrToXmlMap, s3Driver);
 
         WireMocker.mockAlmaGetResponsePartnerNotFound(NO_0030100_ID);
         WireMocker.mockAlmaPostResponse();
@@ -160,7 +161,7 @@ public class ResourceSharingPartnerTest {
                                                                            IoUtils.stringFromResources(
                                                                                Path.of(BASEBIBLIOTEK_0030100_XML)));
 
-        final S3Event s3Event = HandlerUtils.prepareBaseBibliotekFromXml(bibNrToXmlMap,s3Driver);
+        final S3Event s3Event = HandlerTestUtils.prepareBaseBibliotekFromXml(bibNrToXmlMap, s3Driver);
 
         WireMocker.mockAlmaGetResponse(NO_0030100_ID);
         WireMocker.mockAlmaPutResponse(NO_0030100_ID);
@@ -173,7 +174,7 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldLogExceptionWhenS3ClientFails() {
-        var s3Event = HandlerUtils.createS3Event(randomString());
+        var s3Event = HandlerTestUtils.createS3Event(randomString());
         var expectedMessage = randomString();
         s3Client = new FakeS3ClientThrowingException(expectedMessage);
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
@@ -190,7 +191,7 @@ public class ResourceSharingPartnerTest {
                           IoUtils.stringFromResources(Path.of(BASEBIBLIOTEK_0030100_XML)));
         bibNrToXmlMap.put(skippedBibBr, INVALID_BASEBIBLIOTEK_XML_STRING);
 
-        final S3Event s3Event = HandlerUtils.prepareBaseBibliotekFromXml(bibNrToXmlMap, s3Driver);
+        final S3Event s3Event = HandlerTestUtils.prepareBaseBibliotekFromXml(bibNrToXmlMap, s3Driver);
 
         WireMocker.mockAlmaGetResponse(NO_0030100_ID);
         WireMocker.mockAlmaPutResponse(NO_0030100_ID);
@@ -211,8 +212,8 @@ public class ResourceSharingPartnerTest {
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
         WireMocker.mockBasebibliotekXml(basebibliotekXml, BIBNR_RESOLVABLE_TO_ALMA_CODE);
-        var uri = s3Driver.insertFile(HandlerUtils.randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
-        var s3Event = HandlerUtils.createS3Event(uri);
+        var uri = s3Driver.insertFile(HandlerTestUtils.randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        var s3Event = HandlerTestUtils.createS3Event(uri);
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var partners = resourceSharingPartnerHandler.getPartners();
         assertContactInfo(partners.get(0).getContactInfo(), basebibliotek.getRecord().get(0));
@@ -336,9 +337,9 @@ public class ResourceSharingPartnerTest {
     @ValueSource(strings = {BaseBibliotekUtils.KATSYST_ALMA, BaseBibliotekUtils.KATSYST_BIBSYS})
     public void shouldExtractPartnerDetailsProfileDataIsoCorrectly(final String katsyst) throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsyst)
-                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .build();
+            .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .build();
 
         final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
 
@@ -388,11 +389,11 @@ public class ResourceSharingPartnerTest {
 
         final String emailAdr = "adr@example.com";
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
-                                  .withBibnr("1000000")
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .withEpostAdr(emailAdr)
-                                  .withEressurser(new EressurserBuilder().withNncipUri(NNCIP_SERVER).build())
-                                  .build();
+            .withBibnr("1000000")
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .withEpostAdr(emailAdr)
+            .withEressurser(new EressurserBuilder().withNncipUri(NNCIP_SERVER).build())
+            .build();
 
         final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
 
@@ -414,12 +415,12 @@ public class ResourceSharingPartnerTest {
         final String email = "invalid";
 
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
-                                  .withBibnr("1000000")
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .withEpostAdr(email)
-                                  .withEpostBest(email)
-                                  .withEressurser(new EressurserBuilder().withNncipUri(NNCIP_SERVER).build())
-                                  .build();
+            .withBibnr("1000000")
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .withEpostAdr(email)
+            .withEpostBest(email)
+            .withEressurser(new EressurserBuilder().withNncipUri(NNCIP_SERVER).build())
+            .build();
 
         final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
 
@@ -439,11 +440,11 @@ public class ResourceSharingPartnerTest {
     @Test
     public void foreignNonAlmaOrBibsysLibrariesWithNncipShouldHavePartnerProfileTypeEmail() throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
-                                  .withBibnr("1000000")
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_GERMAN)
-                                  .withEpostAdr(EMAIL_ADR)
-                                  .withEressurser(new EressurserBuilder().withNncipUri(NNCIP_SERVER).build())
-                                  .build();
+            .withBibnr("1000000")
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_GERMAN)
+            .withEpostAdr(EMAIL_ADR)
+            .withEressurser(new EressurserBuilder().withNncipUri(NNCIP_SERVER).build())
+            .build();
 
         final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
 
@@ -466,11 +467,11 @@ public class ResourceSharingPartnerTest {
         throws IOException {
         final String email = "adr@example.com";
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsyst)
-                                  .withBibnr("1000000")
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_GERMAN)
-                                  .withEpostAdr(email)
-                                  .withEpostBest(email)
-                                  .build();
+            .withBibnr("1000000")
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_GERMAN)
+            .withEpostAdr(email)
+            .withEpostBest(email)
+            .build();
 
         final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
 
@@ -489,11 +490,11 @@ public class ResourceSharingPartnerTest {
     @Test
     public void shouldExtractProfileDetailsEmailPreferringEmailBest() throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
-                                  .withBibnr("10000000")
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .withEpostBest(EMAIL_BEST)
-                                  .withEpostAdr(EMAIL_ADR)
-                                  .build();
+            .withBibnr("10000000")
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .withEpostBest(EMAIL_BEST)
+            .withEpostAdr(EMAIL_ADR)
+            .build();
 
         final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
 
@@ -513,10 +514,10 @@ public class ResourceSharingPartnerTest {
     public void shouldExtractProfileDetailsEmailFallingBackToEpostAdrIfBestIsMissing() throws IOException {
         final String email = "adr@example.com";
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
-                                  .withBibnr("1")
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .withEpostAdr(email)
-                                  .build();
+            .withBibnr("1")
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .withEpostAdr(email)
+            .build();
 
         final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
 
@@ -537,11 +538,11 @@ public class ResourceSharingPartnerTest {
     public void shouldExtractProfileDetailsEmailCorrectlyIgnoringInvalidEmailAddresses() throws IOException {
         final String email = "invalid";
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
-                                  .withBibnr("1")
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .withEpostBest(email)
-                                  .withEpostAdr(email)
-                                  .build();
+            .withBibnr("1")
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .withEpostBest(email)
+            .withEpostAdr(email)
+            .build();
 
         final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
 
@@ -591,11 +592,11 @@ public class ResourceSharingPartnerTest {
     public void shouldSkipWhenBasebibliotekFails() throws IOException {
         final String bibNrSuccess = "1000000";
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
-                                  .withBibnr(bibNrSuccess)
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .withEpostBest(EMAIL_BEST)
-                                  .withEpostAdr(EMAIL_ADR)
-                                  .build();
+            .withBibnr(bibNrSuccess)
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .withEpostBest(EMAIL_BEST)
+            .withEpostAdr(EMAIL_ADR)
+            .build();
 
         final String failingBibNr = "1234567";
         final S3Event s3Event = prepareBaseBibliotekFromRecords(failingBibNr, record);
@@ -647,9 +648,9 @@ public class ResourceSharingPartnerTest {
     @Test
     public void shouldLogAndThrowExceptionWhenAlmaCodeLookupTableIsMissing() throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_ALMA)
-                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .build();
+            .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .build();
 
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
@@ -671,9 +672,9 @@ public class ResourceSharingPartnerTest {
     @Test
     public void shouldLogAndThrowExceptionWhenAlmaCodeLookupTableIsEmpty() throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_ALMA)
-                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .build();
+            .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .build();
 
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
@@ -702,9 +703,9 @@ public class ResourceSharingPartnerTest {
     @Test
     public void shouldLogAndThrowExceptionWhenAlmaCodeLookupTableIsInvalidJson() throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_ALMA)
-                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .build();
+            .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .build();
 
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
@@ -734,13 +735,13 @@ public class ResourceSharingPartnerTest {
     void shouldReportSuccessfulWhenAllWorksProperly() throws IOException {
         final String bibNr = "1000000";
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
-                                  .withBibnr(bibNr)
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .withEpostBest(EMAIL_BEST)
-                                  .withEpostAdr(EMAIL_ADR)
-                                  .build();
+            .withBibnr(bibNr)
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .withEpostBest(EMAIL_BEST)
+            .withEpostAdr(EMAIL_ADR)
+            .build();
 
-        final UnixPath s3Path = HandlerUtils.randomS3Path();
+        final UnixPath s3Path = HandlerTestUtils.randomS3Path();
         final S3Event s3Event = prepareBaseBibliotekFromRecords(s3Path, record);
 
         final String almaCode = record.getLandkode().toUpperCase(Locale.ROOT) + "-" + bibNr;
@@ -753,7 +754,7 @@ public class ResourceSharingPartnerTest {
 
         var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
         var report = reports3Driver.getFile(
-            UnixPath.of(no.sikt.commons.HandlerUtils.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
+            UnixPath.of(HandlerUtils.extractReportFilename(s3Event, ResourceSharingPartnerHandler.HANDLER_NAME)));
         assertThat(report,
                    containsString(bibNr + StringUtils.SPACE + ResourceSharingPartnerHandler.OK_REPORT_MESSAGE));
     }
@@ -762,13 +763,13 @@ public class ResourceSharingPartnerTest {
     void shouldGenerateReportWhenAlmaContactFailure() throws IOException {
         var bibNr = "1234567";
         var record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
-                         .withBibnr(bibNr)
-                         .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                         .withEpostBest(EMAIL_BEST)
-                         .withEpostAdr(EMAIL_ADR)
-                         .build();
+            .withBibnr(bibNr)
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .withEpostBest(EMAIL_BEST)
+            .withEpostAdr(EMAIL_ADR)
+            .build();
 
-        var s3Path = HandlerUtils.randomS3Path();
+        var s3Path = HandlerTestUtils.randomS3Path();
         var s3Event = prepareBaseBibliotekFromRecords(s3Path, record);
 
         WireMocker.mockAlmaForbiddenGetResponse("NO-" + bibNr);
@@ -778,7 +779,7 @@ public class ResourceSharingPartnerTest {
 
         var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
         var report = reports3Driver.getFile(
-            UnixPath.of(no.sikt.commons.HandlerUtils.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
+            UnixPath.of(HandlerUtils.extractReportFilename(s3Event, ResourceSharingPartnerHandler.HANDLER_NAME)));
 
         assertThat(report, containsString(
             bibNr + ResourceSharingPartnerHandler.COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE));
@@ -791,36 +792,36 @@ public class ResourceSharingPartnerTest {
         final Map<String, String> bibNrToXmlMap = Collections.singletonMap(basebibliotekFailureBibnr,
                                                                            INVALID_BASEBIBLIOTEK_XML_STRING);
 
-        var s3Path = HandlerUtils.randomS3Path();
-        var s3Event = HandlerUtils.prepareBaseBibliotekFromXml(s3Path, bibNrToXmlMap, s3Driver);
+        var s3Path = HandlerTestUtils.randomS3Path();
+        var s3Event = HandlerTestUtils.prepareBaseBibliotekFromXml(s3Path, bibNrToXmlMap, s3Driver);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
         var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
         var report = reports3Driver.getFile(
-            UnixPath.of(no.sikt.commons.HandlerUtils.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
+            UnixPath.of(HandlerUtils.extractReportFilename(s3Event, ResourceSharingPartnerHandler.HANDLER_NAME)));
         assertThat(report, containsString(
-            basebibliotekFailureBibnr + no.sikt.commons.HandlerUtils.COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE));
+            basebibliotekFailureBibnr + COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE));
     }
 
     @Test
     void shouldGenerateReportWhenConversionToPartnerFailure() throws IOException {
         var bibNr = "3";
         var record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
-                         .withBibnr(bibNr)
-                         .withLandkode(null)
-                         .withEpostBest(EMAIL_BEST)
-                         .withEpostAdr(EMAIL_ADR)
-                         .build();
+            .withBibnr(bibNr)
+            .withLandkode(null)
+            .withEpostBest(EMAIL_BEST)
+            .withEpostAdr(EMAIL_ADR)
+            .build();
 
-        var s3Path = HandlerUtils.randomS3Path();
+        var s3Path = HandlerTestUtils.randomS3Path();
         var s3Event = prepareBaseBibliotekFromRecords(s3Path, record);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
         var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
         var report = reports3Driver.getFile(
-            UnixPath.of(no.sikt.commons.HandlerUtils.REPORT_FILE_NAME_PREFIX + s3Path.toString()));
+            UnixPath.of(HandlerUtils.extractReportFilename(s3Event, ResourceSharingPartnerHandler.HANDLER_NAME)));
 
         assertThat(report, containsString(
             bibNr + ResourceSharingPartnerHandler.COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE));
@@ -834,9 +835,9 @@ public class ResourceSharingPartnerTest {
     })
     public void shouldPopulateLocateProfileInPartnerDetailsCorrectly(final String katsyst) throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsyst)
-                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .build();
+            .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .build();
 
         final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
 
@@ -862,8 +863,8 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldIgnorePartnerAndLogProblemIfBaseBibliotekIsNotAvailable() throws IOException {
-        var uri = s3Driver.insertFile(HandlerUtils.randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
-        var s3Event = HandlerUtils.createS3Event(uri);
+        var uri = s3Driver.insertFile(HandlerTestUtils.randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        var s3Event = HandlerTestUtils.createS3Event(uri);
 
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).thenReturn(
             UriWrapper.fromUri("http://localhost:9999").toString());
@@ -881,9 +882,9 @@ public class ResourceSharingPartnerTest {
     @Test
     public void shouldIgnorePartnerAndLogProblemIfAlmaIsNotAvailable() throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), "BIBSYS")
-                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .build();
+            .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .build();
 
         var s3Event = prepareBaseBibliotekFromRecords(record);
 
@@ -906,9 +907,9 @@ public class ResourceSharingPartnerTest {
         throws IOException {
 
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), "BIBSYS")
-                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .build();
+            .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .build();
 
         var s3Event = prepareBaseBibliotekFromRecords(record);
 
@@ -928,9 +929,9 @@ public class ResourceSharingPartnerTest {
     public void shouldIgnorePartnerAndLogProblemIfAlmaCreatePartnerReturnsBadRequestWithUnhandledErrorCode()
         throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), "BIBSYS")
-                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .build();
+            .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .build();
 
         var s3Event = prepareBaseBibliotekFromRecords(record);
 
@@ -952,9 +953,9 @@ public class ResourceSharingPartnerTest {
         throws IOException {
 
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), "BIBSYS")
-                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .build();
+            .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .build();
 
         var s3Event = prepareBaseBibliotekFromRecords(record);
         WireMocker.mockAlmaGetResponse(NO_0030100_ID);
@@ -977,7 +978,7 @@ public class ResourceSharingPartnerTest {
                                                                            IoUtils.stringFromResources(
                                                                                Path.of(BASEBIBLIOTEK_2062200_XML)));
 
-        final S3Event s3Event = HandlerUtils.prepareBaseBibliotekFromXml(bibNrToXmlMap, s3Driver);
+        final S3Event s3Event = HandlerTestUtils.prepareBaseBibliotekFromXml(bibNrToXmlMap, s3Driver);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -1019,10 +1020,10 @@ public class ResourceSharingPartnerTest {
             WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
         });
 
-        final UnixPath path = (s3Path == null) ? HandlerUtils.randomS3Path() : s3Path;
+        final UnixPath path = (s3Path == null) ? HandlerTestUtils.randomS3Path() : s3Path;
         var uri = s3Driver.insertFile(path, fileContent);
 
-        return HandlerUtils.createS3Event(uri);
+        return HandlerTestUtils.createS3Event(uri);
     }
 
     private S3Event prepareBaseBibliotekFromRecordSpecifications(final List<Record> generatedRecords,
@@ -1043,9 +1044,9 @@ public class ResourceSharingPartnerTest {
             generatedRecords.addAll(basebibliotek.getRecord());
         });
 
-        var uri = s3Driver.insertFile(HandlerUtils.randomS3Path(), fileContent);
+        var uri = s3Driver.insertFile(HandlerTestUtils.randomS3Path(), fileContent);
 
-        return HandlerUtils.createS3Event(uri);
+        return HandlerTestUtils.createS3Event(uri);
     }
 
     private void assertIsoProfileDetailsPopulatedCorrectly(final Partner partner,
@@ -1108,15 +1109,15 @@ public class ResourceSharingPartnerTest {
         var expectedEmailsSize = (emailBestShouldExist ? 1 : 0) + (emailRegularShouldExist ? 1 : 0);
         assertThat(emails.getEmail(), hasSize(expectedEmailsSize));
         var emailBest = emails.getEmail()
-                            .stream()
-                            .filter(email -> hasEmailAddressCorresponding(email, record.getEpostBest()))
-                            .findFirst()
-                            .orElse(null);
+            .stream()
+            .filter(email -> hasEmailAddressCorresponding(email, record.getEpostBest()))
+            .findFirst()
+            .orElse(null);
         var emailRegular = emails.getEmail()
-                               .stream()
-                               .filter(email -> hasEmailAddressCorresponding(email, record.getEpostAdr()))
-                               .findFirst()
-                               .orElse(null);
+            .stream()
+            .filter(email -> hasEmailAddressCorresponding(email, record.getEpostAdr()))
+            .findFirst()
+            .orElse(null);
         if (emailBestShouldExist) {
             assertEmail(emailBest, record.getEpostBest(), true);
         }
@@ -1162,13 +1163,13 @@ public class ResourceSharingPartnerTest {
         var expectedAddressSize = (postAddressShouldExist ? 1 : 0) + (visitationAddressShouldExist ? 1 : 0);
         assertThat(addresses, hasSize(expectedAddressSize));
         var postAddress = addresses.stream()
-                              .filter(address -> hasLine1CorrespondingToRecord(address, record.getPadr()))
-                              .findFirst()
-                              .orElse(null);
+            .filter(address -> hasLine1CorrespondingToRecord(address, record.getPadr()))
+            .findFirst()
+            .orElse(null);
         var visitationAddress = addresses.stream()
-                                    .filter(address -> hasLine1CorrespondingToRecord(address, record.getVadr()))
-                                    .findFirst()
-                                    .orElse(null);
+            .filter(address -> hasLine1CorrespondingToRecord(address, record.getVadr()))
+            .findFirst()
+            .orElse(null);
         if (postAddressShouldExist) {
             final String expectedLine5 = record.getLandkode().toUpperCase(Locale.ROOT) + HYPHEN + record.getBibnr();
             assertAddress(postAddress,
