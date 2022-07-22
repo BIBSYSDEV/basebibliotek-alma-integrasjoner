@@ -1,0 +1,13 @@
+{
+  "errorsExist": true,
+  "errorList": {
+    "error": [
+      {
+        "errorCode": "401861",
+        "errorMessage": "User with identifier NO-0030100 was not found.",
+        "trackingId": "E01-2007092130-5VP8A-AWAE685658110"
+      }
+    ]
+  },
+  "result": null
+}

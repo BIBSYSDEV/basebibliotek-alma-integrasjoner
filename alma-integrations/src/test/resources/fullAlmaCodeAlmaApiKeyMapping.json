@@ -1,0 +1,334 @@
+[
+  {
+    "almaCode": "AASENTUN",
+    "almaApiKey": "almaApiKey_AASENTUN"
+  },
+  {
+    "almaCode": "AHO",
+    "almaApiKey": "almaApiKey_AHO"
+  },
+  {
+    "almaCode": "AHUS",
+    "almaApiKey": "almaApiKey_AHUS"
+  },
+  {
+    "almaCode": "AMH",
+    "almaApiKey": "almaApiKey_AMH"
+  },
+  {
+    "almaCode": "BI",
+    "almaApiKey": "almaApiKey_BI"
+  },
+  {
+    "almaCode": "BRC",
+    "almaApiKey": "almaApiKey_BRC"
+  },
+  {
+    "almaCode": "BREDK",
+    "almaApiKey": "almaApiKey_BREDK"
+  },
+  {
+    "almaCode": "BUSKSYK",
+    "almaApiKey": "almaApiKey_BUSKSYK"
+  },
+  {
+    "almaCode": "DEPSS",
+    "almaApiKey": "almaApiKey_DEPSS"
+  },
+  {
+    "almaCode": "DIAKON",
+    "almaApiKey": "almaApiKey_DIAKON"
+  },
+  {
+    "almaCode": "DIASYK",
+    "almaApiKey": "almaApiKey_DIASYK"
+  },
+  {
+    "almaCode": "DMMH",
+    "almaApiKey": "almaApiKey_DMMH"
+  },
+  {
+    "almaCode": "ERFKOMP",
+    "almaApiKey": "almaApiKey_ERFKOMP"
+  },
+  {
+    "almaCode": "FFI_BIBL",
+    "almaApiKey": "almaApiKey_FFI_BIBL"
+  },
+  {
+    "almaCode": "FHS",
+    "almaApiKey": "almaApiKey_FHS"
+  },
+  {
+    "almaCode": "FISKDIR",
+    "almaApiKey": "almaApiKey_FISKDIR"
+  },
+  {
+    "almaCode": "FOLKEMUS",
+    "almaApiKey": "almaApiKey_FOLKEMUS"
+  },
+  {
+    "almaCode": "FORBRUK",
+    "almaApiKey": "almaApiKey_FORBRUK"
+  },
+  {
+    "almaCode": "GLOMDAL",
+    "almaApiKey": "almaApiKey_GLOMDAL"
+  },
+  {
+    "almaCode": "GRANDE",
+    "almaApiKey": "almaApiKey_GRANDE"
+  },
+  {
+    "almaCode": "HH",
+    "almaApiKey": "almaApiKey_HH"
+  },
+  {
+    "almaCode": "HIB",
+    "almaApiKey": "almaApiKey_HIB"
+  },
+  {
+    "almaCode": "HIM",
+    "almaApiKey": "almaApiKey_HIM"
+  },
+  {
+    "almaCode": "HIO",
+    "almaApiKey": "almaApiKey_HIO"
+  },
+  {
+    "almaCode": "HIOA",
+    "almaApiKey": "almaApiKey_HIOA"
+  },
+  {
+    "almaCode": "HIT",
+    "almaApiKey": "almaApiKey_HIT"
+  },
+  {
+    "almaCode": "HVO",
+    "almaApiKey": "almaApiKey_HVO"
+  },
+  {
+    "almaCode": "IFE",
+    "almaApiKey": "almaApiKey_IFE"
+  },
+  {
+    "almaCode": "JBV",
+    "almaApiKey": "almaApiKey_JBV"
+  },
+  {
+    "almaCode": "JUSDEP",
+    "almaApiKey": "almaApiKey_JUSDEP"
+  },
+  {
+    "almaCode": "KHIO",
+    "almaApiKey": "almaApiKey_KHIO"
+  },
+  {
+    "almaCode": "KRUS",
+    "almaApiKey": "almaApiKey_KRUS"
+  },
+  {
+    "almaCode": "KT",
+    "almaApiKey": "almaApiKey_KT"
+  },
+  {
+    "almaCode": "LOVISHS",
+    "almaApiKey": "almaApiKey_LOVISHS"
+  },
+  {
+    "almaCode": "MAIHAUG",
+    "almaApiKey": "almaApiKey_MAIHAUG"
+  },
+  {
+    "almaCode": "MF",
+    "almaApiKey": "almaApiKey_MF"
+  },
+  {
+    "almaCode": "MH",
+    "almaApiKey": "almaApiKey_MH"
+  },
+  {
+    "almaCode": "MIGRDIR",
+    "almaApiKey": "almaApiKey_MIGRDIR"
+  },
+  {
+    "almaCode": "MOLDESYK",
+    "almaApiKey": "almaApiKey_MOLDESYK"
+  },
+  {
+    "almaCode": "NAV",
+    "almaApiKey": "almaApiKey_NAV"
+  },
+  {
+    "almaCode": "NB",
+    "almaApiKey": "almaApiKey_NB"
+  },
+  {
+    "almaCode": "NBANK",
+    "almaApiKey": "almaApiKey_NBANK"
+  },
+  {
+    "almaCode": "NBI",
+    "almaApiKey": "almaApiKey_NBI"
+  },
+  {
+    "almaCode": "NHHB",
+    "almaApiKey": "almaApiKey_NHHB"
+  },
+  {
+    "almaCode": "NIFU",
+    "almaApiKey": "almaApiKey_NIFU"
+  },
+  {
+    "almaCode": "NIH",
+    "almaApiKey": "almaApiKey_NIH"
+  },
+  {
+    "almaCode": "NILU",
+    "almaApiKey": "almaApiKey_NILU"
+  },
+  {
+    "almaCode": "NINA_DN",
+    "almaApiKey": "almaApiKey_NINA_DN"
+  },
+  {
+    "almaCode": "NISK",
+    "almaApiKey": "almaApiKey_NISK"
+  },
+  {
+    "almaCode": "NLA",
+    "almaApiKey": "almaApiKey_NLA"
+  },
+  {
+    "almaCode": "NM",
+    "almaApiKey": "almaApiKey_NM"
+  },
+  {
+    "almaCode": "NMBU",
+    "almaApiKey": "almaApiKey_NMBU"
+  },
+  {
+    "almaCode": "NMH",
+    "almaApiKey": "almaApiKey_NMH"
+  },
+  {
+    "almaCode": "NOBEL",
+    "almaApiKey": "almaApiKey_NOBEL"
+  },
+  {
+    "almaCode": "NOFIMA",
+    "almaApiKey": "almaApiKey_NOFINA"
+  },
+  {
+    "almaCode": "NOM",
+    "almaApiKey": "almaApiKey_NOM"
+  },
+  {
+    "almaCode": "NORCE",
+    "almaApiKey": "almaApiKey_NORGE"
+  },
+  {
+    "almaCode": "NPOLAR",
+    "almaApiKey": "almaApiKey_NPOLAR"
+  },
+  {
+    "almaCode": "NTNU_UB",
+    "almaApiKey": "almaApiKey_NTNU_UB"
+  },
+  {
+    "almaCode": "OSTFSYK",
+    "almaApiKey": "almaApiKey_OSTFSYK"
+  },
+  {
+    "almaCode": "POLITIHS",
+    "almaApiKey": "almaApiKey_POLITIHS"
+  },
+  {
+    "almaCode": "RBUP_OS",
+    "almaApiKey": "almaApiKey_RBUP_OS"
+  },
+  {
+    "almaCode": "RIKSANT",
+    "almaApiKey": "almaApiKey_RIKSANT"
+  },
+  {
+    "almaCode": "SAMALL",
+    "almaApiKey": "almaApiKey_SAMALL"
+  },
+  {
+    "almaCode": "SAMBIB",
+    "almaApiKey": "almaApiKey_SAMBIB"
+  },
+  {
+    "almaCode": "SIHF",
+    "almaApiKey": "almaApiKey_SIHF"
+  },
+  {
+    "almaCode": "SIRUS",
+    "almaApiKey": "almaApiKey_SIRUS"
+  },
+  {
+    "almaCode": "SKOFIMUS",
+    "almaApiKey": "almaApiKey_SKOFIMUS"
+  },
+  {
+    "almaCode": "SSB",
+    "almaApiKey": "almaApiKey_SSB"
+  },
+  {
+    "almaCode": "SSHF",
+    "almaApiKey": "almaApiKey_SSHF"
+  },
+  {
+    "almaCode": "STAMI",
+    "almaApiKey": "almaApiKey_STAMI"
+  },
+  {
+    "almaCode": "STAVMUS",
+    "almaApiKey": "almaApiKey_STAVMUS"
+  },
+  {
+    "almaCode": "STORTING",
+    "almaApiKey": "almaApiKey_STORTING"
+  },
+  {
+    "almaCode": "TEKNMUS",
+    "almaApiKey": "almaApiKey_TEKNMUS"
+  },
+  {
+    "almaCode": "TELSYK",
+    "almaApiKey": "almaApiKey_TELSYK"
+  },
+  {
+    "almaCode": "UBA",
+    "almaApiKey": "almaApiKey_UBA"
+  },
+  {
+    "almaCode": "UBB",
+    "almaApiKey": "almaApiKey_UBB"
+  },
+  {
+    "almaCode": "UBIN",
+    "almaApiKey": "almaApiKey_UBIN"
+  },
+  {
+    "almaCode": "UBIS",
+    "almaApiKey": "almaApiKey_UBIS"
+  },
+  {
+    "almaCode": "UBO",
+    "almaApiKey": "almaApiKey_UBO"
+  },
+  {
+    "almaCode": "UBTO",
+    "almaApiKey": "almaApiKey_UBTO"
+  },
+  {
+    "almaCode": "UNIS",
+    "almaApiKey": "almaApiKey_UNIS"
+  },
+  {
+    "almaCode": "VEGDIR",
+    "almaApiKey": "almaApiKey_VEGDIR"
+  }
+]
