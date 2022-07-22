@@ -1,5 +1,6 @@
 package no.sikt.lum;
 
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -137,15 +138,11 @@ public class UserConverter extends AlmaConverter {
         user.setFirstName(extractPrettyLibraryNameWithoutAmpersand(record));
         user.setLastName(DEFAULT_LASTNAME_LIB);
         user.setGender(defaultGender());
-        if (org.apache.commons.lang3.StringUtils.isNotEmpty(record.getLandkode())) {
-            user.setPreferredLanguage(extractPreferredLanguage(record));
-        }
+        extractPreferredLanguage(record, user);
         user.setUserGroup(UserGroupConverter.extractUserGroup(record));
         user.setUserRoles(defineUserRoles());
         user.setCampusCode(defineCampusCode());
-        if (defineRSLibaries().isPresent()) {
-            user.setRsLibraries(defineRSLibaries().get());
-        }
+        defineRsLibraries(user);
         user.setUserStatistics(defaultUserStatistics());
         user.setExternalId(EXTERNAL_ID_SIS);
         user.setAccountType(defaultAccountType());
@@ -177,7 +174,7 @@ public class UserConverter extends AlmaConverter {
 
     @SuppressWarnings("PMD.ImplicitSwitchFallThrough")
     public String extractPrettyLibraryNameWithoutAmpersand(Record record) {
-        // replace linefeeds with " - "
+        // replace linefeed with " - "
         String libraryName = record.getInst()
             .replace(LINEFEED, StringUtils.SPACE + HandlerUtils.HYPHEN + StringUtils.SPACE);
         String ampersand;
@@ -232,10 +229,13 @@ public class UserConverter extends AlmaConverter {
         return gender;
     }
 
-    private PreferredLanguage extractPreferredLanguage(Record record) {
-        User.PreferredLanguage lang = new User.PreferredLanguage();
-        lang.setValue(COUNTRYCODE_NORWAY.equals(record.getLandkode()) ? LANGUAGECODE_BOKMAAL : LANGUAGECODE_ENGLISH);
-        return lang;
+    private void extractPreferredLanguage(Record record, User user) {
+        String landkode = record.getLandkode();
+        if (isNotEmpty(landkode)) {
+            User.PreferredLanguage lang = new User.PreferredLanguage();
+            lang.setValue(COUNTRYCODE_NORWAY.equals(landkode) ? LANGUAGECODE_BOKMAAL : LANGUAGECODE_ENGLISH);
+            user.setPreferredLanguage(lang);
+        }
     }
 
     private UserRoles defineUserRoles() {
@@ -266,7 +266,7 @@ public class UserConverter extends AlmaConverter {
         throw new RuntimeException(String.format(COULD_NOT_GENERATE_A_CAMPUS_CODE_FOR, targetAlmaCode));
     }
 
-    private Optional<RsLibraries> defineRSLibaries() {
+    private void defineRsLibraries(User user) {
         //Todo: is that sufficient? Same issue as with campusCode @Audun
         Optional<RsLibraries> rsLibraries = Optional.of(new RsLibraries());
         Optional<String> libCode = almaCodeProvider.getLibCode(targetAlmaCode);
@@ -277,7 +277,7 @@ public class UserConverter extends AlmaConverter {
             rsLibrary.setCode(rsLCode);
             rsLibraries.get().getRsLibrary().add(rsLibrary);
         }
-        return rsLibraries;
+        rsLibraries.ifPresent(user::setRsLibraries);
     }
 
     private UserStatistics defaultUserStatistics() {
