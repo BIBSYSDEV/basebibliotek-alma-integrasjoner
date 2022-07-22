@@ -40,6 +40,7 @@ test {
 
     environment "ALMA_API_HOST", "https://localhost:63535"
     environment "ALMA_APIKEY", "apiKeyNZ"
+    environment "ALMA_API_KEYS", "almaApiKeysJson"
     environment "API_HOST", "api.localhost.nva.aws.unit.no"
     environment "REPORT_BUCKET", "basebibliotek-report"
     environment "BASEBIBLIOTEK_USERNAME", "username"

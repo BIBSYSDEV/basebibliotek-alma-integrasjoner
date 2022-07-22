@@ -176,6 +176,7 @@ public class UserConverter extends AlmaObjectConverter {
         // replace linefeed with " - "
         String libraryName = record.getInst()
             .replace(LINEFEED, StringUtils.SPACE + HandlerUtils.HYPHEN + StringUtils.SPACE);
+        libraryName = StringUtils.removeMultipleWhiteSpaces(libraryName);
         String ampersand;
         switch (record.getLandkode().toUpperCase(Locale.ROOT)) {
             case COUNTRYCODE_GREATBRITAIN:

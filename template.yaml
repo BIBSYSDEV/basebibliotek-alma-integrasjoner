@@ -92,7 +92,7 @@ Resources:
           SHARED_CONFIG_BUCKET: !Ref SharedConfigBucketName
           LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH: !Ref LibCodeToAlmaCodeFilePath
           ALMA_API_HOST: !Ref AlmaApiHost
-          ALMA_APIKEY: '{{resolve:secretsmanager:ALMA_APIKEY:SecretString:ALMA_APIKEY}}'
+          ALMA_API_KEYS: '{{resolve:secretsmanager:ALMA_APIKEY:SecretString:alma_api_keys}}'
       Events:
         BasebibliotekFileUpload:
           Type: S3

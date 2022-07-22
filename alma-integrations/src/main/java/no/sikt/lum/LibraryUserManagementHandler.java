@@ -3,9 +3,15 @@ package no.sikt.lum;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.sikt.alma.user.generated.User;
 import no.sikt.clients.BaseBibliotekApi;
@@ -38,7 +44,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     public static final String COULD_NOT_CONVERT_TO_USER_REPORT_MESSAGE = " could not convert to user\n";
     public static final String ALMA_API_HOST = "ALMA_API_HOST";
     public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_REST_URL";
-    private static final String ALMA_API_KEY_ENV_KEY = "ALMA_APIKEY";
+    public static final String ALMA_API_KEYS_ENV_KEY = "ALMA_API_KEYS";
     private static final String EVENT = "event";
     public static final String HANDLER_NAME = "lum";
     private final transient S3Client s3Client;
@@ -48,6 +54,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
 
     private final transient BaseBibliotekApi baseBibliotekApi;
     private final transient AlmaUserUpserter almaUserUpserter;
+    private final transient Map<String, String> almaApiKeyMap;
 
     @JacocoGenerated
     public LibraryUserManagementHandler() {
@@ -57,11 +64,10 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     public LibraryUserManagementHandler(S3Client s3Client, Environment environment) {
         this.s3Client = s3Client;
         this.environment = environment;
-
-        final String almaApiKey = environment.readEnv(ALMA_API_KEY_ENV_KEY);
+        final String almaApiKeys = environment.readEnv(ALMA_API_KEYS_ENV_KEY);
         final URI almaUri = UriWrapper.fromUri(environment.readEnv(ALMA_API_HOST)).getUri();
-        this.almaUserUpserter = new HttpUrlConnectionAlmaUserUpserter(almaApiKey, almaUri);
-
+        almaApiKeyMap = readAlmaApiKeys(almaApiKeys);
+        this.almaUserUpserter = new HttpUrlConnectionAlmaUserUpserter(almaApiKeyMap, almaUri);
         final URI basebibliotekUri =
             UriWrapper.fromUri(environment.readEnv(BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).getUri();
         this.baseBibliotekApi = new HttpUrlConnectionBaseBibliotekApi(basebibliotekUri);
@@ -96,16 +102,17 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     private int sendBaseBibliotekToAlma(AlmaCodeProvider almaCodeProvider, StringBuilder reportStringBuilder,
                                         List<BaseBibliotek> baseBibliotekList) {
         int counter = 0;
-        for (String almaCode : almaCodeProvider.getAvailableAlmaCodes()) {
+        for (String almaCode : almaApiKeyMap.keySet()) {
             counter += sendToAlmaAndCountSuccess(
-                generateUsers(almaCodeProvider, baseBibliotekList, reportStringBuilder, almaCode), reportStringBuilder);
+                generateUsers(almaCodeProvider, baseBibliotekList, reportStringBuilder, almaCode),
+                almaApiKeyMap.get(almaCode), reportStringBuilder);
         }
         return counter;
     }
 
     private List<User> generateUsers(AlmaCodeProvider almaCodeProvider, List<BaseBibliotek> baseBibliotekList,
-                                                     StringBuilder reportStringBuilder,
-                                                     String targetAlmaCode) {
+                                     StringBuilder reportStringBuilder,
+                                     String targetAlmaCode) {
         var users = new ArrayList<User>();
         for (BaseBibliotek baseBibliotek : baseBibliotekList) {
             try {
@@ -122,27 +129,32 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     }
 
     @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-    private int sendToAlmaAndCountSuccess(List<User> users, StringBuilder reportStringBuilder) {
+    private int sendToAlmaAndCountSuccess(List<User> users, String almaApikey,
+                                          StringBuilder reportStringBuilder) {
         var counter = 0;
         for (User user : users) {
             var primaryId = user.getPrimaryId();
-            if (sendToAlma(user)) {
+            if (sendToAlma(user, almaApikey)) {
                 counter++;
                 reportStringBuilder
                     .append(primaryId)
+                    .append(StringUtils.SPACE)
+                    .append(almaApikey)
                     .append(StringUtils.SPACE)
                     .append(OK_REPORT_MESSAGE);
             } else {
                 reportStringBuilder
                     .append(primaryId)
-                    .append(COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE);
+                    .append(COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE)
+                    .append(StringUtils.SPACE)
+                    .append(almaApikey);
             }
         }
         return counter;
     }
 
-    private boolean sendToAlma(User user) {
-        return almaUserUpserter.upsertUser(user);
+    private boolean sendToAlma(User user, String almaApikey) {
+        return almaUserUpserter.upsertUser(user, almaApikey);
     }
 
     private RuntimeException logErrorAndThrowException(Exception exception) {
@@ -150,5 +162,23 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         return exception instanceof RuntimeException
                    ? (RuntimeException) exception
                    : new RuntimeException(exception);
+    }
+
+    private Map<String, String> readAlmaApiKeys(String almaApiKeys) {
+        try {
+            AlmaCodeAlmaApiKeyPair[] almaCodeAlmaApiKeyPairs = new ObjectMapper()
+                .readValue(almaApiKeys, AlmaCodeAlmaApiKeyPair[].class);
+            return Arrays.stream(almaCodeAlmaApiKeyPairs).collect(Collectors.toMap(a -> a.almaCode, a -> a.almaApikey));
+        } catch (JsonProcessingException e) {
+            throw logErrorAndThrowException(e);
+        }
+    }
+
+    private static class AlmaCodeAlmaApiKeyPair {
+
+        @JsonProperty("almaCode")
+        private transient String almaCode;
+        @JsonProperty("almaApiKey")
+        private transient String almaApikey;
     }
 }

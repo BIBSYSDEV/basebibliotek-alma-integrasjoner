@@ -36,6 +36,7 @@ class LibraryUserManagementHandlerTest {
     private static final String SHARED_CONFIG_BUCKET_NAME_ENV_VALUE = "SharedConfigBucket";
     public static final String BIBLIOTEK_REST_PATH = "/basebibliotek/rest/bibnr/";
     public static final String BASEBIBLIOTEK_REPORT = "basebibliotek-report";
+    public static final String FULL_ALMA_CODE_ALMA_APIKEY_MAPPING_JSON = "fullAlmaCodeAlmaApiKeyMapping.json";
     public static final String FULL_LIB_CODE_TO_ALMA_CODE_MAPPING_JSON = "fullLibCodeToAlmaCodeMapping.json";
     private static final String LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH = "/libCodeToAlmaCodeMapping.json";
     private static final String BIBNR_RESOLVABLE_TO_ALMA_CODE = "0030100";
@@ -61,12 +62,15 @@ class LibraryUserManagementHandlerTest {
             SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
         when(mockedEnvironment.readEnv(LibraryUserManagementHandler.REPORT_BUCKET_ENVIRONMENT_NAME)).thenReturn(
             BASEBIBLIOTEK_REPORT);
-        when(mockedEnvironment.readEnv(
-                 LibraryUserManagementHandler.LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY)).thenReturn(
-            LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH);
+        when(mockedEnvironment.readEnv(LibraryUserManagementHandler.LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY))
+            .thenReturn(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH);
         final String fullLibCodeToAlmaCodeMapping = IoUtils.stringFromResources(
             Path.of(FULL_LIB_CODE_TO_ALMA_CODE_MAPPING_JSON));
-        numberOfAlmaInstances = StringUtils.countMatches(fullLibCodeToAlmaCodeMapping, "almaCode");
+        final String fullAlmaCodeAlmaApiKeyMapping = IoUtils.stringFromResources(
+            Path.of(FULL_ALMA_CODE_ALMA_APIKEY_MAPPING_JSON));
+        when(mockedEnvironment.readEnv(LibraryUserManagementHandler.ALMA_API_KEYS_ENV_KEY)).thenReturn(
+            fullAlmaCodeAlmaApiKeyMapping);
+        numberOfAlmaInstances = StringUtils.countMatches(fullAlmaCodeAlmaApiKeyMapping, "almaCode");
         s3Driver.insertFile(UnixPath.of(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH), fullLibCodeToAlmaCodeMapping);
         libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client, mockedEnvironment);
     }

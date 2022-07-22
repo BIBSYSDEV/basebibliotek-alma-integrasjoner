@@ -4,5 +4,5 @@ import no.sikt.alma.user.generated.User;
 
 public interface AlmaUserUpserter {
 
-    boolean upsertUser(User user);
+    boolean upsertUser(User user, String almaApikey);
 }

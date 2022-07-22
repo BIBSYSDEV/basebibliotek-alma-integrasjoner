@@ -12,6 +12,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Optional;
 import no.sikt.alma.user.generated.User;
 import no.sikt.clients.AbstractHttpUrlConnectionApi;
@@ -50,24 +51,24 @@ public class HttpUrlConnectionAlmaUserUpserter extends AbstractHttpUrlConnection
         UNEXPECTED_RESPONSE_FETCHING_USER_LOG_MESSAGE_PREFIX + " '%s' from Alma.\nStatus code: "
         + "%d\nResponse body: %s";
 
-    private final transient String almaApikey;
+    private transient Map<String, String> almaApikeyMap;
     private final transient URI almaApiHost;
     private static final ObjectMapper objectMapper = new ObjectMapper()
                                                          .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
                                                                     false);
 
-    public HttpUrlConnectionAlmaUserUpserter(final String almaApiKey, final URI almaApiHost) {
-        this(HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build(), almaApiKey, almaApiHost);
+    public HttpUrlConnectionAlmaUserUpserter(final Map<String, String> almaApiKeyMap, final URI almaApiHost) {
+        this(HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build(), almaApiKeyMap, almaApiHost);
     }
 
-    public HttpUrlConnectionAlmaUserUpserter(final HttpClient httpClient, final String almaApiKey,
+    public HttpUrlConnectionAlmaUserUpserter(final HttpClient httpClient, final Map<String, String> almaApiKeyMap,
                                              final URI almaApiHost) {
         super(httpClient);
-        this.almaApikey = almaApiKey;
+        this.almaApikeyMap = almaApiKeyMap;
         this.almaApiHost = almaApiHost;
     }
 
-    private Optional<String> fetchUser(final String userID) {
+    private Optional<String> fetchUser(final String userID, String almaApikey) {
         final HttpRequest request = HttpRequest.newBuilder()
                                         .GET()
                                         .uri(UriWrapper.fromUri(almaApiHost)
@@ -112,7 +113,7 @@ public class HttpUrlConnectionAlmaUserUpserter extends AbstractHttpUrlConnection
                                                             almaError.getErrorCode()));
     }
 
-    private void updateUser(final User user) {
+    private void updateUser(final User user, String almaApikey) {
         try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             JAXB.marshal(user, outputStream);
             final String userAsString = outputStream.toString(StandardCharsets.UTF_8);
@@ -141,7 +142,7 @@ public class HttpUrlConnectionAlmaUserUpserter extends AbstractHttpUrlConnection
         }
     }
 
-    private void createUser(final User user) {
+    private void createUser(final User user, String almaApikey) {
         try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             JAXB.marshal(user, outputStream);
             final String userAsString = outputStream.toString(StandardCharsets.UTF_8);
@@ -172,10 +173,10 @@ public class HttpUrlConnectionAlmaUserUpserter extends AbstractHttpUrlConnection
     }
 
     @Override
-    public boolean upsertUser(final User user) {
+    public boolean upsertUser(final User user, String almaApikey) {
         try {
-            final Optional<String> almaUser = fetchUser(user.getPrimaryId());
-            almaUser.ifPresentOrElse(currentPartner -> updateUser(user), () -> createUser(user));
+            final Optional<String> almaUser = fetchUser(user.getPrimaryId(), almaApikey);
+            almaUser.ifPresentOrElse(currentPartner -> updateUser(user, almaApikey), () -> createUser(user, almaApikey));
             return true;
         } catch (Exception e) {
             LOGGER.warn(LOG_MESSAGE_COMMUNICATION_PROBLEM, e);
