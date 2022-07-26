@@ -115,15 +115,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
                                      String targetAlmaCode) {
         var users = new ArrayList<User>();
         for (BaseBibliotek baseBibliotek : baseBibliotekList) {
-            try {
-                users.addAll(new UserConverter(almaCodeProvider, baseBibliotek, targetAlmaCode).toUser());
-            } catch (Exception e) {
-                //Errors in individual libraries should not cause crash in entire execution.
-                logger.info(COULD_NOT_CONVERT_TO_USER_ERROR_MESSAGE, e);
-                reportStringBuilder
-                    .append(baseBibliotek.getRecord().get(0).getBibnr())
-                    .append(COULD_NOT_CONVERT_TO_USER_REPORT_MESSAGE);
-            }
+            users.addAll(new UserConverter(almaCodeProvider, baseBibliotek, targetAlmaCode).toUsers(reportStringBuilder));
         }
         return users;
     }

@@ -19,7 +19,7 @@ public class AlmaCodeProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(AlmaCodeProvider.class);
 
-    /* default */ static final String EMPTY_MAPPING_TABLE_MESSAGE = "Alma code mapping table is empty.";
+    /* default */ public static final String EMPTY_MAPPING_TABLE_MESSAGE = "Alma code mapping table is empty.";
     /* default */ static final String INVALID_JSON_MESSAGE = "Alma code mapping JSON is invalid.";
 
     private static final Map<String, String> libCodeToAlmaCodeMap = new ConcurrentHashMap<>();

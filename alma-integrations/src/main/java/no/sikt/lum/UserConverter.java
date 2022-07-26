@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import no.nb.basebibliotek.generated.Aut;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.nb.basebibliotek.generated.Record;
@@ -39,7 +40,10 @@ public class UserConverter extends AlmaObjectConverter {
     public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss",
                                                                                    Locale.ROOT);
     private static final Logger logger = LoggerFactory.getLogger(UserConverter.class);
+    public static final String COULD_NOT_CONVERT_TO_USER_ERROR_MESSAGE = " Could not convert to user";
+    public static final String COULD_NOT_CONVERT_TO_USER_REPORT_MESSAGE = " could not convert to user\n";
     public static final String INST = "inst";
+    public static final String BIBLTYPE = "bibltype";
     public static final String PUBLIC = "Public";
     public static final String INACTIVE = "Inactive";
     public static final String ACTIVE = "Active";
@@ -104,20 +108,31 @@ public class UserConverter extends AlmaObjectConverter {
         throw new RuntimeException(String.format(COULD_NOT_CONVERT_RECORD, missingParameters, toXml(record)));
     }
 
-    public List<User> toUser() {
-        return baseBibliotek
+    public List<User> toUsers(StringBuilder reportStringBuilder) {
+        List<User> users = new ArrayList<>();
+        baseBibliotek
             .getRecord()
-            .stream()
-            .map(this::convertRecordToUserWhenConstraintsSatisfied)
-            .collect(Collectors.toList());
+            .forEach(record -> convertRecordToUserWhenConstraintsSatisfied(record, reportStringBuilder)
+                .ifPresent(users::add));
+        return users;
     }
 
-    private User convertRecordToUserWhenConstraintsSatisfied(Record record) {
-        if (satisfiesConstraints(record)) {
-            return convertRecordToUser(record);
-        } else {
-            logProblemAndThrowException(record);
-            return null;
+    private Optional<User> convertRecordToUserWhenConstraintsSatisfied(Record record,
+                                                                       StringBuilder reportStringBuilder) {
+        try {
+            if (satisfiesConstraints(record)) {
+                return Optional.of(convertRecordToUser(record));
+            } else {
+                logProblemAndThrowException(record);
+                return Optional.empty();
+            }
+        } catch (Exception e) {
+            //Errors in individual libraries should not cause crash in entire execution.
+            logger.info(COULD_NOT_CONVERT_TO_USER_ERROR_MESSAGE, e);
+            reportStringBuilder
+                .append(baseBibliotek.getRecord().get(0).getBibnr())
+                .append(COULD_NOT_CONVERT_TO_USER_REPORT_MESSAGE);
+            return Optional.empty();
         }
     }
 
@@ -126,6 +141,9 @@ public class UserConverter extends AlmaObjectConverter {
         final List<String> missingFields = new ArrayList<>();
         if (StringUtils.isEmpty(record.getInst())) {
             missingFields.add(INST);
+        }
+        if (StringUtils.isEmpty(record.getBibltype())) {
+            missingFields.add(BIBLTYPE);
         }
         return missingFields;
     }

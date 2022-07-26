@@ -72,11 +72,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import software.amazon.awssdk.core.sync.ResponseTransformer;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import test.utils.BasebibliotekGenerator;
 import test.utils.EressurserBuilder;
+import test.utils.FakeS3ClientThrowingException;
 import test.utils.HandlerTestUtils;
 import test.utils.RecordBuilder;
 import test.utils.RecordSpecification;
@@ -1209,21 +1207,5 @@ public class ResourceSharingPartnerTest {
 
     private boolean hasLine1CorrespondingToRecord(Address address, String recordAddr) {
         return recordAddr.equals(address.getLine1());
-    }
-
-    private static class FakeS3ClientThrowingException extends FakeS3Client {
-
-        private final transient String expectedErrorMessage;
-
-        public FakeS3ClientThrowingException(String expectedErrorMessage) {
-            super();
-            this.expectedErrorMessage = expectedErrorMessage;
-        }
-
-        @Override
-        public <ReturnT> ReturnT getObject(GetObjectRequest getObjectRequest,
-                                           ResponseTransformer<GetObjectResponse, ReturnT> responseTransformer) {
-            throw new RuntimeException(expectedErrorMessage);
-        }
     }
 }

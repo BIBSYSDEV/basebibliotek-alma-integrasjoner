@@ -9,6 +9,7 @@ public class RecordBuilder {
     private final transient BigInteger rid;
     private final transient LocalDate timestamp;
     private final transient String katsyst;
+    private transient String bibltype;
     private transient String bibnr;
     private transient String landkode;
     private transient String epostBest;
@@ -72,6 +73,11 @@ public class RecordBuilder {
         return this;
     }
 
+    public RecordBuilder withBiblType(String bibltype) {
+        this.bibltype = bibltype;
+        return this;
+    }
+
     public Record build() {
         Record record = new Record();
 
@@ -90,8 +96,8 @@ public class RecordBuilder {
         record.setVpostnr(vPostNr);
         record.setVpoststed(vPostSted);
         record.setInst(inst);
+        record.setBibltype(bibltype);
 
         return record;
     }
-
 }
