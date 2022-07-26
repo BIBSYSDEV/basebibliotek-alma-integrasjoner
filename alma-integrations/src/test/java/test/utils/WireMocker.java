@@ -23,9 +23,12 @@ public class WireMocker {
     private static final String SLASH = "/";
 
     public static void mockAlmaGetResponse(final String almaCode) {
-        String responseBody = IoUtils.stringFromResources(Path.of(EMPTY_STRING, "rsp_0030100.json"));
+        String responseBodyPartner = IoUtils.stringFromResources(Path.of(EMPTY_STRING, "rsp_0030100.json"));
         stubFor(get(urlPathMatching(URL_PATH_PARTNER + SLASH + almaCode))
-                    .willReturn(ok().withBody(responseBody)));
+                    .willReturn(ok().withBody(responseBodyPartner)));
+        String responseBodyUser = IoUtils.stringFromResources(Path.of(EMPTY_STRING, "lum_0030100.json"));
+        stubFor(get(urlPathMatching(URL_PATH_USERS + SLASH + almaCode))
+                    .willReturn(ok().withBody(responseBodyUser)));
     }
 
     public static void mockAlmaGetResponsePartnerNotFound(final String libCode) {
@@ -44,8 +47,10 @@ public class WireMocker {
     }
 
     public static void mockAlmaPutResponse(final String almaCode) {
-        String responseBody = IoUtils.stringFromResources(Path.of("rsp_0030100.json"));
-        stubFor(put(URL_PATH_PARTNER + SLASH + almaCode).willReturn(ok().withBody(responseBody)));
+        String responseBodyPartner = IoUtils.stringFromResources(Path.of("rsp_0030100.json"));
+        stubFor(put(URL_PATH_PARTNER + SLASH + almaCode).willReturn(ok().withBody(responseBodyPartner)));
+        String responseBodyUser = IoUtils.stringFromResources(Path.of("lum_0030100.json"));
+        stubFor(put(URL_PATH_USERS + SLASH + almaCode).willReturn(ok().withBody(responseBodyUser)));
     }
 
     public static void mockAlmaPostResponse() {

@@ -2,6 +2,8 @@ package no.sikt.lum;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -90,6 +92,24 @@ class LibraryUserManagementHandlerTest {
         Integer response = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
         verify(getRequestedFor(urlPathEqualTo(WireMocker.URL_PATH_USERS + "/" + LIB_0030100_ID)));
         verify(postRequestedFor(urlPathEqualTo(WireMocker.URL_PATH_USERS)));
+        assertThat(response, is(notNullValue()));
+        assertThat(response, is(numberOfAlmaInstances));
+    }
+
+
+    @Test
+    public void shouldBeAbleToReadAndPutRecordToAlma() throws IOException {
+        final Map<String, String> bibNrToXmlMap = Collections.singletonMap(BIBNR_RESOLVABLE_TO_ALMA_CODE,
+                                                                           IoUtils.stringFromResources(
+                                                                               Path.of(BASEBIBLIOTEK_0030100_XML)));
+
+        final S3Event s3Event = HandlerTestUtils.prepareBaseBibliotekFromXml(bibNrToXmlMap, s3Driver);
+
+        WireMocker.mockAlmaGetResponse(LIB_0030100_ID);
+        WireMocker.mockAlmaPutResponse(LIB_0030100_ID);
+        Integer response = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
+        verify(getRequestedFor(urlEqualTo(WireMocker.URL_PATH_USERS + "/" + LIB_0030100_ID)));
+        verify(putRequestedFor(urlPathEqualTo(WireMocker.URL_PATH_USERS + "/" + LIB_0030100_ID)));
         assertThat(response, is(notNullValue()));
         assertThat(response, is(numberOfAlmaInstances));
     }
