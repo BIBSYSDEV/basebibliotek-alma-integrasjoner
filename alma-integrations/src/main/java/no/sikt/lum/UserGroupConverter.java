@@ -5,6 +5,7 @@ import java.util.List;
 import no.nb.basebibliotek.generated.Record;
 import no.sikt.alma.user.generated.User;
 import no.sikt.alma.user.generated.User.UserGroup;
+import nva.commons.core.JacocoGenerated;
 import nva.commons.core.StringUtils;
 
 public class UserGroupConverter {
@@ -36,6 +37,7 @@ public class UserGroupConverter {
      * @param kundeType Streng som inneholder en liste med kundetyper. Separator mellom elementer er \"[+]\"
      * @return Bibliotekskategorien som skal brukes til ved Almaimport
      */
+    @JacocoGenerated
     @SuppressWarnings({"PMD.AvoidLiteralsInIfCondition", "PMD.DataflowAnomalyAnalysis"})
     public static BibKategori konverterBibKategori(String libnr, String kundeType) {
         if (libnr == null) {
@@ -104,6 +106,7 @@ public class UserGroupConverter {
         return kat;
     }
 
+    @JacocoGenerated
     @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     private static BibKategori finnBibKategoriFraKundetype(String customerType) {
         BibKategori kat = null;

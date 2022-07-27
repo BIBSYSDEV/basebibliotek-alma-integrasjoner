@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import no.nb.basebibliotek.generated.Record;
+import no.sikt.clients.alma.HttpUrlConnectionAlmaUserUpserter;
 import no.sikt.clients.basebibliotek.BaseBibliotekUtils;
 import no.sikt.commons.HandlerUtils;
 import no.sikt.rsp.AlmaCodeProvider;
@@ -249,7 +250,7 @@ class LibraryUserManagementHandlerTest {
         final String bibNr = "1000000";
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
             .withBibnr(bibNr)
-            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_GERMAN)
             .withEpostBest(EMAIL_BEST)
             .withEpostAdr(EMAIL_ADR)
             .withInst(INST)
@@ -279,7 +280,7 @@ class LibraryUserManagementHandlerTest {
             .withEpostBest(EMAIL_BEST)
             .withEpostAdr(EMAIL_ADR)
             .withInst(INST)
-            .withBiblType(BIBLTYPE)
+            .withBiblType("VGS")
             .build();
         var s3Path = HandlerTestUtils.randomS3Path();
         var s3Event = prepareBaseBibliotekFromRecords(s3Path, record);
@@ -313,9 +314,10 @@ class LibraryUserManagementHandlerTest {
         var bibNr = "3";
         var record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
             .withBibnr(bibNr)
-            .withLandkode(null)
+            .withInst(null)
             .withEpostBest(EMAIL_BEST)
             .withEpostAdr(EMAIL_ADR)
+            .withBiblType(BIBLTYPE)
             .build();
         var s3Path = HandlerTestUtils.randomS3Path();
         var s3Event = prepareBaseBibliotekFromRecords(s3Path, record);
@@ -340,13 +342,14 @@ class LibraryUserManagementHandlerTest {
         assertThat(appender.getMessages(), containsString(LOG_MESSAGE_COMMUNICATION_PROBLEM));
     }
 
-    /**
-    //    @Test
+    @Test
     public void shouldIgnoreUserAndLogProblemIfAlmaGetUserReturnsBadRequestWithUnhandledErrorCode()
         throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), "BIBSYS")
             .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
             .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .withInst(INST)
+            .withBiblType("UNI")
             .build();
         var s3Event = prepareBaseBibliotekFromRecords(record);
         WireMocker.mockAlmaGetResponseBadRequestNotUserNotFound(LIB_0030100_ID);
@@ -358,12 +361,14 @@ class LibraryUserManagementHandlerTest {
                        HttpUrlConnectionAlmaUserUpserter.UNEXPECTED_RESPONSE_FETCHING_USER_LOG_MESSAGE_PREFIX));
     }
 
-    //    @Test
+    @Test
     public void shouldIgnoreUserAndLogProblemIfAlmaCreateUserReturnsBadRequestWithUnhandledErrorCode()
         throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), "BIBSYS")
             .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
             .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .withInst(INST)
+            .withBiblType("ORG")
             .build();
         var s3Event = prepareBaseBibliotekFromRecords(record);
         WireMocker.mockAlmaGetResponseUserNotFound(LIB_0030100_ID);
@@ -376,24 +381,26 @@ class LibraryUserManagementHandlerTest {
                        HttpUrlConnectionAlmaUserUpserter.UNEXPECTED_RESPONSE_CREATING_USER_LOG_MESSAGE_PREFIX));
     }
 
-    //    @Test
+    @Test
     public void shouldIgnoreUserAndLogProblemIfAlmaUpdateUserReturnsBadRequestWithUnhandledErrorCode()
         throws IOException {
         final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), "BIBSYS")
             .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
             .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
+            .withInst(INST)
+            .withBiblType("FBI")
             .build();
-        var s3Event = prepareBaseBibliotekFromRecords(record);
+        var
+            s3Event = prepareBaseBibliotekFromRecords(record);
         WireMocker.mockAlmaGetResponse(LIB_0030100_ID);
         WireMocker.mockAlmaPutResponseBadRequest(LIB_0030100_ID);
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final TestAppender appender =
+            LogUtils.getTestingAppenderForRootLogger();
         final Integer count = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
         assertThat(count, is(0));
-        assertThat(appender.getMessages(),
-                   containsString(
-                       HttpUrlConnectionAlmaUserUpserter.UNEXPECTED_RESPONSE_UPDATING_USER_LOG_MESSAGE_PREFIX));
+        assertThat(appender.getMessages(), containsString(
+            HttpUrlConnectionAlmaUserUpserter.UNEXPECTED_RESPONSE_UPDATING_USER_LOG_MESSAGE_PREFIX));
     }
-     */
 
     private S3Event prepareBaseBibliotekFromRecords(final UnixPath s3Path, final Record... records) throws IOException {
         return prepareBaseBibliotekFromRecords(s3Path, null, records);

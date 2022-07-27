@@ -3,8 +3,8 @@
   "errorList": {
     "error": [
       {
-        "errorCode": "401861",
-        "errorMessage": "User with identifier 1234 was not found.",
+        "errorCode": "123456",
+        "errorMessage": "User with identifier 1234 returned with unknown error code.",
         "trackingId": "E01-0101190932-VOBYO-AWAE1554214409"
       }
     ]

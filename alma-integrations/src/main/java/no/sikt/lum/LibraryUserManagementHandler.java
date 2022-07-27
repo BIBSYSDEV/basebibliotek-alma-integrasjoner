@@ -67,7 +67,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         final String almaApiKeys = environment.readEnv(ALMA_API_KEYS_ENV_KEY);
         final URI almaUri = UriWrapper.fromUri(environment.readEnv(ALMA_API_HOST)).getUri();
         almaApiKeyMap = readAlmaApiKeys(almaApiKeys);
-        this.almaUserUpserter = new HttpUrlConnectionAlmaUserUpserter(almaApiKeyMap, almaUri);
+        this.almaUserUpserter = new HttpUrlConnectionAlmaUserUpserter(almaUri);
         final URI basebibliotekUri =
             UriWrapper.fromUri(environment.readEnv(BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).getUri();
         this.baseBibliotekApi = new HttpUrlConnectionBaseBibliotekApi(basebibliotekUri);
@@ -115,7 +115,8 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
                                      String targetAlmaCode) {
         var users = new ArrayList<User>();
         for (BaseBibliotek baseBibliotek : baseBibliotekList) {
-            users.addAll(new UserConverter(almaCodeProvider, baseBibliotek, targetAlmaCode).toUsers(reportStringBuilder));
+            users.addAll(
+                new UserConverter(almaCodeProvider, baseBibliotek, targetAlmaCode).toUsers(reportStringBuilder));
         }
         return users;
     }
