@@ -54,7 +54,7 @@ pmd {
 }
 
 checkstyle {
-    configFile = rootProject.resources.text.fromFile('config/checkstyle/checkstyle.xml').asFile()
+    configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
     showViolations = true
 }
 
