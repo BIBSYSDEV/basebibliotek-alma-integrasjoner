@@ -59,6 +59,7 @@ checkstyle {
 }
 
 tasks.withType(Checkstyle) {
+    exclude('*generated')
     reports {
         xml.enabled false
         html.enabled true

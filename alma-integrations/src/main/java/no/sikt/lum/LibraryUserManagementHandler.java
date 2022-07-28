@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -55,6 +56,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     private final transient BaseBibliotekApi baseBibliotekApi;
     private final transient AlmaUserUpserter almaUserUpserter;
     private final transient Map<String, String> almaApiKeyMap;
+    private transient Map<String, List<User>> usersPerAlmaInstanceMap = new HashMap<>();
 
     @JacocoGenerated
     public LibraryUserManagementHandler() {
@@ -99,13 +101,17 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         }
     }
 
+    public Map<String, List<User>> getUsers() {
+        return usersPerAlmaInstanceMap;
+    }
+
     private int sendBaseBibliotekToAlma(AlmaCodeProvider almaCodeProvider, StringBuilder reportStringBuilder,
                                         List<BaseBibliotek> baseBibliotekList) {
         int counter = 0;
         for (String almaCode : almaApiKeyMap.keySet()) {
-            counter += sendToAlmaAndCountSuccess(
-                generateUsers(almaCodeProvider, baseBibliotekList, reportStringBuilder, almaCode),
-                almaApiKeyMap.get(almaCode), reportStringBuilder);
+            List<User> users = generateUsers(almaCodeProvider, baseBibliotekList, reportStringBuilder, almaCode);
+            counter += sendToAlmaAndCountSuccess(users, almaApiKeyMap.get(almaCode), reportStringBuilder);
+            usersPerAlmaInstanceMap.put(almaCode, users);
         }
         return counter;
     }

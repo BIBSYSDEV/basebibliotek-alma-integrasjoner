@@ -76,7 +76,7 @@ public final class ContactInfoConverter {
     }
 
     private static Optional<Email> createEmailRegular(Record record, String emailBestAdr) {
-        return Objects.nonNull(record.getEpostAdr()) && (emailBestAdr.equalsIgnoreCase(record.getEpostAdr()))
+        return Objects.nonNull(record.getEpostAdr())
                    ? Optional.of(createEmail(record.getEpostAdr(), false))
                    : Optional.empty();
     }
@@ -190,9 +190,9 @@ public final class ContactInfoConverter {
         String land = twoToThreeMap.get(landkode.toUpperCase(Locale.ROOT));
         var country = new Country();
         if (!StringUtils.isEmpty(land)) {
-            country.setValue(land);
+            country.setValue(land.toUpperCase(Locale.ROOT));
         } else {
-            country.setValue(landkode);
+            country.setValue(landkode.toUpperCase(Locale.ROOT));
         }
         return country;
     }

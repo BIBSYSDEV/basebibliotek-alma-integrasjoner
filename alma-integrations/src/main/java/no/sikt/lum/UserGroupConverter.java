@@ -106,7 +106,6 @@ public class UserGroupConverter {
         return kat;
     }
 
-    @JacocoGenerated
     @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     private static BibKategori finnBibKategoriFraKundetype(String customerType) {
         BibKategori kat = null;

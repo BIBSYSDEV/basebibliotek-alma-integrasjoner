@@ -8,8 +8,11 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static no.sikt.clients.AbstractHttpUrlConnectionApi.LOG_MESSAGE_COMMUNICATION_PROBLEM;
 import static no.sikt.commons.HandlerUtils.COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE;
+import static no.sikt.commons.HandlerUtils.HYPHEN;
 import static no.sikt.lum.UserConverter.LIB_USER_PREFIX;
+import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static nva.commons.core.StringUtils.EMPTY_STRING;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -31,9 +34,20 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import no.nb.basebibliotek.generated.Record;
+import no.sikt.alma.user.generated.Address;
+import no.sikt.alma.user.generated.Email;
+import no.sikt.alma.user.generated.Emails;
+import no.sikt.alma.user.generated.Phones;
+import no.sikt.alma.user.generated.ContactInfo;
+import no.sikt.alma.user.generated.User;
 import no.sikt.clients.alma.HttpUrlConnectionAlmaUserUpserter;
 import no.sikt.clients.basebibliotek.BaseBibliotekUtils;
 import no.sikt.commons.HandlerUtils;
@@ -48,6 +62,8 @@ import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
 import org.apache.commons.lang3.StringUtils;
+import org.hamcrest.collection.IsCollectionWithSize;
+import org.hamcrest.core.IsNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,6 +71,7 @@ import test.utils.BasebibliotekGenerator;
 import test.utils.FakeS3ClientThrowingException;
 import test.utils.HandlerTestUtils;
 import test.utils.RecordBuilder;
+import test.utils.RecordSpecification;
 import test.utils.WireMocker;
 
 @SuppressWarnings({"PMD.DataflowAnomalyAnalysis", "PMD.AvoidDuplicateLiterals"})
@@ -166,6 +183,27 @@ class LibraryUserManagementHandlerTest {
         var expectedSuccessfulConversion = numberOfAlmaInstances;
         var numberOfSuccessfulConversion = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
         assertThat(numberOfSuccessfulConversion, is(equalTo(expectedSuccessfulConversion)));
+    }
+
+    @Test
+    public void shouldExtractContactDetailsCorrectly() throws IOException {
+        var withPaddr = true;
+        var withVaddr = true;
+        var specification = new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE, true, null, randomBoolean(),
+                                                    randomBoolean(), withPaddr, withVaddr, randomBoolean(),
+                                                    randomString());
+        var basebibliotekGenerator = new BasebibliotekGenerator(specification);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        WireMocker.mockAlmaGetResponse(LIB_0030100_ID);
+        WireMocker.mockAlmaPutResponse(LIB_0030100_ID);
+        var uri = s3Driver.insertFile(HandlerTestUtils.randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        var s3Event = HandlerTestUtils.createS3Event(uri);
+        libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
+        var users = libraryUserManagementHandler.getUsers();
+        Entry<String, List<User>> entry = users.entrySet().iterator().next();
+        assertContactInfo(entry.getValue().get(0).getContactInfo(), basebibliotek.getRecord().get(0));
     }
 
     @Test
@@ -434,5 +472,114 @@ class LibraryUserManagementHandlerTest {
         final UnixPath path = (s3Path == null) ? HandlerTestUtils.randomS3Path() : s3Path;
         var uri = s3Driver.insertFile(path, fileContent);
         return HandlerTestUtils.createS3Event(uri);
+    }
+
+    private void assertContactInfo(ContactInfo contactInfo, Record record) {
+        assertAddresses(contactInfo.getAddresses().getAddress(), record);
+        assertPhone(contactInfo.getPhones(), record);
+        assertEmails(contactInfo.getEmails(), record);
+    }
+
+    private void assertEmails(Emails emails, Record record) {
+        var emailBestShouldExist = Objects.nonNull(record.getEpostBest());
+        var emailRegularShouldExist = Objects.nonNull(record.getEpostAdr());
+        var expectedEmailsSize = (emailBestShouldExist ? 1 : 0) + (emailRegularShouldExist ? 1 : 0);
+        assertThat(emails.getEmail(), IsCollectionWithSize.hasSize(expectedEmailsSize));
+        var emailBest = emails.getEmail()
+            .stream()
+            .filter(email -> hasEmailAddressCorresponding(email, record.getEpostBest()))
+            .findFirst()
+            .orElse(null);
+        var emailRegular = emails.getEmail()
+            .stream()
+            .filter(email -> hasEmailAddressCorresponding(email, record.getEpostAdr()))
+            .findFirst()
+            .orElse(null);
+        if (emailBestShouldExist) {
+            assertEmail(emailBest, record.getEpostBest(), true);
+        }
+        if (emailRegularShouldExist) {
+            assertEmail(emailRegular, record.getEpostAdr(), !emailBestShouldExist);
+        }
+    }
+
+    private void assertEmail(Email email, String emailAddress, boolean shouldBePreferred) {
+        assertThat(email, is(IsNull.notNullValue()));
+        assertThat(email.getEmailTypes().getEmailType(), IsCollectionWithSize.hasSize(1));
+        var expectedEmailType = ContactInfoConverter.WORK;
+        assertThat(email.getEmailTypes().getEmailType().get(0).getDesc(), is(equalTo(expectedEmailType)));
+        var expectedEmailAddress = Objects.nonNull(emailAddress) ? emailAddress : EMPTY_STRING;
+        assertThat(email.getEmailAddress(), is(equalTo(expectedEmailAddress)));
+        assertThat(email.isPreferred(), is(equalTo(shouldBePreferred)));
+    }
+
+    private boolean hasEmailAddressCorresponding(Email email, String recordEmail) {
+        return Objects.nonNull(recordEmail) && recordEmail.equals(email.getEmailAddress());
+    }
+
+    private void assertPhone(Phones phones, Record record) {
+        assertThat(phones.getPhone(), IsCollectionWithSize.hasSize(1));
+        var phone = phones.getPhone().get(0);
+        assertThat(phone.isPreferred(), is(equalTo(true)));
+        assertThat(phone.getPhoneTypes().getPhoneType(), IsCollectionWithSize.hasSize(1));
+        assertThat(phone.getPhoneTypes().getPhoneType().get(0).getDesc(), is(equalTo(ContactInfoConverter.OFFICE)));
+        if (nva.commons.core.StringUtils.isEmpty(record.getTlf())) {
+            assertThat(phone.getPhoneNumber(), is(equalTo(EMPTY_STRING)));
+        } else {
+            assertThat(phone.getPhoneNumber(), is(equalTo(record.getTlf())));
+        }
+    }
+
+    private void assertAddresses(List<Address> addresses, Record record) {
+        var postAddressShouldExist = Objects.nonNull(record.getPadr());
+        var visitationAddressShouldExist = Objects.nonNull(record.getVadr());
+        var expectedAddressSize = (postAddressShouldExist ? 1 : 0) + (visitationAddressShouldExist ? 1 : 0);
+        assertThat(addresses, IsCollectionWithSize.hasSize(expectedAddressSize));
+        var postAddress = addresses.stream()
+            .filter(address -> hasLine1CorrespondingToRecord(address, record.getPadr()))
+            .findFirst()
+            .orElse(null);
+        var visitationAddress = addresses.stream()
+            .filter(address -> hasLine1CorrespondingToRecord(address, record.getVadr()))
+            .findFirst()
+            .orElse(null);
+        if (postAddressShouldExist) {
+            final String expectedLine5 = record.getLandkode().toUpperCase(Locale.ROOT) + HYPHEN + record.getBibnr();
+            assertAddress(postAddress,
+                          record.getPadr(),
+                          expectedLine5,
+                          record.getPpoststed(),
+                          record.getPpostnr(),
+                          record.getLandkode(),
+                          true);
+        }
+        if (visitationAddressShouldExist) {
+            final String expectedLine5 = record.getLandkode().toUpperCase(Locale.ROOT) + HYPHEN + record.getBibnr();
+            assertAddress(visitationAddress,
+                          record.getVadr(),
+                          expectedLine5,
+                          record.getVpoststed(),
+                          record.getVpostnr(),
+                          record.getLandkode(),
+                          !postAddressShouldExist);
+        }
+    }
+
+    private void assertAddress(Address address, String expectedLine1, String expectedLine5, String expectedCity,
+                               String expectedPostalCode, String expectedCountry, boolean expectedPreferred) {
+        assertThat(address, is(IsNull.notNullValue()));
+        assertThat(address.getLine1(), is(equalTo(expectedLine1)));
+        assertThat(address.getLine5(), is(equalTo(expectedLine5)));
+        assertThat(address.isPreferred(), is(expectedPreferred));
+        assertThat(address.getCity(), is(equalTo(expectedCity)));
+        assertThat(address.getPostalCode(), is(equalTo(expectedPostalCode)));
+        assertThat(address.getCountry().getValue(), is(equalTo(expectedCountry.toUpperCase(Locale.ROOT))));
+        var expectedAddressType = ContactInfoConverter.WORK;
+        assertThat(address.getAddressTypes().getAddressType(), IsCollectionWithSize.hasSize(1));
+        assertThat(address.getAddressTypes().getAddressType().get(0).getDesc(), is(equalTo(expectedAddressType)));
+    }
+
+    private boolean hasLine1CorrespondingToRecord(Address address, String recordAddr) {
+        return recordAddr.equals(address.getLine1());
     }
 }

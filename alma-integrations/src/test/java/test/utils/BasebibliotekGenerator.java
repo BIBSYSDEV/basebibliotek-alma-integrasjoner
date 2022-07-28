@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -30,6 +31,7 @@ import no.nb.basebibliotek.generated.Link;
 import no.nb.basebibliotek.generated.Record;
 import no.nb.basebibliotek.generated.UregistrerteFilialer;
 import no.nb.basebibliotek.generated.Wressurser;
+import no.sikt.lum.UserGroupConverter.BibKategori;
 
 public class BasebibliotekGenerator {
 
@@ -63,7 +65,7 @@ public class BasebibliotekGenerator {
             specification.getWithIsil(),
             specification.getKatsys(),
             specification.getEressursExcludes(),
-            specification.getStengt()));
+            specification.getStengt(), true));
     }
 
     @SuppressWarnings("PMD.NullAssignment")
@@ -94,7 +96,8 @@ public class BasebibliotekGenerator {
                                   boolean withIsil,
                                   String katsys,
                                   List<String> eressursExcludes,
-                                  String stengt) {
+                                  String stengt,
+                                  boolean shouldHaveInst) {
         var record = new Record();
         record.setRid(incrementCurrentRidAndReturnResult());
         record.setTstamp(randomLocalDate().toString());
@@ -167,7 +170,7 @@ public class BasebibliotekGenerator {
         if (randomBoolean()) {
             record.setRelatert(randomString());
         }
-        if (randomBoolean()) {
+        if (shouldHaveInst) {
             record.setInst(randomString());
         }
         if (randomBoolean()) {
@@ -245,6 +248,9 @@ public class BasebibliotekGenerator {
         if (randomBoolean()) {
             record.setMerknader(MerknaderGenerator.randomMerknader());
         }
+        if (randomBoolean()) {
+            record.setBibltype(randomBiltype());
+        }
 
         return record;
     }
@@ -314,12 +320,12 @@ public class BasebibliotekGenerator {
     private static Collection<? extends JAXBElement<String>> randomOaiOrSruOrArielIps(List<String> eressursExcludes) {
         var maxNumberOfOaiOrSruOrArielIps = 10;
         return IntStream.range(0, randomInteger(maxNumberOfOaiOrSruOrArielIps) + 1)
-                   .boxed()
-                   .map(
-                       BasebibliotekGenerator::randomOaiOrSruOrArielIp)
-                   .filter(p -> !eressursExcludes.contains(p.getName().getLocalPart()))
-                   .collect(
-                       Collectors.toList());
+            .boxed()
+            .map(
+                BasebibliotekGenerator::randomOaiOrSruOrArielIp)
+            .filter(p -> !eressursExcludes.contains(p.getName().getLocalPart()))
+            .collect(
+                Collectors.toList());
     }
 
     private static JAXBElement<String> randomOaiOrSruOrArielIp(int index) {
@@ -348,9 +354,9 @@ public class BasebibliotekGenerator {
     private static Collection<? extends JAXBElement<String>> randomBibKoderOrBibkodeGml() {
         var maxNumberBibKoderOrBibKodeGml = 10;
         return IntStream.range(0, randomInteger(maxNumberBibKoderOrBibKodeGml) + 1)
-                   .boxed()
-                   .map(index -> randomBibKodeOrBibkodeGml())
-                   .collect(Collectors.toList());
+            .boxed()
+            .map(index -> randomBibKodeOrBibkodeGml())
+            .collect(Collectors.toList());
     }
 
     private static JAXBElement<String> randomBibKodeOrBibkodeGml() {
@@ -380,5 +386,12 @@ public class BasebibliotekGenerator {
             aut.setEncrypted(true);
         }
         return aut;
+    }
+
+    private String randomBiltype() {
+        String[] bibltypes = new String[]{"UNB", "UNI", "HØY", "FIR", "ORG", "FAG", "AVD", "ARK", "MUS", "FBI", "FIL",
+            "FYB", "FEN", "GSK", "VGS", "FHS"};
+        int rnd = new Random().nextInt(bibltypes.length);
+        return bibltypes[rnd];
     }
 }
