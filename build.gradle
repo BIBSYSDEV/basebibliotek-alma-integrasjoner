@@ -55,6 +55,9 @@ pmd {
 
 checkstyle {
     configFile = rootProject.resources.text.fromFile('config/checkstyle/checkstyle.xml').asFile()
+    configProperties.checkstyleSuppressionsPath =
+            rootProject.resources.text
+                    .fromFile('config/checkstyle/checkstyle-suppressions.xml').asFile()
     showViolations = true
 }
 
