@@ -84,7 +84,7 @@ Resources:
     Properties:
       CodeUri: alma-integrations
       Handler: no.sikt.lum.LibraryUserManagementHandler::handleRequest
-      Role: !GetAtt LibraryUserManagementRole.Arn
+      Role: !GetAtt LibraryUserManagementHandlerRole.Arn
       Environment:
         Variables:
           REPORT_BUCKET: !Sub '${ReportBucketName}-${AWS::AccountId}'
