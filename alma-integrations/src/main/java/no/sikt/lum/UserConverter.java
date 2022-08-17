@@ -11,8 +11,6 @@ import java.util.Optional;
 import no.nb.basebibliotek.generated.Aut;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.nb.basebibliotek.generated.Record;
-import no.sikt.alma.user.generated.RsLibraries;
-import no.sikt.alma.user.generated.RsLibrary;
 import no.sikt.alma.user.generated.User;
 import no.sikt.alma.user.generated.User.AccountType;
 import no.sikt.alma.user.generated.User.CampusCode;
@@ -157,7 +155,6 @@ public class UserConverter extends AlmaObjectConverter {
         user.setUserGroup(UserGroupConverter.extractUserGroup(record));
         user.setUserRoles(defineUserRoles());
         user.setCampusCode(defineCampusCode());
-        defineRsLibraries(user);
         user.setUserStatistics(defaultUserStatistics());
         user.setExternalId(EXTERNAL_ID_SIS);
         user.setAccountType(defaultAccountType());
@@ -281,22 +278,6 @@ public class UserConverter extends AlmaObjectConverter {
         }
         //todo: what to do, when we do not have anything in that file??? @Audun
         throw new RuntimeException(String.format(COULD_NOT_GENERATE_A_CAMPUS_CODE_FOR, targetAlmaCode));
-    }
-
-
-    //TODO: slettes.
-    private void defineRsLibraries(User user) {
-        //Todo: is that sufficient? Same issue as with campusCode @Audun
-        Optional<RsLibraries> rsLibraries = Optional.of(new RsLibraries());
-        Optional<String> libCode = almaCodeProvider.getLibCode(targetAlmaCode);
-        if (libCode.isPresent()) {
-            RsLibrary rsLibrary = new RsLibrary();
-            RsLibrary.Code rsLCode = new RsLibrary.Code();
-            rsLCode.setValue(libCode.get());
-            rsLibrary.setCode(rsLCode);
-            rsLibraries.get().getRsLibrary().add(rsLibrary);
-        }
-        rsLibraries.ifPresent(user::setRsLibraries);
     }
 
     private UserStatistics defaultUserStatistics() {
