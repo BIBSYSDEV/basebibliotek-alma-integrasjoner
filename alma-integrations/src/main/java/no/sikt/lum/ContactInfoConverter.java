@@ -67,17 +67,16 @@ public final class ContactInfoConverter {
 
     private static Emails createEmails(Record record) {
         var emailBest = createEmailBest(record);
-        var emailBestAdr = emailBest.isPresent() ?  emailBest.get().getEmailAddress() : StringUtils.EMPTY_STRING;
-        var emailRegular = createEmailRegular(record, emailBestAdr);
+        var emailRegular = createEmailRegular(record, emailBest.isPresent());
         var emails = new Emails();
         emailBest.ifPresent(email -> emails.getEmail().add(email));
         emailRegular.ifPresent(email -> emails.getEmail().add(email));
         return emails;
     }
 
-    private static Optional<Email> createEmailRegular(Record record, String emailBestAdr) {
+    private static Optional<Email> createEmailRegular(Record record, Boolean emailBestIsPresent) {
         return Objects.nonNull(record.getEpostAdr())
-                   ? Optional.of(createEmail(record.getEpostAdr(), false))
+                   ? Optional.of(createEmail(record.getEpostAdr(), !emailBestIsPresent))
                    : Optional.empty();
     }
 
