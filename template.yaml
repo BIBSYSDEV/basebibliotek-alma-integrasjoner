@@ -79,31 +79,6 @@ Resources:
                   - Name: suffix
                     Value: '.txt'
 
-  LibraryUserManagementFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: alma-integrations
-      Handler: no.sikt.lum.LibraryUserManagementHandler::handleRequest
-      Role: !GetAtt LibraryUserManagementHandlerRole.Arn
-      Environment:
-        Variables:
-          REPORT_BUCKET: !Sub '${ReportBucketName}-${AWS::AccountId}'
-          BASEBIBLIOTEK_REST_URL: !Ref BasebibliotekRestUrl
-          SHARED_CONFIG_BUCKET: !Ref SharedConfigBucketName
-          LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH: !Ref LibCodeToAlmaCodeFilePath
-          ALMA_API_HOST: !Ref AlmaApiHost
-      Events:
-        BasebibliotekFileUpload:
-          Type: S3
-          Properties:
-            Bucket: !Ref BasebibliotekXmlBucket
-            Events: 's3:ObjectCreated:*'
-            Filter:
-              S3Key:
-                Rules:
-                  - Name: suffix
-                    Value: '.txt'
-
   BasebibliotekFetchCronjob:
     Type: AWS::Serverless::Function
     Properties:
@@ -133,17 +108,6 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
 
-  LibraryUserManagementHandlerRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-
   BasebibliotekFetchCronjobRole:
     Type: AWS::IAM::Role
     Properties:
@@ -162,7 +126,6 @@ Resources:
       PolicyName: !Sub DefaultLambdaPermissions-${AWS::StackName}
       Roles:
         - !Ref ResourceSharingPartnerHandlerRole
-        - !Ref LibraryUserManagementHandlerRole
         - !Ref BasebibliotekFetchCronjobRole
       PolicyDocument:
         Version: '2012-10-17'
@@ -180,7 +143,6 @@ Resources:
       PolicyName: !Sub BasebibliotekXmlBucketAccessPolicy-${AWS::StackName}
       Roles:
         - !Ref ResourceSharingPartnerHandlerRole
-        - !Ref LibraryUserManagementHandlerRole
         - !Ref BasebibliotekFetchCronjobRole
       PolicyDocument:
         Version: '2012-10-17'
@@ -197,7 +159,6 @@ Resources:
       PolicyName: !Sub SharedConfigBucketAccessPolicy-${AWS::StackName}
       Roles:
         - !Ref ResourceSharingPartnerHandlerRole
-        - !Ref LibraryUserManagementHandlerRole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -213,7 +174,6 @@ Resources:
       PolicyName: !Sub ReportBucketAccessPolicy-${AWS::StackName}
       Roles:
         - !Ref ResourceSharingPartnerHandlerRole
-        - !Ref LibraryUserManagementHandlerRole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
