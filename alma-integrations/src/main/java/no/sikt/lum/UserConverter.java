@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import no.nb.basebibliotek.generated.Aut;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.nb.basebibliotek.generated.Record;
@@ -270,6 +268,7 @@ public class UserConverter extends AlmaObjectConverter {
         return userRoles;
     }
 
+    //Møte: tror ikke den trengs. Audun sender slack melding.
     private CampusCode defineCampusCode() {
         // Todo: this might be not precise enough. As it uses the libCode to the alma-instance the libUser is updated to
         // (as defined in the libCodeToAlmaCode mapping config file used in RSP)
@@ -284,6 +283,8 @@ public class UserConverter extends AlmaObjectConverter {
         throw new RuntimeException(String.format(COULD_NOT_GENERATE_A_CAMPUS_CODE_FOR, targetAlmaCode));
     }
 
+
+    //TODO: slettes.
     private void defineRsLibraries(User user) {
         //Todo: is that sufficient? Same issue as with campusCode @Audun
         Optional<RsLibraries> rsLibraries = Optional.of(new RsLibraries());

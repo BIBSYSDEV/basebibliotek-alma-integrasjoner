@@ -37,6 +37,9 @@ public class UserGroupConverter {
      * @param kundeType Streng som inneholder en liste med kundetyper. Separator mellom elementer er \"[+]\"
      * @return Bibliotekskategorien som skal brukes til ved Almaimport
      */
+
+    //Libnr inneholder informasjon. Kan skape krøll hvis et bibliotek går fra å være et høyskole bibliotek til
+    // universitetsbibliotek.
     @JacocoGenerated
     @SuppressWarnings({"PMD.AvoidLiteralsInIfCondition", "PMD.DataflowAnomalyAnalysis"})
     public static BibKategori konverterBibKategori(String libnr, String kundeType) {
