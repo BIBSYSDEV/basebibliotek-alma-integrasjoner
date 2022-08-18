@@ -21,6 +21,8 @@ import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static test.utils.HandlerTestUtils.createS3Event;
+import static test.utils.HandlerTestUtils.randomS3Path;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
@@ -170,7 +172,7 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldLogExceptionWhenS3ClientFails() {
-        var s3Event = HandlerTestUtils.createS3Event(randomString());
+        var s3Event = createS3Event(randomString());
         var expectedMessage = randomString();
         s3Client = new FakeS3ClientThrowingException(expectedMessage);
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
@@ -208,8 +210,8 @@ public class ResourceSharingPartnerTest {
         var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
         var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
         WireMocker.mockBasebibliotekXml(basebibliotekXml, BIBNR_RESOLVABLE_TO_ALMA_CODE);
-        var uri = s3Driver.insertFile(HandlerTestUtils.randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
-        var s3Event = HandlerTestUtils.createS3Event(uri);
+        var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        var s3Event = createS3Event(uri);
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var contactInfo = resourceSharingPartnerHandler.getPartners().get(0).getContactInfo();
         assertContactInfo(contactInfo, basebibliotek.getRecord().get(0));
@@ -762,7 +764,7 @@ public class ResourceSharingPartnerTest {
             .withEpostAdr(EMAIL_ADR)
             .build();
 
-        final UnixPath s3Path = HandlerTestUtils.randomS3Path();
+        final UnixPath s3Path = randomS3Path();
         final S3Event s3Event = prepareBaseBibliotekFromRecords(s3Path, record);
 
         final String almaCode = record.getLandkode().toUpperCase(Locale.ROOT) + "-" + bibNr;
@@ -790,7 +792,7 @@ public class ResourceSharingPartnerTest {
             .withEpostAdr(EMAIL_ADR)
             .build();
 
-        var s3Path = HandlerTestUtils.randomS3Path();
+        var s3Path = randomS3Path();
         var s3Event = prepareBaseBibliotekFromRecords(s3Path, record);
 
         WireMocker.mockAlmaForbiddenGetResponse("NO-" + bibNr);
@@ -813,7 +815,7 @@ public class ResourceSharingPartnerTest {
         final Map<String, String> bibNrToXmlMap = Collections.singletonMap(basebibliotekFailureBibnr,
                                                                            INVALID_BASEBIBLIOTEK_XML_STRING);
 
-        var s3Path = HandlerTestUtils.randomS3Path();
+        var s3Path = randomS3Path();
         var s3Event = HandlerTestUtils.prepareBaseBibliotekFromXml(s3Path, bibNrToXmlMap, s3Driver);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
@@ -835,7 +837,7 @@ public class ResourceSharingPartnerTest {
             .withEpostAdr(EMAIL_ADR)
             .build();
 
-        var s3Path = HandlerTestUtils.randomS3Path();
+        var s3Path = randomS3Path();
         var s3Event = prepareBaseBibliotekFromRecords(s3Path, record);
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
@@ -884,8 +886,8 @@ public class ResourceSharingPartnerTest {
 
     @Test
     public void shouldIgnorePartnerAndLogProblemIfBaseBibliotekIsNotAvailable() throws IOException {
-        var uri = s3Driver.insertFile(HandlerTestUtils.randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
-        var s3Event = HandlerTestUtils.createS3Event(uri);
+        var uri = s3Driver.insertFile(randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        var s3Event = createS3Event(uri);
 
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).thenReturn(
             UriWrapper.fromUri("http://localhost:9999").toString());
@@ -1041,10 +1043,10 @@ public class ResourceSharingPartnerTest {
             WireMocker.mockBasebibliotekXml(basebibliotekXml, bibNr);
         });
 
-        final UnixPath path = (s3Path == null) ? HandlerTestUtils.randomS3Path() : s3Path;
+        final UnixPath path = (s3Path == null) ? randomS3Path() : s3Path;
         var uri = s3Driver.insertFile(path, fileContent);
 
-        return HandlerTestUtils.createS3Event(uri);
+        return createS3Event(uri);
     }
 
     private S3Event prepareBaseBibliotekFromRecordSpecifications(final List<Record> generatedRecords,
@@ -1065,9 +1067,9 @@ public class ResourceSharingPartnerTest {
             generatedRecords.addAll(basebibliotek.getRecord());
         });
 
-        var uri = s3Driver.insertFile(HandlerTestUtils.randomS3Path(), fileContent);
+        var uri = s3Driver.insertFile(randomS3Path(), fileContent);
 
-        return HandlerTestUtils.createS3Event(uri);
+        return createS3Event(uri);
     }
 
     private void assertIsoProfileDetailsPopulatedCorrectly(final Partner partner,
