@@ -10,6 +10,7 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,12 +25,16 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import no.unit.nva.stubs.WiremockHttpClient;
 import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
+import org.hamcrest.core.Every;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -129,7 +134,9 @@ public class BaseBibliotekFetchHandlerTest {
 
         var scheduledEvent = new ScheduledEvent();
         var expectedBibnrs = Set.of("0030100", "0030101", "7049304", "0030103");
-        var listOfBibNr = baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT);
+        var listOfBibNr =
+            baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT).stream().flatMap(Collection::stream)
+                              .collect(Collectors.toList());
         assertThat(listOfBibNr, hasSize(expectedBibnrs.size()));
         expectedBibnrs.forEach(expectedBibnr  -> assertThat(listOfBibNr, hasItem(expectedBibnr)));
 
@@ -190,6 +197,23 @@ public class BaseBibliotekFetchHandlerTest {
         assertThat(appender.getMessages(), containsString(expectedMessage));
     }
 
+    @Test
+    public void shouldSplitLargeNumberOfLibrariesIntoSmallerBibNrFiles() {
+        var basebibliotekUrlsAsHtml = IoUtils.stringFromResources(
+            Path.of(BASEBIBLIOTEK_URL_HTML));
+        mockedGetRequestThatReturnsSpecifiedResponse(basebibliotekUrlsAsHtml);
+
+        var basebibliotekXML1 = IoUtils.stringFromResources(
+            Path.of("redacted_bb_full.xml"));
+        var basebibliotekXML3 = IoUtils.stringFromResources(
+            Path.of("basebibliotek_redacted_incremental_3.xml"));
+        mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_04_27_XML, basebibliotekXML1);
+        mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_05_04_XML, basebibliotekXML3);
+        var scheduledEvent = new ScheduledEvent();
+        List<List<String>> listOfBibNr = baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT);
+        assertThat(listOfBibNr, Every.everyItem(hasSize(lessThanOrEqualTo(100))));
+    }
+
     private void startWiremockServer() {
         httpServer = new WireMockServer(options().dynamicHttpsPort());
         httpServer.start();
@@ -218,6 +242,7 @@ public class BaseBibliotekFetchHandlerTest {
                                     .withStatus(HttpURLConnection.HTTP_OK)
                                     .withBody(body)));
     }
+
 
     class RequestBodyMatches implements ArgumentMatcher<RequestBody> {
 

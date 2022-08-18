@@ -15,6 +15,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Date;
@@ -37,8 +38,12 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent, Set<String>> {
+public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent, List<List<String>>> {
 
+    public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_EXPORT_URL";
+    public static final String BASEBIBLILOTEK_USERNAME_ENVIRONMENT_NAME = "BASEBIBLIOTEK_USERNAME";
+    public static final String BASEBIBLIOTEK_PASSWORD_ENVIRONMENT_NAME = "BASEBIBLIOTEK_PASSWORD";
+    public static final String S3_BUCKET_ENVIRONMENT_NAME = "BASEBIBLIOTEK_XML_BUCKET";
     private static final Logger logger = LoggerFactory.getLogger(BasebibliotekFetchHandler.class);
     private static final String FILENAME_REGEX = ".*?\">(bb-.*?.xml)</a>.*";
     private static final String BASIC_AUTHORIZATION = "Basic %s";
@@ -48,24 +53,15 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
     private static final String DD_MM_YYYY_PATTERN = "dd-MM-yyyy";
     private static final String TXT = ".txt";
     private static final String COULD_NOT_GET_ERROR_MESSAGE = "could not GET ";
-
+    private static final String BASEBIBLIOTEK_RESPONSE_ERROR =
+        "could not connect to basebibliotek, Connection responded with status: ";
+    private static final String IMPORT_ALL_LIBRARIES = "bb-full.xml";
     private final transient S3Client s3Client;
     private final transient HttpClient httpClient;
-
-    public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_EXPORT_URL";
-    public static final String BASEBIBLILOTEK_USERNAME_ENVIRONMENT_NAME = "BASEBIBLIOTEK_USERNAME";
-    public static final String BASEBIBLIOTEK_PASSWORD_ENVIRONMENT_NAME = "BASEBIBLIOTEK_PASSWORD";
-    public static final String S3_BUCKET_ENVIRONMENT_NAME = "BASEBIBLIOTEK_XML_BUCKET";
     private final transient String basebibliotekUri;
     private final transient String basebibliotekUsername;
     private final transient String basebibliotekPassword;
     private final transient String s3BasebibliotekXmlBucket;
-
-    private static final String BASEBIBLIOTEK_RESPONSE_ERROR =
-        "could not connect to basebibliotek, Connection responded with status: ";
-
-    private static final String IMPORT_ALL_LIBRARIES = "bb-full.xml";
-
     private final transient String basebibliotekAuthorization;
 
     @JacocoGenerated
@@ -84,22 +80,37 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
         this.basebibliotekAuthorization = createAuthorization();
     }
 
-    private String createAuthorization() {
-        String loginPassword = basebibliotekUsername + USERNAME_PASSWORD_DELIMITER + basebibliotekPassword;
-        return String.format(BASIC_AUTHORIZATION, Base64.getEncoder().encodeToString(loginPassword.getBytes()));
-    }
-
     @Override
-    public Set<String> handleRequest(ScheduledEvent scheduledEvent, Context context) {
+    public List<List<String>> handleRequest(ScheduledEvent scheduledEvent, Context context) {
         return attempt(() -> getBasebibliotekData(UriWrapper.fromUri(basebibliotekUri).getUri()))
                    .map(this::getBodyFromResponse)
                    .map(this::snipIncrementalBasebibliotekUrls)
                    .map(this::fetchBasebibliotekXmls)
                    .map(this::convertXmls)
                    .map(this::collectBibnrFromBaseBibliotek)
-                   .map(this::putObjectToS3)
+                   .map(this::convertToListOfListOfBibNr)
+                   .map(this::putObjectsToS3)
                    .orElseThrow(
                        fail -> logExpectionAndThrowRuntimeError(fail.getException(), fail.getException().getMessage()));
+    }
+
+    private String createAuthorization() {
+        String loginPassword = basebibliotekUsername + USERNAME_PASSWORD_DELIMITER + basebibliotekPassword;
+        return String.format(BASIC_AUTHORIZATION, Base64.getEncoder().encodeToString(loginPassword.getBytes()));
+    }
+
+    private List<List<String>> convertToListOfListOfBibNr(Set<String> bibNr) {
+        List<List<String>> result = new ArrayList<>();
+        List<String> bibNrs = new ArrayList<>(bibNr);
+
+        var startIndex = 0;
+        while (startIndex < bibNrs.size()) {
+            var endIndex = Math.min(startIndex + 100, bibNrs.size());
+            result.add(bibNrs.subList(startIndex, endIndex));
+            startIndex = endIndex;
+        }
+
+        return result;
     }
 
     private Set<String> collectBibnrFromBaseBibliotek(List<BaseBibliotek> baseBiblioteks) {
@@ -140,15 +151,21 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
         return JAXB.unmarshal(new StringReader(basebibliotekXmlString), BaseBibliotek.class);
     }
 
-    private Set<String> putObjectToS3(Set<String> bibNrs) {
-        attempt(() -> s3Client.putObject(createPutObjectRequest(),
-                                         RequestBody.fromString(craftBibnrString(bibNrs))))
-            .orElseThrow(fail -> logExpectionAndThrowRuntimeError(fail.getException(),
-                                                                  COULD_NOT_UPLOAD_FILE_TO_S_3_ERROR_MESSAGE));
+    private List<List<String>> putObjectsToS3(List<List<String>> bibNrs) {
+        for (int i = 0; i < bibNrs.size(); i++) {
+            putObjectToS3(bibNrs.get(i), i + "");
+        }
         return bibNrs;
     }
 
-    private String craftBibnrString(Set<String> bibNrs) {
+    private void putObjectToS3(List<String> subsetBibNr, String subsetNumber) {
+        attempt(() -> s3Client.putObject(createPutObjectRequest(subsetNumber),
+                                         RequestBody.fromString(craftBibnrString(subsetBibNr))))
+            .orElseThrow(fail -> logExpectionAndThrowRuntimeError(fail.getException(),
+                                                                  COULD_NOT_UPLOAD_FILE_TO_S_3_ERROR_MESSAGE));
+    }
+
+    private String craftBibnrString(List<String> bibNrs) {
         return String.join("\n", bibNrs);
     }
 
@@ -159,10 +176,10 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
                    : new RuntimeException(exception);
     }
 
-    private PutObjectRequest createPutObjectRequest() {
+    private PutObjectRequest createPutObjectRequest(String subsetNumber) {
         Date date = new Date();
         SimpleDateFormat formatter = new SimpleDateFormat(DD_MM_YYYY_PATTERN, Locale.ROOT);
-        String filename = formatter.format(date) + TXT;
+        String filename = formatter.format(date) + "_" + subsetNumber + TXT;
         return PutObjectRequest.builder()
                    .bucket(s3BasebibliotekXmlBucket)
                    .key(filename)
