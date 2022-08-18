@@ -42,6 +42,10 @@ public class PartnerConverter extends AlmaObjectConverter {
     private static final String BORROWING_WORKFLOW = "Borrowing";
     private static final boolean LENDING_IS_SUPPORTED = true;
     private static final String ISIL_CODE_SEPARATOR = "-";
+    private static final String NATIONAL_DEPOT_LIBRARY_BIBNR = "0183300";
+    private static final String NATIONAL_DEPOT_LIBRARY_INSTITUTION_CODE = "BIBLIOFIL_DEPOT";
+    private static final String NATIONAL_DEPOT_LIBRARY_LOCATE_CODE = "DEPOT";
+    private static final String DEPOT_HOLDING_CODE = "available";
     public static final int RESENDING_OVERDUE_MESSAGE_INTERVAL = 7;
     public static final String NNCIP_URI = "nncip_uri";
     public static final String TEMPORARILY_CLOSED = "U";
@@ -127,6 +131,11 @@ public class PartnerConverter extends AlmaObjectConverter {
             partnerDetails.setInstitutionCode(INSTITUTION_CODE_PREFIX + almaCode);
             final LocateProfile locateProfile = generateLocateProfile(almaCode);
             partnerDetails.setLocateProfile(locateProfile);
+        } else if (NATIONAL_DEPOT_LIBRARY_BIBNR.equals(record.getBibnr())) {
+            partnerDetails.setInstitutionCode(NATIONAL_DEPOT_LIBRARY_INSTITUTION_CODE);
+            final LocateProfile locateProfile = generateLocateProfile(NATIONAL_DEPOT_LIBRARY_LOCATE_CODE);
+            partnerDetails.setLocateProfile(locateProfile);
+            partnerDetails.setHoldingCode(DEPOT_HOLDING_CODE);
         } else {
             partnerDetails.setInstitutionCode("");
             partnerDetails.setLocateProfile(null);

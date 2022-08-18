@@ -101,6 +101,9 @@ public class ResourceSharingPartnerTest {
     public static final Context CONTEXT = mock(Context.class);
     private static final String BIBNR_RESOLVABLE_TO_ALMA_CODE = "0030100";
     private static final String INSTITUTION_CODE = "47BIBSYS_NB";
+    private static final String NATIONAL_DEPOT_LIBRARY_INSTITUTION_CODE = "BIBLIOFIL_DEPOT";
+    private static final String NATIONAL_DEPOT_LIBRARY_LOCATE_PROFILE_VALUE = "LOCATE_DEPOT";
+    private static final String HOLDING_CODE_AVAILABLE = "available";
     private transient FakeS3Client s3Client;
     private transient S3Driver s3Driver;
     private transient ResourceSharingPartnerHandler resourceSharingPartnerHandler;
@@ -208,8 +211,33 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(HandlerTestUtils.randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
         var s3Event = HandlerTestUtils.createS3Event(uri);
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
-        var partners = resourceSharingPartnerHandler.getPartners();
-        assertContactInfo(partners.get(0).getContactInfo(), basebibliotek.getRecord().get(0));
+        var contactInfo = resourceSharingPartnerHandler.getPartners().get(0).getContactInfo();
+        assertContactInfo(contactInfo, basebibliotek.getRecord().get(0));
+    }
+
+    @Test
+    public void shouldHandleNationalDepotLibrarySpecifically() throws IOException {
+        final String nationalDepotLibraryBibNr = "0183300";
+        var specification = new RecordSpecification(nationalDepotLibraryBibNr,
+                                                    true,
+                                                    null,
+                                                    randomBoolean(),
+                                                    randomBoolean(),
+                                                    false,
+                                                    false, randomBoolean(),
+                                                    randomString());
+        var basebibliotekGenerator = new BasebibliotekGenerator(specification);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, nationalDepotLibraryBibNr);
+        var uri = s3Driver.insertFile(randomS3Path(), nationalDepotLibraryBibNr);
+        var s3Event = createS3Event(uri);
+        resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
+        var partnerDetails = resourceSharingPartnerHandler.getPartners().get(0).getPartnerDetails();
+
+        assertThat(partnerDetails.getInstitutionCode(), is(NATIONAL_DEPOT_LIBRARY_INSTITUTION_CODE));
+        assertThat(partnerDetails.getLocateProfile().getValue(), is(NATIONAL_DEPOT_LIBRARY_LOCATE_PROFILE_VALUE));
+        assertThat(partnerDetails.getHoldingCode(), is(HOLDING_CODE_AVAILABLE));
     }
 
     @ParameterizedTest
