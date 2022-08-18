@@ -31,7 +31,6 @@ import no.nb.basebibliotek.generated.Link;
 import no.nb.basebibliotek.generated.Record;
 import no.nb.basebibliotek.generated.UregistrerteFilialer;
 import no.nb.basebibliotek.generated.Wressurser;
-import no.sikt.lum.UserGroupConverter.BibKategori;
 
 public class BasebibliotekGenerator {
 
@@ -249,7 +248,7 @@ public class BasebibliotekGenerator {
             record.setMerknader(MerknaderGenerator.randomMerknader());
         }
         if (randomBoolean()) {
-            record.setBibltype(randomBiltype());
+            record.setBibltype(randomBibltype());
         }
 
         return record;
@@ -388,7 +387,7 @@ public class BasebibliotekGenerator {
         return aut;
     }
 
-    private String randomBiltype() {
+    private String randomBibltype() {
         String[] bibltypes = new String[]{"UNB", "UNI", "HØY", "FIR", "ORG", "FAG", "AVD", "ARK", "MUS", "FBI", "FIL",
             "FYB", "FEN", "GSK", "VGS", "FHS"};
         int rnd = new Random().nextInt(bibltypes.length);
