@@ -21,7 +21,7 @@ updates:
       interval: 'daily'
     target-branch: 'develop'
   - package-ecosystem: 'gradle'
-    directory: '/resource-sharing-partners' # Location of package manifests
+    directory: '/alma-integrations' # Location of package manifests
     schedule:
       interval: 'daily'
     target-branch: 'develop'
