@@ -201,6 +201,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
             throw logErrorAndThrowException(e);
         }
     }
+
     private static class AlmaCodeAlmaApiKeyPair {
 
         @JsonProperty("almaCode")
