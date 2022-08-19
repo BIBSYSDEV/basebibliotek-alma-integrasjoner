@@ -12,14 +12,14 @@ public class LanguageCodeConverter {
 
     public static final String LOCALES_WITHOUT_ISO_3_COUNTRY_CODES = "Locales without ISO3Country-codes: ";
     public static final String COMMA_SEPARATOR = ", ";
-    public static final Map<String, String> twoToThreeMap = new HashMap<>();
+    public static final Map<String, String> isoAlpha2ToIsoAlpha3CodeMap = new HashMap<>();
 
     static {
         Locale[] availableLocales = Locale.getAvailableLocales();
         List<String> localesWithoutISO3Country = new ArrayList<>();
         for (Locale locale : availableLocales) {
             try {
-                twoToThreeMap.put(locale.getCountry(), locale.getISO3Country());
+                isoAlpha2ToIsoAlpha3CodeMap.put(locale.getCountry(), locale.getISO3Country());
             } catch (MissingResourceException e) {
                 localesWithoutISO3Country.add(locale.toString());
                 // ignore, is useless anyway
@@ -29,6 +29,6 @@ public class LanguageCodeConverter {
     }
 
     public static String convertISO31661Alpha2CodeToAlpha3Code(String alpha2Code){
-        return twoToThreeMap.get(alpha2Code.toUpperCase(Locale.ROOT));
+        return isoAlpha2ToIsoAlpha3CodeMap.get(alpha2Code.toUpperCase(Locale.ROOT));
     }
 }
