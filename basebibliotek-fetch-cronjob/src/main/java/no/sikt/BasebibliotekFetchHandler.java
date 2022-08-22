@@ -56,6 +56,12 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
     private static final String BASEBIBLIOTEK_RESPONSE_ERROR =
         "could not connect to basebibliotek, Connection responded with status: ";
     private static final String IMPORT_ALL_LIBRARIES = "bb-full.xml";
+
+    //Because LUM has to contact 80 servers to update alma for each bibNr, the maximum number of bibNR in each file
+    // is reduces. This ensures that the LUM handler does not exceed 15 minutes run time.
+    // In the future alma might combine the 80 endpoints to a single one, and then this limit will not be needed
+    // anymore.
+    public static final int NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE = 100;
     private final transient S3Client s3Client;
     private final transient HttpClient httpClient;
     private final transient String basebibliotekUri;
@@ -105,7 +111,7 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
 
         var startIndex = 0;
         while (startIndex < bibNrs.size()) {
-            var endIndex = Math.min(startIndex + 100, bibNrs.size());
+            var endIndex = Math.min(startIndex + NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE, bibNrs.size());
             result.add(bibNrs.subList(startIndex, endIndex));
             startIndex = endIndex;
         }
