@@ -1,13 +1,7 @@
 package no.sikt.lum;
 
 import static no.sikt.commons.HandlerUtils.HYPHEN;
-import static org.apache.commons.lang3.StringUtils.join;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.MissingResourceException;
 import java.util.Objects;
 import java.util.Optional;
 import no.nb.basebibliotek.generated.Record;
@@ -22,6 +16,7 @@ import no.sikt.alma.user.generated.Emails;
 import no.sikt.alma.user.generated.Phone;
 import no.sikt.alma.user.generated.Phone.PhoneTypes;
 import no.sikt.alma.user.generated.Phones;
+import no.sikt.commons.LanguageCodeConverter;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.StringUtils;
 
@@ -32,26 +27,6 @@ public final class ContactInfoConverter {
     private static final boolean P_ADDRESS_IS_ALWAYS_PREFERRED = true;
     public static final String WORK = "Work";
     public static final String OFFICE = "Office";
-    public static final String COMMA_SEPARATOR = ", ";
-    public static final String LOCALES_WITHOUT_ISO_3_COUNTRY_CODES = "Locales without ISO3Country-codes: ";
-
-    static final Map<String, String> twoToThreeMap = new HashMap<>();
-
-
-
-    static {
-        Locale[] availableLocales = Locale.getAvailableLocales();
-        List<String> localesWithoutISO3Country = new ArrayList<>();
-        for (Locale locale : availableLocales) {
-            try {
-                twoToThreeMap.put(locale.getCountry(), locale.getISO3Country());
-            } catch (MissingResourceException e) {
-                localesWithoutISO3Country.add(locale.toString());
-                // ignore, is useless anyway
-            }
-        }
-        System.out.println(LOCALES_WITHOUT_ISO_3_COUNTRY_CODES + join(localesWithoutISO3Country, COMMA_SEPARATOR));
-    }
 
     @JacocoGenerated
     private ContactInfoConverter() {
@@ -186,7 +161,7 @@ public final class ContactInfoConverter {
     }
 
     private static Country createCountry(String landkode) {
-        String land = twoToThreeMap.get(landkode.toUpperCase(Locale.ROOT));
+        String land = LanguageCodeConverter.convertISO31661Alpha2CodeToAlpha3Code(landkode);
         var country = new Country();
         if (!StringUtils.isEmpty(land)) {
             country.setValue(land.toUpperCase(Locale.ROOT));

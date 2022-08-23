@@ -16,6 +16,7 @@ import no.sikt.alma.partners.generated.Emails;
 import no.sikt.alma.partners.generated.Phone;
 import no.sikt.alma.partners.generated.Phone.PhoneTypes;
 import no.sikt.alma.partners.generated.Phones;
+import no.sikt.commons.LanguageCodeConverter;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.StringUtils;
 
@@ -159,8 +160,11 @@ public final class ContactInfoConverter {
     }
 
     private static Country createCountry(String landkode) {
+        String land = LanguageCodeConverter.convertISO31661Alpha2CodeToAlpha3Code(landkode);
         var country = new Country();
-        if (!StringUtils.isEmpty(landkode)) {
+        if (!StringUtils.isEmpty(land)) {
+            country.setValue(land.toUpperCase(Locale.ROOT));
+        } else {
             country.setValue(landkode.toUpperCase(Locale.ROOT));
         }
         return country;
