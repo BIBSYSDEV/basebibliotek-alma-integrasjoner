@@ -5,6 +5,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
 
+@SuppressWarnings("PMD.EmptyCatchBlock")
 public class LanguageCodeConverter {
 
     public static final Map<String, String> isoAlpha2ToIsoAlpha3CodeMap = new HashMap<>();
