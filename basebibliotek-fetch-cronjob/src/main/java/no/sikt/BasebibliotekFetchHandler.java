@@ -62,6 +62,7 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
     // In the future alma might combine the 80 endpoints to a single one, and then this limit will not be needed
     // anymore.
     public static final int NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE = 100;
+    public static final String BIBNR_FILENAME_DELIMITER = "_";
     private final transient S3Client s3Client;
     private final transient HttpClient httpClient;
     private final transient String basebibliotekUri;
@@ -159,7 +160,7 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
 
     private List<List<String>> putObjectsToS3(List<List<String>> bibNrs) {
         for (int i = 0; i < bibNrs.size(); i++) {
-            putObjectToS3(bibNrs.get(i), i + "");
+            putObjectToS3(bibNrs.get(i), Integer.toString(i));
         }
         return bibNrs;
     }
@@ -185,7 +186,7 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
     private PutObjectRequest createPutObjectRequest(String subsetNumber) {
         Date date = new Date();
         SimpleDateFormat formatter = new SimpleDateFormat(DD_MM_YYYY_PATTERN, Locale.ROOT);
-        String filename = formatter.format(date) + "_" + subsetNumber + TXT;
+        String filename = formatter.format(date) + BIBNR_FILENAME_DELIMITER + subsetNumber + TXT;
         return PutObjectRequest.builder()
                    .bucket(s3BasebibliotekXmlBucket)
                    .key(filename)
