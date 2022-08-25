@@ -1,4 +1,3 @@
-
 dependencies {
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.8.2'
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.8.2'
@@ -29,4 +28,10 @@ dependencies {
         archiveClassifier.set('')
         zip64 true
     }
+}
+
+test {
+    useJUnitPlatform()
+    failFast = true
+    finalizedBy jacocoTestReport
 }
