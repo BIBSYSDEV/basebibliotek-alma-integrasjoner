@@ -7,9 +7,12 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static no.sikt.BasebibliotekFetchHandler.NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,12 +27,17 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import no.unit.nva.stubs.WiremockHttpClient;
 import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
+import org.hamcrest.core.Every;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,17 +51,15 @@ public class BaseBibliotekFetchHandlerTest {
 
     public static final String BASEBIBLIOTEK_REDACTED_INCREMENTAL_1_XML = "basebibliotek_redacted_incremental_1.xml";
     public static final String BASEBIBLIOTEK_REDACTED_INCREMENTAL_2_XML = "basebibliotek_redacted_incremental_2.xml";
-    private static final String S3_BUCKET_NAME = "s3BucketName";
     public static final String BIBLIOTEK_EKSPORT_BIBLEV_PATH = "/bibliotek/eksport/biblev";
+    public static final String BASEBIBLIOTEK_URL_HTML = "basebibliotek-url.html";
+    public static final Context CONTEXT = mock(Context.class);
+    private static final String S3_BUCKET_NAME = "s3BucketName";
     private static final String BASEBIBLIOTEK_BB_2022_04_27_XML = "bb-2022-04-27.xml";
     private static final String BASEBIBLIOTEK_BB_2022_05_04_XML = "bb-2022-05-04.xml";
     private static final String BASEBIBLIOTEK_BB_FULL_XML = "bb-full.xml";
-    public static final String BASEBIBLIOTEK_URL_HTML = "basebibliotek-url.html";
     private transient WireMockServer httpServer;
-
     private transient BasebibliotekFetchHandler baseBibliotekFetchHandler;
-    public static final Context CONTEXT = mock(Context.class);
-
     private transient S3Client s3Client;
 
     private transient TestAppender appender;
@@ -87,7 +93,7 @@ public class BaseBibliotekFetchHandlerTest {
             "could not connect to basebibliotek, Connection responded with status: " + HttpURLConnection.HTTP_FORBIDDEN;
         mockedGetRequestWithSpecifiedStatusCode(HttpURLConnection.HTTP_FORBIDDEN, BIBLIOTEK_EKSPORT_BIBLEV_PATH);
         assertThrows(RuntimeException.class, () -> baseBibliotekFetchHandler
-            .handleRequest(new ScheduledEvent(), CONTEXT));
+                                                       .handleRequest(new ScheduledEvent(), CONTEXT));
         assertThat(appender.getMessages(), containsString(expectedMessage));
     }
 
@@ -106,7 +112,7 @@ public class BaseBibliotekFetchHandlerTest {
                               basebibliotekXML2);
 
         assertThrows(RuntimeException.class, () -> baseBibliotekFetchHandler
-            .handleRequest(new ScheduledEvent(), CONTEXT));
+                                                       .handleRequest(new ScheduledEvent(), CONTEXT));
 
         var expectedMessage =
             "could not GET " + BASEBIBLIOTEK_BB_2022_04_27_XML;
@@ -129,9 +135,11 @@ public class BaseBibliotekFetchHandlerTest {
 
         var scheduledEvent = new ScheduledEvent();
         var expectedBibnrs = Set.of("0030100", "0030101", "7049304", "0030103");
-        var listOfBibNr = baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT);
+        var listOfBibNr =
+            baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT).stream().flatMap(Collection::stream)
+                .collect(Collectors.toList());
         assertThat(listOfBibNr, hasSize(expectedBibnrs.size()));
-        expectedBibnrs.forEach(expectedBibnr  -> assertThat(listOfBibNr, hasItem(expectedBibnr)));
+        expectedBibnrs.forEach(expectedBibnr -> assertThat(listOfBibNr, hasItem(expectedBibnr)));
 
         //Verify that basebibliotek has been contacted.
         WireMock.verify(getRequestedFor(urlEqualTo(BIBLIOTEK_EKSPORT_BIBLEV_PATH)));
@@ -188,6 +196,31 @@ public class BaseBibliotekFetchHandlerTest {
         baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT);
         var expectedMessage = "Record with missing bibnr";
         assertThat(appender.getMessages(), containsString(expectedMessage));
+    }
+
+    @Test
+    public void shouldSplitLargeNumberOfLibrariesIntoSmallerBibNrFiles() {
+        var basebibliotekUrlsAsHtml = IoUtils.stringFromResources(
+            Path.of(BASEBIBLIOTEK_URL_HTML));
+        mockedGetRequestThatReturnsSpecifiedResponse(basebibliotekUrlsAsHtml);
+
+        var basebibliotekXML1 = IoUtils.stringFromResources(
+            Path.of("redacted_bb_full.xml"));
+        var basebibliotekXML3 = IoUtils.stringFromResources(
+            Path.of("basebibliotek_redacted_incremental_3.xml"));
+        mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_04_27_XML, basebibliotekXML1);
+        mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_05_04_XML, basebibliotekXML3);
+        var scheduledEvent = new ScheduledEvent();
+        List<List<String>> listOfBibNr = baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT);
+        //Since this test is specific for checking bibNrs files sizes, it has been made so that the
+        // numbersOfLibrariesExpected can change according to new requirements added to basebibliotek conversion.
+        var expectedNumbersOfLibrariesFiles = (int) Math.ceil(listOfBibNr.stream()
+                                                                  .mapToDouble(Collection::size)
+                                                                  .sum() / NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE);
+        //check that no bibNrs file has more than 100 elements:
+        assertThat(listOfBibNr, Every.everyItem(hasSize(lessThanOrEqualTo(NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE))));
+        //Check that baseBibliotekFetchHandler has not split bibNrs unnecessary.
+        assertThat(listOfBibNr, hasSize(equalTo(expectedNumbersOfLibrariesFiles)));
     }
 
     private void startWiremockServer() {

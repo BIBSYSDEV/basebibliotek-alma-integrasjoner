@@ -55,7 +55,7 @@ Resources:
   ResourceSharingPartnerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: resource-sharing-partners
+      CodeUri: alma-integrations
       Handler: no.sikt.rsp.ResourceSharingPartnerHandler::handleRequest
       Role: !GetAtt ResourceSharingPartnerHandlerRole.Arn
       Environment:
