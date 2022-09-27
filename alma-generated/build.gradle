@@ -9,9 +9,9 @@ configurations {
 }
 
 dependencies {
-    implementation group: 'org.glassfish.jaxb', name: 'jaxb-runtime', version: '4.0.0'
-    jaxb group: 'com.sun.xml.bind', name: 'jaxb-xjc', version: '4.0.0'
-    jaxb group: 'com.sun.xml.bind', name: 'jaxb-impl', version: '4.0.0'
+    implementation group: 'org.glassfish.jaxb', name: 'jaxb-runtime', version: '4.0.1'
+    jaxb group: 'com.sun.xml.bind', name: 'jaxb-xjc', version: '4.0.1'
+    jaxb group: 'com.sun.xml.bind', name: 'jaxb-impl', version: '4.0.1'
     jaxb group: 'javax.xml.bind', name: 'jaxb-api', version: '2.4.0-b180830.0359'
     jaxb group: 'javax.activation', name:'javax.activation-api', version: '1.2.0'
 }
