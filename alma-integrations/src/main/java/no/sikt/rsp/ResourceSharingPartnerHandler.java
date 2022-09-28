@@ -88,10 +88,10 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
             var bibNrFile = HandlerUtils.readFile(s3event, s3Client);
             logger.info("done collecting bibNrFile");
 
-            final String instRegAsJson = driver.getFile(UnixPath.of(libCodeToAlmaCodeMappingFilePath));
-            logger.info("done collecting instreg");
+            final String libCodesToAlmaCodesMappings = driver.getFile(UnixPath.of(libCodeToAlmaCodeMappingFilePath));
+            logger.info("done collecting library codes to alma codes mappings");
 
-            AlmaCodeProvider almaCodeProvider = new AlmaCodeProvider(instRegAsJson);
+            AlmaCodeProvider almaCodeProvider = new AlmaCodeProvider(libCodesToAlmaCodesMappings);
             var bibnrList = HandlerUtils.getBibNrList(bibNrFile);
             var reportStringBuilder = new StringBuilder();
             var basebiblioteks = HandlerUtils
