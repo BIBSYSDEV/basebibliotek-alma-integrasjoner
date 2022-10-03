@@ -53,6 +53,7 @@ import no.sikt.alma.partners.generated.Emails;
 import no.sikt.alma.partners.generated.IsoDetails;
 import no.sikt.alma.partners.generated.NcipP2PDetails;
 import no.sikt.alma.partners.generated.Partner;
+import no.sikt.alma.partners.generated.PartnerDetails;
 import no.sikt.alma.partners.generated.PartnerDetails.LocateProfile;
 import no.sikt.alma.partners.generated.Phones;
 import no.sikt.alma.partners.generated.ProfileType;
@@ -109,6 +110,8 @@ public class ResourceSharingPartnerTest {
     private static final String NATIONAL_DEPOT_LIBRARY_LOCATE_PROFILE_VALUE = "LOCATE_DEPOT";
     private static final String HOLDING_CODE_AVAILABLE = "available";
     private static final Environment mockedEnvironment = mock(Environment.class);
+    private static final boolean AUTO_CLAIM_IS_SUPPORTED = true;
+    private static final int AUTO_CLAIM_TIME = 3;
     private transient FakeS3Client s3Client;
     private transient S3Driver s3Driver;
     private transient ResourceSharingPartnerHandler resourceSharingPartnerHandler;
@@ -1080,10 +1083,13 @@ public class ResourceSharingPartnerTest {
     private void assertIsoProfileDetailsPopulatedCorrectly(final Partner partner,
                                                            final String landkode,
                                                            final String bibnr) {
-
-        IsoDetails details = partner.getPartnerDetails().getProfileDetails().getIsoDetails();
+        PartnerDetails partnerDetails = partner.getPartnerDetails();
+        IsoDetails details = partnerDetails.getProfileDetails().getIsoDetails();
 
         final String expectedIsoSymbol = landkode.toUpperCase(Locale.ROOT) + HYPHEN + bibnr;
+
+        assertThat(partnerDetails.isAutoClaimSupported(), is(AUTO_CLAIM_IS_SUPPORTED));
+        assertThat(partnerDetails.getAutoClaimTime(), is(AUTO_CLAIM_TIME));
 
         assertThat(details.getIllPort(), is(ILL_SERVER_PORT));
         assertThat(details.getIsoSymbol(), is(expectedIsoSymbol));
@@ -1096,7 +1102,8 @@ public class ResourceSharingPartnerTest {
                                                              String bibnr,
                                                              String expectedEmail) {
 
-        final ProfileType profileType = partner.getPartnerDetails().getProfileDetails().getProfileType();
+        final PartnerDetails partnerDetails = partner.getPartnerDetails();
+        final ProfileType profileType = partnerDetails.getProfileDetails().getProfileType();
 
         assertThat(profileType, is(ProfileType.NCIP_P_2_P));
 
@@ -1113,16 +1120,23 @@ public class ResourceSharingPartnerTest {
         assertThat(details.getEmailAddress(), is(expectedEmail));
         assertThat(details.getResendingOverdueMessageInterval(),
                    is(PartnerConverter.RESENDING_OVERDUE_MESSAGE_INTERVAL));
+
+        assertThat(partnerDetails.isAutoClaimSupported(), nullValue());
+        assertThat(partnerDetails.getAutoClaimTime(), nullValue());
     }
 
     private void assertEmailProfileDetailsPopulatedCorrectly(Partner partner, String expectedEmail) {
-        final ProfileType profileType = partner.getPartnerDetails().getProfileDetails().getProfileType();
+        final PartnerDetails partnerDetails = partner.getPartnerDetails();
+        final ProfileType profileType = partnerDetails.getProfileDetails().getProfileType();
 
         assertThat(profileType, is(ProfileType.EMAIL));
 
         final EmailDetails details = partner.getPartnerDetails().getProfileDetails().getEmailDetails();
 
         assertThat(details.getEmail(), is(expectedEmail));
+
+        assertThat(partnerDetails.isAutoClaimSupported(), nullValue());
+        assertThat(partnerDetails.getAutoClaimTime(), nullValue());
     }
 
     private void assertContactInfo(ContactInfo contactInfo, Record record, String alpha3CountryCode) {

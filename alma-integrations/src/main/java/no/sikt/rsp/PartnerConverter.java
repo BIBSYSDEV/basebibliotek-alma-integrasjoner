@@ -55,6 +55,8 @@ public class PartnerConverter extends AlmaObjectConverter {
     public static final String SYSTEM_TYPE_VALUE_OTHER = "OTHER";
     public static final String SYSTEM_TYPE_DESC_ALMA = "alma";
     public static final String SYSTEM_TYPE_DESC_OTHER = "other";
+    private static final boolean AUTO_CLAIM_SUPPORTED = true;
+    private static final int AUTO_CLAIM_TIME = 3;
 
     private final transient String interLibraryLoanServer;
 
@@ -121,7 +123,7 @@ public class PartnerConverter extends AlmaObjectConverter {
         partnerDetails.setBorrowingWorkflow(BORROWING_WORKFLOW);
         partnerDetails.setHoldingCode(extractHoldingCodeIfAlmaOrBibsysLibrary(record).orElse(null));
         partnerDetails.setSystemType(extractSystemType(record));
-        partnerDetails.setProfileDetails(extractProfileDetails(record));
+        partnerDetails.setProfileDetails(extractProfileDetails(record, partnerDetails));
         partnerDetails.setStatus(extractStatus(record));
 
         final String almaCode = almaCodeProvider.getAlmaCode(record.getBibnr()).orElse("");
@@ -149,7 +151,7 @@ public class PartnerConverter extends AlmaObjectConverter {
     }
 
     @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-    private ProfileDetails extractProfileDetails(Record record) {
+    private ProfileDetails extractProfileDetails(Record record, final PartnerDetails partnerDetails) {
         ProfileDetails details = new ProfileDetails();
 
         Optional<String> nncipUri = extractNncipUri(record);
@@ -166,6 +168,9 @@ public class PartnerConverter extends AlmaObjectConverter {
             isoDetails.setSharedBarcodes(true);
 
             details.setIsoDetails(isoDetails);
+
+            partnerDetails.setAutoClaimSupported(AUTO_CLAIM_SUPPORTED);
+            partnerDetails.setAutoClaimTime(AUTO_CLAIM_TIME);
         } else if (nncipUri.isPresent() && BaseBibliotekUtils.isNorwegian(record)) {
             details.setProfileType(ProfileType.NCIP_P_2_P);
 
