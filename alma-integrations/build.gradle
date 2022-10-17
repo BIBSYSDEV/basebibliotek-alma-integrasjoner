@@ -15,7 +15,7 @@ dependencies {
 
     implementation group: 'com.github.bibsysdev', name: 'nva-language', version: '1.0'
     implementation group: 'com.github.bibsysdev', name: 's3', version: '1.25.7'
-    implementation group: 'com.github.bibsysdev', name: 'core', version: '1.25.7'
+    implementation group: 'com.github.bibsysdev', name: 'core', version: '1.25.8'
 
     implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.1'
     implementation group: 'com.amazonaws', name: 'aws-lambda-java-log4j2', version: '1.5.1'
@@ -24,7 +24,7 @@ dependencies {
     implementation group: 'software.amazon.awssdk', name: 'secretsmanager'
     implementation group: 'software.amazon.awssdk', name: 's3'
 
-    implementation group: 'org.glassfish.jaxb', name: 'jaxb-runtime', version: '4.0.0'
+    implementation group: 'org.glassfish.jaxb', name: 'jaxb-runtime', version: '4.0.1'
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.13.3'
 
     implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.17.2'
