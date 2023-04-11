@@ -4,7 +4,7 @@ plugins {
     id 'pmd'
     id 'jacoco'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
-    id 'nebula.lint' version '17.7.0'
+    id 'nebula.lint' version '18.0.3'
 }
 
 sourceCompatibility = JavaVersion.VERSION_11  // source-code version and must be <= targetCompatibility
