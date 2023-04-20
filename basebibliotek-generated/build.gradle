@@ -28,7 +28,7 @@ task xsd2java() {
         ant.xjc(
                 destdir: '${jaxbTargetDir}',
                 package: 'no.nb.basebibliotek.generated',
-                schema: 'https://www.nb.no/baser/bibliotek/eksport/basebibliotek.xsd'
+                schema: 'https://www.nb.no/basebibliotek/resources/basebibliotek.xsd'
         )
     }
 }
