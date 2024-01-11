@@ -58,6 +58,7 @@ Resources:
       CodeUri: alma-integrations
       Handler: no.sikt.rsp.ResourceSharingPartnerHandler::handleRequest
       Role: !GetAtt ResourceSharingPartnerHandlerRole.Arn
+      ReservedConcurrentExecutions: 1
       Environment:
         Variables:
           REPORT_BUCKET: !Sub '${ReportBucketName}-${AWS::AccountId}'
