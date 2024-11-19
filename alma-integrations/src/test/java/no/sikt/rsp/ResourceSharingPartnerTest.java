@@ -1105,7 +1105,7 @@ public class ResourceSharingPartnerTest {
         final PartnerDetails partnerDetails = partner.getPartnerDetails();
         final ProfileType profileType = partnerDetails.getProfileDetails().getProfileType();
 
-        assertThat(profileType, is(ProfileType.NCIP_P_2_P));
+        assertThat(profileType, is(ProfileType.NCIP_P2P));
 
         final NcipP2PDetails details = partner.getPartnerDetails().getProfileDetails().getNcipP2PDetails();
 
