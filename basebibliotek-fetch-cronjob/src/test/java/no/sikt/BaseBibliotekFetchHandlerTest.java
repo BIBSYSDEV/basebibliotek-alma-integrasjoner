@@ -31,7 +31,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import no.unit.nva.stubs.WiremockHttpClient;
 import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
@@ -254,7 +253,7 @@ public class BaseBibliotekFetchHandlerTest {
                                     .withBody(body)));
     }
 
-    class RequestBodyMatches implements ArgumentMatcher<RequestBody> {
+    static class RequestBodyMatches implements ArgumentMatcher<RequestBody> {
 
         private final transient RequestBody left;
         transient String leftContent = "";
