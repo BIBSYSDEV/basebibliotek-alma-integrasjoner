@@ -9,16 +9,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: cfn-lint template
-        uses: scottbrenner/cfn-lint-action@main
-        with:
-          entrypoint: /bin/sh
-          args: "-c \"cat template.yaml | sed '/CODEBUILD_RESOLVED_SOURCE_VERSION/d' | cfn-lint -\""
+      - name: Setup Cloud Formation Linter with Latest Version
+        uses: scottbrenner/cfn-lint-action@v2
 
-      - name: cfn-lint pipeline
-        uses: scottbrenner/cfn-lint-action@main
-        with:
-          entrypoint: /bin/sh
-          args: "-c \"cat pipeline.yml | sed '/CODEBUILD_RESOLVED_SOURCE_VERSION/d' | cfn-lint -\""
+      - name: Run cfn-lint on template and pipeline
+        run: |
+          cfn-lint --version
+          /bin/sh -c "cat pipeline.yml | sed '/CODEBUILD_RESOLVED_SOURCE_VERSION/d' | cfn-lint -"
+          /bin/sh -c "cat template.yaml | sed '/CODEBUILD_RESOLVED_SOURCE_VERSION/d' | cfn-lint -"
