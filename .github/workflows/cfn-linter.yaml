@@ -18,4 +18,5 @@ jobs:
         run: |
           cfn-lint --version
           cfn-lint -t ./template.yaml
+          cfn-lint -t ./pipeline.yml
           echo Linting Complete!
