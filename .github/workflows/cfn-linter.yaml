@@ -19,3 +19,4 @@ jobs:
           cfn-lint --version
           /bin/sh -c "cat pipeline.yml | sed '/CODEBUILD_RESOLVED_SOURCE_VERSION/d' | cfn-lint -"
           /bin/sh -c "cat template.yaml | sed '/CODEBUILD_RESOLVED_SOURCE_VERSION/d' | cfn-lint -"
+          echo Linting Complete!
