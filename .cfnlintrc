@@ -1,6 +1,6 @@
 templates:
 - ./**/*.yml
-#- ./**/*.yaml
+- ./**/*.yaml
 ignore_templates:
 - ./**/buildspec.yml
 - ./**/buildspec.yaml

@@ -17,6 +17,9 @@ jobs:
       - name: Run cfn-lint on template and pipeline
         run: |
           cfn-lint --version
+          cfn-lint -t ./template.yaml
+          cfn-lint -t ./pipeline.yml
+          cat ./template.yaml
           /bin/sh -c "cat pipeline.yml | sed '/CODEBUILD_RESOLVED_SOURCE_VERSION/d' | cfn-lint -"
           /bin/sh -c "cat template.yaml | sed '/CODEBUILD_RESOLVED_SOURCE_VERSION/d' | cfn-lint -"
           echo Linting Complete!
