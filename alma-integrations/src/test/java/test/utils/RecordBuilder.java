@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import no.nb.basebibliotek.generated.Eressurser;
 import no.nb.basebibliotek.generated.Record;
 
+@SuppressWarnings("checkstyle:MemberName")
 public class RecordBuilder {
     private final transient BigInteger rid;
     private final transient LocalDate timestamp;

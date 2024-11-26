@@ -172,7 +172,7 @@ public class PartnerConverter extends AlmaObjectConverter {
             partnerDetails.setAutoClaimSupported(AUTO_CLAIM_SUPPORTED);
             partnerDetails.setAutoClaimTime(AUTO_CLAIM_TIME);
         } else if (nncipUri.isPresent() && BaseBibliotekUtils.isNorwegian(record)) {
-            details.setProfileType(ProfileType.NCIP_P_2_P);
+            details.setProfileType(ProfileType.NCIP_P2P);
 
             final NcipP2PDetails ncipP2PDetails = new NcipP2PDetails();
 

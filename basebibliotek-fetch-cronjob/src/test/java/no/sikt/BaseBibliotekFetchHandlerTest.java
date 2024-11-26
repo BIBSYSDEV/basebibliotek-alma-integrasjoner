@@ -31,7 +31,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import no.unit.nva.stubs.WiremockHttpClient;
 import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
@@ -214,11 +213,13 @@ public class BaseBibliotekFetchHandlerTest {
         List<List<String>> listOfBibNr = baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT);
         //Since this test is specific for checking bibNrs files sizes, it has been made so that the
         // numbersOfLibrariesExpected can change according to new requirements added to basebibliotek conversion.
-        var expectedNumbersOfLibrariesFiles = (int) Math.ceil(listOfBibNr.stream()
-                                                                  .mapToDouble(Collection::size)
-                                                                  .sum() / NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE);
+        var expectedNumbersOfLibrariesFiles =
+            (int) Math.ceil(listOfBibNr.stream()
+                                .mapToDouble(Collection::size)
+                                .sum() / NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE);
         //check that no bibNrs file has more than 100 elements:
-        assertThat(listOfBibNr, Every.everyItem(hasSize(lessThanOrEqualTo(NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE))));
+        assertThat(listOfBibNr,
+                   Every.everyItem(hasSize(lessThanOrEqualTo(NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE))));
         //Check that baseBibliotekFetchHandler has not split bibNrs unnecessary.
         assertThat(listOfBibNr, hasSize(equalTo(expectedNumbersOfLibrariesFiles)));
     }
@@ -252,7 +253,7 @@ public class BaseBibliotekFetchHandlerTest {
                                     .withBody(body)));
     }
 
-    class RequestBodyMatches implements ArgumentMatcher<RequestBody> {
+    static class RequestBodyMatches implements ArgumentMatcher<RequestBody> {
 
         private final transient RequestBody left;
         transient String leftContent = "";
