@@ -3,37 +3,45 @@ version '1.0-SNAPSHOT'
 
 dependencies {
 
-    testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.8.2'
-    testImplementation group: 'com.github.bibsysdev', name: 'nvatestutils', version: '1.25.20'
-    testImplementation group: 'com.github.bibsysdev', name: 'logutils', version: '1.25.20'
-    testImplementation group: 'org.hamcrest', name: 'hamcrest', version: '2.2'
-    testImplementation group: 'org.hamcrest', name: 'hamcrest-core', version: '2.2'
-    testImplementation group: 'com.github.tomakehurst', name: 'wiremock-jre8', version: '2.33.2'
-    testImplementation group: 'org.mockito', name: 'mockito-core', version: '4.5.1'
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.8.2'
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.8.2'
+    testImplementation libs.junit.jupiter.params
+    testImplementation libs.junit.jupiter.api
+    testRuntimeOnly libs.junit.jupiter.engine
 
-    implementation group: 'com.github.bibsysdev', name: 'nva-language', version: '1.0'
-    implementation group: 'com.github.bibsysdev', name: 's3', version: '1.25.20'
-    implementation group: 'com.github.bibsysdev', name: 'core', version: '1.25.20'
+    testImplementation libs.nva.testutils
+    testImplementation libs.nva.logutils
 
-    implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.1'
-    implementation group: 'com.amazonaws', name: 'aws-lambda-java-log4j2', version: '1.5.1'
-    implementation group: 'com.amazonaws', name: 'aws-lambda-java-events', version: '3.11.0'
-    implementation platform('software.amazon.awssdk:bom:2.17.191')
-    implementation group: 'software.amazon.awssdk', name: 'secretsmanager'
-    implementation group: 'software.amazon.awssdk', name: 's3'
+    testImplementation libs.hamcrest
+    testImplementation libs.hamcrest.core
 
-    implementation group: 'org.glassfish.jaxb', name: 'jaxb-runtime', version: '4.0.1'
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.13.3'
+    testImplementation libs.mockito.core
 
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.17.2'
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.17.2'
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j18-impl', version: '2.17.2'
-    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.36'
+    testImplementation libs.wiremock
 
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
-    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+    implementation libs.nva.commons.core
+    implementation libs.nva.s3
+    implementation libs.nva.language
+
+    implementation libs.aws.lambda.java.core
+    implementation libs.aws.lambda.java.log4j2
+    implementation libs.aws.lambda.java.events
+    implementation libs.aws.sdk2.s3
+    implementation libs.aws.sdk2.secrets //Possible version mismatch with existing
+
+    implementation libs.jackson.databind
+
+    implementation libs.jaxb.runtime
+
+    implementation libs.log4j.api
+    implementation libs.log4j.core
+    implementation libs.log4j.slf4j.impl
+    implementation libs.slf4j.api
+
+    implementation libs.google.gson
+
+    implementation libs.apache.commons.lang3
+
+    //implementation platform('software.amazon.awssdk:bom:2.17.191') // Version manually specified for each module in libs.versions.toml
+    //implementation group: 'software.amazon.awssdk', name: 'secretsmanager' // Do we need this to match version?
 
     implementation project(path: ":basebibliotek-generated", configuration: 'default')
     implementation project(path: ":alma-generated", configuration: 'default')
