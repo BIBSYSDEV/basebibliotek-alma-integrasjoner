@@ -1,14 +1,14 @@
 package no.sikt.commons;
 
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
+import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("PMD.EmptyCatchBlock")
 public class LanguageCodeConverter {
 
-    public static final Map<String, String> isoAlpha2ToIsoAlpha3CodeMap = new HashMap<>();
+    public static final Map<String, String> isoAlpha2ToIsoAlpha3CodeMap = new ConcurrentHashMap<>();
 
     static {
         Locale[] availableLocales = Locale.getAvailableLocales();

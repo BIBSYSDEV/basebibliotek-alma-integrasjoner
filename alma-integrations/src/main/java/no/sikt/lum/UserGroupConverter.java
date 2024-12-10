@@ -41,7 +41,13 @@ public class UserGroupConverter {
     //Libnr inneholder informasjon. Kan skape krøll hvis et bibliotek går fra å være et høyskole bibliotek til
     // universitetsbibliotek.
     @JacocoGenerated
-    @SuppressWarnings({"PMD.AvoidLiteralsInIfCondition", "PMD.DataflowAnomalyAnalysis"})
+    @SuppressWarnings({
+        "PMD.AvoidLiteralsInIfCondition",
+        "PMD.DataflowAnomalyAnalysis",
+        "PMD.CognitiveComplexity",
+        "PMD.NPathComplexity",
+        "PMD.CollapsibleIfStatements",
+    })
     public static BibKategori konverterBibKategori(String libnr, String kundeType) {
         if (libnr == null) {
             throw new RuntimeException("libnr er null");

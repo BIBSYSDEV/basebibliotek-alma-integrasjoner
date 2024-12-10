@@ -11,10 +11,10 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.sikt.alma.user.generated.User;
@@ -60,7 +60,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     private final transient BaseBibliotekApi baseBibliotekApi;
     private final transient AlmaUserUpserter almaUserUpserter;
     private final transient Map<String, String> almaApiKeyMap;
-    private final transient Map<String, List<User>> usersPerAlmaInstanceMap = new HashMap<>();
+    private final transient Map<String, List<User>> usersPerAlmaInstanceMap = new ConcurrentHashMap<>();
 
     @JacocoGenerated
     public LibraryUserManagementHandler() {
@@ -83,6 +83,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         this.reportS3BucketName = environment.readEnv(REPORT_BUCKET_ENVIRONMENT_NAME);
     }
 
+    @Override
     public Integer handleRequest(S3Event s3event, Context context) {
         logger.info(EVENT + gson.toJson(s3event));
         String sharedConfigBucketName = environment.readEnv(SHARED_CONFIG_BUCKET_NAME_ENV_NAME);

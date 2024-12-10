@@ -111,9 +111,9 @@ public class HttpUrlConnectionAlmaUserUpserter extends AbstractHttpUrlConnection
     }
 
     private void updateUser(final User user, String almaApikey) {
-        try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             JAXB.marshal(user, outputStream);
-            final String userAsString = outputStream.toString(StandardCharsets.UTF_8);
+            String userAsString = outputStream.toString(StandardCharsets.UTF_8);
 
             final HttpRequest request = HttpRequest.newBuilder()
                 .PUT(HttpRequest.BodyPublishers.ofString(userAsString))
@@ -140,9 +140,9 @@ public class HttpUrlConnectionAlmaUserUpserter extends AbstractHttpUrlConnection
     }
 
     private void createUser(final User user, String almaApikey) {
-        try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             JAXB.marshal(user, outputStream);
-            final String userAsString = outputStream.toString(StandardCharsets.UTF_8);
+            String userAsString = outputStream.toString(StandardCharsets.UTF_8);
 
             final HttpRequest request = HttpRequest.newBuilder()
                 .POST(

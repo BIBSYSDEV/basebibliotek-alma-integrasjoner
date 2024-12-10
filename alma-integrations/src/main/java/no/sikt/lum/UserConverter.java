@@ -2,8 +2,9 @@ package no.sikt.lum;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -30,11 +31,10 @@ import nva.commons.core.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("PMD.GodClass")
 public class UserConverter extends AlmaObjectConverter {
 
     public static final String COUNTRYCODE_NORWAY = "NO";
-    public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss",
-                                                                                   Locale.ROOT);
     private static final Logger logger = LoggerFactory.getLogger(UserConverter.class);
     public static final String COULD_NOT_CONVERT_TO_USER_ERROR_MESSAGE = " Could not convert to user";
     public static final String COULD_NOT_CONVERT_TO_USER_REPORT_MESSAGE = " could not convert to user\n";
@@ -281,7 +281,8 @@ public class UserConverter extends AlmaObjectConverter {
     }
 
     private UserStatistics defaultUserStatistics() {
-        String now = SIMPLE_DATE_FORMAT.format(Calendar.getInstance().getTime());
+        // TODO: Test this new 'now' generation code below
+        String now = getCurrentTime();
         UserStatistic userStatistic = new UserStatistic();
         userStatistic.setStatisticNote(now);
         UserStatistic.StatisticCategory statisticCategory = new UserStatistic.StatisticCategory();
@@ -295,6 +296,12 @@ public class UserConverter extends AlmaObjectConverter {
         UserStatistics userStatistics = new UserStatistics();
         userStatistics.getUserStatistic().add(userStatistic);
         return userStatistics;
+    }
+
+    private String getCurrentTime() {
+        SimpleDateFormat patternString = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ROOT);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(patternString.toPattern());
+        return formatter.format(LocalDateTime.now());
     }
 
     private AccountType defaultAccountType() {
