@@ -33,6 +33,11 @@ subprojects {
                                 .fromFile('config/checkstyle/checkstyle-suppressions.xml').asFile()
                 showViolations = true
             }
+
+            // We do not want a jar for our own modules, just a fatJar.
+            // For all auto generated modules, we need a jar that contains the classes or else the build will fail
+            // Therefore we only exclude jar generation in this code block
+            jar.enabled = false
         }
 }
 
@@ -45,9 +50,10 @@ tasks.named('test', Test) {
     }
 }
 
-// We don't want a jar, just a fatJar
-jar.enabled = false
-project.tasks.build.dependsOn project.tasks.shadowJar
+// We want to compile all jars before building
+tasks.named('build').configure {
+    dependsOn tasks.named('shadowJar')
+}
 
 // TODO: Coverage verification does not seem to work. Fix
 tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification) {

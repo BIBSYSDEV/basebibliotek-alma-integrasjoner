@@ -63,6 +63,7 @@ test {
     environment "BASEBIBLIOTEK_URL", "mock.url.com"
     environment "BASEBIBLIOTEK_XML_BUCKET", "basebibliotekXmlBucket"
 
+    // TODO: Remove? Already in java conventions
     useJUnitPlatform()
     failFast = true
     finalizedBy jacocoTestReport
