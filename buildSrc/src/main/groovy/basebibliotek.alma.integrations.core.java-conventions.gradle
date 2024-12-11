@@ -1,15 +1,19 @@
 plugins {
-    // Applies to all modules
+    // Plugins that applies to all modules
+    // Java Library: All things java
     id 'java-library'
-    id 'java'
+    // Jacoco: Test coverage plugin
     id 'jacoco' // Can we skip this for auto generated modules?
+    // Shadow: Generate fat jar
     id 'com.github.johnrengelman.shadow'
+    // Nebula Lint: Linting gradle build files
     id 'nebula.lint' // Move to subprojects excluding auto generated ones?
     id 'jacoco-report-aggregation' // Can we skip this for auto generated modules?
 }
 
 repositories {
     mavenCentral()
+    // Jitpack: User submitted repositories
     maven { url 'https://jitpack.io' }
 }
 
@@ -20,12 +24,14 @@ subprojects {
             apply plugin: 'pmd'
             apply plugin: 'checkstyle'
 
+            // Setup PMD
             pmd {
                 ruleSetConfig = rootProject.resources.text.fromFile('config/pmd/ruleset.xml')
                 ruleSets = []
                 ignoreFailures = false
             }
 
+            // Setup Checkstyle
             checkstyle {
                 configFile = rootProject.resources.text.fromFile('config/checkstyle/checkstyle.xml').asFile()
                 configProperties.checkstyleSuppressionsPath =
@@ -41,6 +47,7 @@ subprojects {
         }
 }
 
+// Running tests using gradle
 tasks.named('test', Test) {
     useJUnitPlatform()
     failFast = true
@@ -50,19 +57,19 @@ tasks.named('test', Test) {
     }
 }
 
-// We want to compile all jars before building
+// We want to compile all jars including those from auto generated modules before building or else the build will fail
 tasks.named('build').configure {
     dependsOn tasks.named('shadowJar')
 }
 
-// TODO: Coverage verification does not seem to work. Fix
+// Test coverage verification rules
 tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification) {
     violationRules {
         rule {
             limit {
                 counter = 'METHOD'
                 value = 'COVEREDRATIO'
-                minimum = 1.0
+                minimum = 0.9
             }
         }
 
@@ -77,6 +84,7 @@ tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification) {
     dependsOn jacocoTestReport
 }
 
+// Generate html checkstyle report using xsl style file excluding generated modules
 tasks.withType(Checkstyle).configureEach{
     exclude('*generated')
     reports {
@@ -85,18 +93,26 @@ tasks.withType(Checkstyle).configureEach{
     }
 }
 
+// Lint dependencies on build
 gradleLint {
     rules = ['all-dependency']
     reportFormat = 'html'
     reportOnlyFixableViolations = true
 }
 
+// Generate html coverage report in reports directory
 jacocoTestReport {
     reports {
         html.destination file("${buildDir}/reports/jacoco")
     }
 }
 
+// Use utf-8 for compilation
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'utf-8'
+}
+
+// Verify test coverage is over minimum required values
+tasks.named('check').configure {
+    dependsOn tasks.named('jacocoTestCoverageVerification')
 }

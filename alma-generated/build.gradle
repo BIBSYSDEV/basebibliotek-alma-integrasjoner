@@ -1,3 +1,7 @@
+// How Jar files are named
+group 'no.sikt.alma.partners.generated'
+version '1.0-SNAPSHOT'
+
 project.ext {
     jaxbTargetDir = file("$buildDir/generated/sources/xjc")
 }

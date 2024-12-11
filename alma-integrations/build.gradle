@@ -1,3 +1,4 @@
+// How Jar files are named
 group 'no.sikt'
 version '1.0-SNAPSHOT'
 
@@ -62,10 +63,4 @@ test {
     environment "BASEBIBLIOTEK_PASSWORD", "password"
     environment "BASEBIBLIOTEK_URL", "mock.url.com"
     environment "BASEBIBLIOTEK_XML_BUCKET", "basebibliotekXmlBucket"
-
-    // TODO: Remove? Already in java conventions
-    useJUnitPlatform()
-    failFast = true
-    finalizedBy jacocoTestReport
 }
-

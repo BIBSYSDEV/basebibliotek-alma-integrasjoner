@@ -8,7 +8,7 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 
-// Use only one of these jacocoAggregation. They might not work correctly yet. Needs more work
+// TODO: Fix jacoco aggregation. It does not work. Use only one of these jacocoAggregation.
 
 /*dependencies {
     // Need jaxb in all modules to be same version for this to work
@@ -26,7 +26,7 @@ repositories {
     }
 }*/
 
-reporting {
+/*reporting {
     reports {
         testCodeCoverageReport(JacocoCoverageReport) {
             testType = TestSuiteType.UNIT_TEST
@@ -35,9 +35,14 @@ reporting {
             testType = TestSuiteType.INTEGRATION_TEST
         }
     }
-}
+}*/
 
-check {
+/*check {
     dependsOn testCodeCoverageReport
     dependsOn integrationTestCodeCoverageReport
-}
+}*/
+
+/*tasks.named('check').configure {
+    dependsOn tasks.named('testCodeCoverageReport')
+    dependsOn tasks.named('integrationTestCodeCoverageReport')
+}*/
