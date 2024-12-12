@@ -14,7 +14,7 @@ slf4j-impl = { strictly = '2.17.2' }
 nva-language = { strictly = '1.0' }
 awsSdk2 = { strictly = '2.17.191' }
 wiremock = { strictly = '2.33.2' }
-jaxb = { strictly = '4.0.1' }
+jaxb = { strictly = '4.0.2' }
 gson = { strictly = '2.10.1' }
 apache-commons = { strictly = '3.12.0' }
 
