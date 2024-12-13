@@ -1,5 +1,5 @@
 plugins {
-    id 'java-library'
+    id 'java'
     id 'com.github.johnrengelman.shadow'
     id 'nebula.lint' // Move to subprojects excluding auto generated ones?
     id 'jacoco-report-aggregation'
