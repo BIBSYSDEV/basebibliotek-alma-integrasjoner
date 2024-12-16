@@ -18,6 +18,12 @@ jaxb = { strictly = '4.0.2' }
 gson = { strictly = '2.10.1' }
 apache-commons = { strictly = '3.12.0' }
 
+# Jaxb group
+jaxb-xjc = { strictly = '4.0.2' }
+jaxb-impl = { strictly = '4.0.2' }
+jaxb-api = { strictly = '2.4.0-b180830.0359' }
+activation-api = { strictly = '1.2.0' }
+
 [libraries]
 
 #Test
@@ -59,3 +65,13 @@ jaxb-runtime = { group = 'org.glassfish.jaxb', name = 'jaxb-runtime', version.re
 google-gson = { group = 'com.google.code.gson', name = 'gson', version.ref = 'gson' }
 
 apache-commons-lang3 = { group = 'org.apache.commons', name = 'commons-lang3', version.ref = 'apache-commons' }
+
+# Jaxb group
+jaxb-xjc = { group = "com.sun.xml.bind", name = "jaxb-xjc", version.ref = "jaxb-xjc" }
+jaxb-impl = { group = "com.sun.xml.bind", name = "jaxb-impl", version.ref = "jaxb-impl" }
+jaxb-api = { group = "javax.xml.bind", name = "jaxb-api", version.ref = "jaxb-api" }
+activation-api = { group = "javax.activation", name = "javax.activation-api", version.ref = "activation-api" }
+
+[bundles]
+
+jaxb-group = [ "jaxb-xjc", "jaxb-impl", "jaxb-api", "activation-api" ]
