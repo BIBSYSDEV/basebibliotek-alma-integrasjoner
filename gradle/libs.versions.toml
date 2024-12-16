@@ -67,11 +67,13 @@ google-gson = { group = 'com.google.code.gson', name = 'gson', version.ref = 'gs
 apache-commons-lang3 = { group = 'org.apache.commons', name = 'commons-lang3', version.ref = 'apache-commons' }
 
 # Jaxb group
-jaxb-xjc = { group = "com.sun.xml.bind", name = "jaxb-xjc", version.ref = "jaxb-xjc" }
-jaxb-impl = { group = "com.sun.xml.bind", name = "jaxb-impl", version.ref = "jaxb-impl" }
-jaxb-api = { group = "javax.xml.bind", name = "jaxb-api", version.ref = "jaxb-api" }
-activation-api = { group = "javax.activation", name = "javax.activation-api", version.ref = "activation-api" }
+jaxb-xjc = { group = 'com.sun.xml.bind', name = 'jaxb-xjc', version.ref = 'jaxb-xjc' }
+jaxb-impl = { group = 'com.sun.xml.bind', name = 'jaxb-impl', version.ref = 'jaxb-impl' }
+jaxb-api = { group = 'javax.xml.bind', name = 'jaxb-api', version.ref = 'jaxb-api' }
+activation-api = { group = 'javax.activation', name = 'javax.activation-api', version.ref = 'activation-api' }
 
 [bundles]
 
-jaxb-group = [ "jaxb-xjc", "jaxb-impl", "jaxb-api", "activation-api" ]
+jaxb-group = [ 'jaxb-xjc', 'jaxb-impl', 'jaxb-api', 'activation-api' ]
+logging = [ 'log4j-api', 'log4j-core', 'slf4j-api', 'log4j-slf4j-impl' ]
+aws-lambda = [ 'aws-lambda-java-core', 'aws-lambda-java-events', 'aws-lambda-java-log4j2' ]

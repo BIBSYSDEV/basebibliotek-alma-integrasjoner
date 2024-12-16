@@ -18,15 +18,10 @@ dependencies {
 
     testImplementation libs.wiremock
 
-    implementation libs.aws.lambda.java.core
-    implementation libs.aws.lambda.java.log4j2
-    implementation libs.aws.lambda.java.events
+    implementation libs.bundles.aws.lambda
     implementation libs.aws.sdk2.s3
 
-    implementation libs.log4j.api
-    implementation libs.log4j.core
-    implementation libs.log4j.slf4j.impl
-    implementation libs.slf4j.api
+    implementation libs.bundles.logging
 
     implementation libs.nva.commons.core
     implementation libs.nva.s3
