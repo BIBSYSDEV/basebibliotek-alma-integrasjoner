@@ -33,7 +33,7 @@ subprojects {
 
             jacocoTestReport {
                 reports {
-                    html.destination file("${buildDir}/reports/jacoco")
+                    html.destination file("${layout.buildDirectory.asFile.get()}/reports/jacoco")
                 }
             }
 

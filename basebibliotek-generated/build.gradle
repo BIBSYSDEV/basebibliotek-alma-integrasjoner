@@ -3,7 +3,7 @@ group 'no.nb.basebibliotek.generated'
 version '1.0-SNAPSHOT'
 
 project.ext {
-    jaxbTargetDir = file("$buildDir/generated/sources/xjc")
+    jaxbTargetDir = file("${layout.buildDirectory.asFile.get()}/generated/sources/xjc")
 }
 
 sourceSets.main.java.srcDirs += jaxbTargetDir
