@@ -4,7 +4,7 @@ import java.util.Locale;
 import java.util.Objects;
 import no.nb.basebibliotek.generated.Record;
 
-public abstract class BaseBibliotekUtils {
+public final class BaseBibliotekUtils {
     public static final String COUNTRY_CODE_NORWEGIAN = "NO";
     public static final String COUNTRY_CODE_GERMAN = "DE";
     public static final String KATSYST_ALMA = "alma";

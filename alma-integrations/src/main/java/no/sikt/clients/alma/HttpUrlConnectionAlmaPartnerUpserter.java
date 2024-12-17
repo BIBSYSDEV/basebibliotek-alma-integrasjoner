@@ -113,7 +113,7 @@ public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnect
     }
 
     private void updatePartner(final Partner partner) {
-        try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             JAXB.marshal(partner, outputStream);
             final String partnerAsString = outputStream.toString(StandardCharsets.UTF_8);
 
@@ -142,7 +142,7 @@ public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnect
     }
 
     private void createPartner(final Partner partner) {
-        try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             JAXB.marshal(partner, outputStream);
             final String partnerAsString = outputStream.toString(StandardCharsets.UTF_8);
 

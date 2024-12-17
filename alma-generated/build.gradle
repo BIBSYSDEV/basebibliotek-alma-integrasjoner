@@ -1,5 +1,9 @@
+// How Jar files are named
+group 'no.sikt.alma.partners.generated'
+version '1.0-SNAPSHOT'
+
 project.ext {
-    jaxbTargetDir = file("$buildDir/generated/sources/xjc")
+    jaxbTargetDir = file("${layout.buildDirectory.asFile.get()}/generated/sources/xjc")
 }
 
 sourceSets.main.java.srcDirs += jaxbTargetDir
@@ -9,14 +13,11 @@ configurations {
 }
 
 dependencies {
-    implementation group: 'org.glassfish.jaxb', name: 'jaxb-runtime', version: '4.0.2'
-    jaxb group: 'com.sun.xml.bind', name: 'jaxb-xjc', version: '4.0.2'
-    jaxb group: 'com.sun.xml.bind', name: 'jaxb-impl', version: '4.0.2'
-    jaxb group: 'javax.xml.bind', name: 'jaxb-api', version: '2.4.0-b180830.0359'
-    jaxb group: 'javax.activation', name:'javax.activation-api', version: '1.2.0'
+    implementation libs.jaxb.runtime
+    jaxb libs.bundles.jaxb.group
 }
 
-task xsd2javaPartners() {
+tasks.register('xsd2javaPartners') {
     doLast {
         jaxbTargetDir.mkdirs()
         ant.taskdef(name: 'xjc', classname: 'com.sun.tools.xjc.XJC2Task', classpath: configurations.jaxb.asPath)
@@ -29,7 +30,7 @@ task xsd2javaPartners() {
     }
 }
 
-task xsd2javaUser() {
+tasks.register('xsd2javaUser') {
     doLast {
         jaxbTargetDir.mkdirs()
         ant.taskdef(name: 'xjc', classname: 'com.sun.tools.xjc.XJC2Task', classpath: configurations.jaxb.asPath)
@@ -42,7 +43,7 @@ task xsd2javaUser() {
     }
 }
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     dependsOn(xsd2javaPartners)
     dependsOn(xsd2javaUser)
 }
