@@ -77,3 +77,4 @@ activation-api = { group = 'javax.activation', name = 'javax.activation-api', ve
 jaxb-group = [ 'jaxb-xjc', 'jaxb-impl', 'jaxb-api', 'activation-api' ]
 logging = [ 'log4j-api', 'log4j-core', 'slf4j-api', 'log4j-slf4j-impl' ]
 aws-lambda = [ 'aws-lambda-java-core', 'aws-lambda-java-events', 'aws-lambda-java-log4j2' ]
+testing = [ 'junit-jupiter-api', 'junit-jupiter-params', 'mockito-core', 'hamcrest', 'hamcrest-core', 'nva-testutils', 'nva-logutils', 'wiremock' ]
