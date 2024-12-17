@@ -281,7 +281,6 @@ public class UserConverter extends AlmaObjectConverter {
     }
 
     private UserStatistics defaultUserStatistics() {
-        // TODO: Test this new 'now' generation code below
         String now = getCurrentTime();
         UserStatistic userStatistic = new UserStatistic();
         userStatistic.setStatisticNote(now);
