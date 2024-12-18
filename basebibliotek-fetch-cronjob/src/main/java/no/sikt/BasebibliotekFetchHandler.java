@@ -73,6 +73,7 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
     private final transient String basebibliotekAuthorization;
 
     @JacocoGenerated
+    @SuppressWarnings("unused")
     public BasebibliotekFetchHandler() {
         this(S3Driver.defaultS3Client().build(),
              HttpClient.newBuilder().build(), new Environment());

@@ -126,7 +126,7 @@ public class UserConverter extends AlmaObjectConverter {
             //Errors in individual libraries should not cause crash in entire execution.
             logger.info(COULD_NOT_CONVERT_TO_USER_ERROR_MESSAGE, e);
             reportStringBuilder
-                .append(baseBibliotek.getRecord().get(0).getBibnr())
+                .append(baseBibliotek.getRecord().getFirst().getBibnr())
                 .append(COULD_NOT_CONVERT_TO_USER_REPORT_MESSAGE);
             return Optional.empty();
         }
@@ -190,48 +190,19 @@ public class UserConverter extends AlmaObjectConverter {
         String libraryName = record.getInst()
             .replace(LINEFEED, StringUtils.SPACE + HandlerUtils.HYPHEN + StringUtils.SPACE);
         libraryName = StringUtils.removeMultipleWhiteSpaces(libraryName);
-        String ampersand;
-        switch (record.getLandkode().toUpperCase(Locale.ROOT)) {
-            case COUNTRYCODE_GREATBRITAIN:
-            case COUNTRYCODE_UNITEDSTATES:
-            case COUNTRYCODE_CANADA:
-            case COUNTRYCODE_AUSTRALIA:
-            case COUNTRYCODE_IRLAND:
-            case COUNTRYCODE_NEWZEALAND:
-                ampersand = AND_ENGLISH;
-                break;
-            case COUNTRYCODE_GERMANY:
-            case COUNTRYCODE_AUSTRIA:
-            case COUNTRYCODE_SWITZERLAND:
-                ampersand = AND_GERMAN;
-                break;
-            case COUNTRYCODE_FRANCE:
-            case COUNTRYCODE_BELGIUM:
-                ampersand = AND_FRENCH;
-                break;
-            case COUNTRYCODE_FINLAND:
-            case COUNTRYCODE_ESTLAND:
-                ampersand = AND_FINISH;
-                break;
-            case COUNTRYCODE_NETHERLANDS:
-                ampersand = AND_DUTCH;
-                break;
-            case COUNTRYCODE_SWEDEN:
-                ampersand = AND_SWEDISH;
-                break;
-            case COUNTRYCODE_POLAND:
-                ampersand = AND_POLISH;
-                break;
-            case COUNTRYCODE_SPAIN:
-                ampersand = AND_SPANISH;
-                break;
-            case COUNTRYCODE_PORTUGAL:
-            case COUNTRYCODE_ITALY:
-                ampersand = AND_ITALIAN_PORTUGUESE;
-                break;
-            default:
-                ampersand = AND_NORWEGIAN;
-        }
+        String ampersand = switch (record.getLandkode().toUpperCase(Locale.ROOT)) {
+            case COUNTRYCODE_GREATBRITAIN, COUNTRYCODE_UNITEDSTATES, COUNTRYCODE_CANADA, COUNTRYCODE_AUSTRALIA,
+                 COUNTRYCODE_IRLAND, COUNTRYCODE_NEWZEALAND -> AND_ENGLISH;
+            case COUNTRYCODE_GERMANY, COUNTRYCODE_AUSTRIA, COUNTRYCODE_SWITZERLAND -> AND_GERMAN;
+            case COUNTRYCODE_FRANCE, COUNTRYCODE_BELGIUM -> AND_FRENCH;
+            case COUNTRYCODE_FINLAND, COUNTRYCODE_ESTLAND -> AND_FINISH;
+            case COUNTRYCODE_NETHERLANDS -> AND_DUTCH;
+            case COUNTRYCODE_SWEDEN -> AND_SWEDISH;
+            case COUNTRYCODE_POLAND -> AND_POLISH;
+            case COUNTRYCODE_SPAIN -> AND_SPANISH;
+            case COUNTRYCODE_PORTUGAL, COUNTRYCODE_ITALY -> AND_ITALIAN_PORTUGUESE;
+            default -> AND_NORWEGIAN;
+        };
         libraryName = libraryName.replace(AMPERSAND, ampersand); // replace & with " og "
         return libraryName;
     }
