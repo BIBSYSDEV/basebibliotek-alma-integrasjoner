@@ -38,6 +38,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent, List<List<String>>> {
 
     public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_EXPORT_URL";

@@ -2,7 +2,7 @@
 junit = { strictly = '5.8.2' }
 nva-commons = { strictly = '1.25.20' }
 jackson = { require = '2.13.3' }
-mockito = { strictly = '4.5.1' }
+mockito = { strictly = '5.14.2' }
 hamcrest = { strictly = '2.2' }
 aws-lambda-java-core = { strictly = '1.2.1' }
 aws-lambda-java-events = { strictly = '3.11.0' }

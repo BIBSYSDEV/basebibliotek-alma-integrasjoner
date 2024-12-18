@@ -43,10 +43,10 @@ public class UserGroupConverter {
     @JacocoGenerated
     @SuppressWarnings({
         "PMD.AvoidLiteralsInIfCondition",
-        "PMD.DataflowAnomalyAnalysis",
         "PMD.CognitiveComplexity",
         "PMD.NPathComplexity",
         "PMD.CollapsibleIfStatements",
+        "PMD.NullAssignment"
     })
     public static BibKategori konverterBibKategori(String libnr, String kundeType) {
         if (libnr == null) {

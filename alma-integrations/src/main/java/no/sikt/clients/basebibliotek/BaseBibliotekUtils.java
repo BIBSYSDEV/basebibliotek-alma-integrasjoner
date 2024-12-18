@@ -15,19 +15,11 @@ public final class BaseBibliotekUtils {
     }
 
     public static boolean isNorwegian(final Record record) {
-        if (Objects.nonNull(record.getLandkode())) {
-            return COUNTRY_CODE_NORWEGIAN.equalsIgnoreCase(record.getLandkode());
-        } else {
-            return false;
-        }
+        return COUNTRY_CODE_NORWEGIAN.equalsIgnoreCase(record.getLandkode());
     }
 
     public static boolean isAlmaOrBibsysLibrary(final Record record) {
-        if (Objects.nonNull(record.getKatsyst())) {
-            return isAlmaOrBibsysLibrary(record.getKatsyst());
-        } else {
-            return false;
-        }
+        return Objects.nonNull(record.getKatsyst()) && isAlmaOrBibsysLibrary(record.getKatsyst());
     }
 
     public static boolean isAlmaOrBibsysLibrary(final String katsyst) {

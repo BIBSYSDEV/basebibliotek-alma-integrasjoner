@@ -31,7 +31,7 @@ import nva.commons.core.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings("PMD.GodClass")
+@SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
 public class UserConverter extends AlmaObjectConverter {
 
     public static final String COUNTRYCODE_NORWAY = "NO";

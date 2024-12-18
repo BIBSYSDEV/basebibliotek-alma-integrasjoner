@@ -203,7 +203,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         }
     }
 
-    private static class AlmaCodeAlmaApiKeyPair {
+    private static final class AlmaCodeAlmaApiKeyPair {
 
         @JsonProperty("almaCode")
         private transient String almaCode;

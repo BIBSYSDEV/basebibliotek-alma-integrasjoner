@@ -1,27 +1,27 @@
 version: 0.2
 
-env:
-  shell: bash
+#env:
+  #shell: bash
 
 phases:
 
   install:
     runtime-versions:
-      java: corretto11
-      ruby: 2.6
+      java: corretto21
+      #ruby: 2.6
     commands:
-      - pip3 install --upgrade cfn-lint
+      #- pip3 install --upgrade cfn-lint
       # Upgrade AWS CLI to the latest version
       # Install aws-sam-cli
-      - pip3 install aws-sam-cli
+      - pip3 install aws-sam-cli -U
       # Install cfn_nag
-      - gem install cfn-nag
+      #- gem install cfn-nag
 
-  pre_build:
-    commands:
-      - echo "pre_build steps for revision ${CODEBUILD_RESOLVED_SOURCE_VERSION}..."
-      - env
-      - aws --version
+  #pre_build:
+    #commands:
+      #- echo "pre_build steps for revision ${CODEBUILD_RESOLVED_SOURCE_VERSION}..."
+      #- env
+      #- aws --version
 
 
   build:
@@ -31,11 +31,11 @@ phases:
       - sam build
       - sam package --s3-bucket $S3_BUCKET --output-template-file packaged.yml
 
-    post_build:
-      commands:
-        - echo Build completed on `date`
-        - echo Files
-        - ls -l
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Files
+      - ls -l
 
 artifacts:
   files:

@@ -19,8 +19,8 @@ group 'no.sikt'
 version '1.0-SNAPSHOT'
 
 java {
-    java.sourceCompatibility = JavaVersion.VERSION_11
-    java.targetCompatibility = JavaVersion.VERSION_11
+    java.sourceCompatibility = JavaVersion.VERSION_21
+    java.targetCompatibility = JavaVersion.VERSION_21
 }
 
 wrapper {
