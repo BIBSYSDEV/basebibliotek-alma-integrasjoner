@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'com.github.johnrengelman.shadow'
-    id 'nebula.lint' // Move to subprojects excluding auto generated ones?
+    id 'nebula.lint'
     id 'jacoco-report-aggregation'
 }
 
@@ -33,7 +33,7 @@ subprojects {
 
             jacocoTestReport {
                 reports {
-                    html.destination file("${layout.buildDirectory.asFile.get()}/reports/jacoco")
+                    html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco"))
                 }
             }
 
