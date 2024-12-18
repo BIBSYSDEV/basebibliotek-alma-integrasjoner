@@ -5,14 +5,17 @@ version '1.0-SNAPSHOT'
 dependencies {
 
     testImplementation libs.bundles.testing
+    testImplementation libs.aws.http.client.spi
     testRuntimeOnly libs.junit.jupiter.engine
 
     implementation libs.bundles.aws.lambda
     implementation libs.aws.sdk2.s3
+    implementation libs.aws.sdk.core
     implementation libs.bundles.logging
     implementation libs.nva.commons.core
     implementation libs.nva.s3
     implementation libs.nva.language
+    implementation libs.jakarta.xml.bind
 
     implementation project(path: ":basebibliotek-generated", configuration: 'default')
 

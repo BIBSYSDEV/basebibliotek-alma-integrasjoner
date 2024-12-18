@@ -12,11 +12,12 @@ log4jApi = { strictly = '2.17.2' }
 slf4j = { require = '1.7.36' }
 slf4j-impl = { strictly = '2.17.2' }
 nva-language = { strictly = '1.0' }
-awsSdk2 = { strictly = '2.17.191' }
 wiremock = { strictly = '2.33.2' }
 jaxb = { strictly = '4.0.2' }
 gson = { strictly = '2.10.1' }
 apache-commons = { strictly = '3.12.0' }
+xml-bind = { strictly = '4.0.0' }
+aws-sdk = { strictly = '2.17.191' }
 
 # Jaxb group
 jaxb-xjc = { strictly = '4.0.2' }
@@ -48,12 +49,19 @@ nva-s3 = { group = 'com.github.bibsysdev', name = 's3', version.ref = 'nva-commo
 nva-language = { group = 'com.github.bibsysdev', name = 'nva-language', version.ref = 'nva-language' }
 
 jackson-databind = { group = 'com.fasterxml.jackson.core', name = 'jackson-databind', version.ref = 'jackson' }
+jackson-annotations = { group = 'com.fasterxml.jackson.core', name = 'jackson-annotations', version.ref = 'jackson' }
+jackson-core = { group = 'com.fasterxml.jackson.core', name = 'jackson-core', version.ref = 'jackson' }
 
 aws-lambda-java-core = { group = 'com.amazonaws', name = 'aws-lambda-java-core', version.ref = 'aws-lambda-java-core' }
 aws-lambda-java-events = { group = 'com.amazonaws', name = 'aws-lambda-java-events', version.ref = 'aws-lambda-java-events' }
 aws-lambda-java-log4j2 = { group = 'com.amazonaws', name = 'aws-lambda-java-log4j2', version.ref = 'aws-lambda-java-log4j2' }
-aws-sdk2-secrets = { group = 'software.amazon.awssdk', name = 'secretsmanager', version.ref = 'awsSdk2' }
-aws-sdk2-s3 = { group = 'software.amazon.awssdk', name = 's3', version.ref = 'awsSdk2' }
+aws-sdk2-secrets = { group = 'software.amazon.awssdk', name = 'secretsmanager', version.ref = 'aws-sdk' }
+aws-sdk2-s3 = { group = 'software.amazon.awssdk', name = 's3', version.ref = 'aws-sdk' }
+aws-sdk-core = { group = 'software.amazon.awssdk', name = 'sdk-core', version.ref = 'aws-sdk' }
+aws-core = { group = 'software.amazon.awssdk', name = 'aws-core', version.ref = 'aws-sdk' }
+aws-regions = { group = 'software.amazon.awssdk', name = 'regions', version.ref = 'aws-sdk' }
+aws-utils = { group = 'software.amazon.awssdk', name = 'utils', version.ref = 'aws-sdk' }
+aws-http-client-spi = { group = 'software.amazon.awssdk', name = 'http-client-spi', version.ref = 'aws-sdk' }
 
 log4j-api = { group = 'org.apache.logging.log4j', name = 'log4j-api', version.ref = 'log4jApi' }
 log4j-core = { group = 'org.apache.logging.log4j', name = 'log4j-core', version.ref = 'log4j' }
@@ -65,6 +73,8 @@ jaxb-runtime = { group = 'org.glassfish.jaxb', name = 'jaxb-runtime', version.re
 google-gson = { group = 'com.google.code.gson', name = 'gson', version.ref = 'gson' }
 
 apache-commons-lang3 = { group = 'org.apache.commons', name = 'commons-lang3', version.ref = 'apache-commons' }
+
+jakarta-xml-bind = { group = 'jakarta.xml.bind', name = 'jakarta.xml.bind-api', version.ref = 'xml-bind' }
 
 # Jaxb group
 jaxb-xjc = { group = 'com.sun.xml.bind', name = 'jaxb-xjc', version.ref = 'jaxb-xjc' }
