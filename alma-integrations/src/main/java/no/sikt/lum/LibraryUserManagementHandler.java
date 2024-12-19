@@ -63,6 +63,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     private final transient Map<String, List<User>> usersPerAlmaInstanceMap = new ConcurrentHashMap<>();
 
     @JacocoGenerated
+    @SuppressWarnings("unused")
     public LibraryUserManagementHandler() {
         this(S3Driver.defaultS3Client().build(), new Environment(), SecretsManagerClient.builder()
                                                                         .region(Region.EU_WEST_1)
@@ -203,7 +204,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         }
     }
 
-    private static class AlmaCodeAlmaApiKeyPair {
+    private static final class AlmaCodeAlmaApiKeyPair {
 
         @JsonProperty("almaCode")
         private transient String almaCode;
