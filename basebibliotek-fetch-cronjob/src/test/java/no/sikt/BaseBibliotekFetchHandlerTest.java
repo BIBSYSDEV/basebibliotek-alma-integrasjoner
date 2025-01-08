@@ -5,7 +5,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static no.sikt.BasebibliotekFetchHandler.NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -21,8 +20,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.ScheduledEvent;
-import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.http.HttpClient;
@@ -37,7 +37,6 @@ import nva.commons.core.ioutils.IoUtils;
 import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
 import org.hamcrest.core.Every;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
@@ -46,6 +45,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+@WireMockTest(httpsEnabled = true)
 public class BaseBibliotekFetchHandlerTest {
 
     public static final String BASEBIBLIOTEK_REDACTED_INCREMENTAL_1_XML = "basebibliotek_redacted_incremental_1.xml";
@@ -57,20 +57,18 @@ public class BaseBibliotekFetchHandlerTest {
     private static final String BASEBIBLIOTEK_BB_2022_04_27_XML = "bb-2022-04-27.xml";
     private static final String BASEBIBLIOTEK_BB_2022_05_04_XML = "bb-2022-05-04.xml";
     private static final String BASEBIBLIOTEK_BB_FULL_XML = "bb-full.xml";
-    private transient WireMockServer httpServer;
     private transient BasebibliotekFetchHandler baseBibliotekFetchHandler;
     private transient S3Client s3Client;
 
     private transient TestAppender appender;
 
     @BeforeEach
-    public void init() {
+    public void init(WireMockRuntimeInfo runtimeInfo) {
         appender = LogUtils.getTestingAppenderForRootLogger();
         s3Client = mock(S3Client.class);
-        startWiremockServer();
         Environment environment = mock(Environment.class);
         when(environment.readEnv(BasebibliotekFetchHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).thenReturn(
-            httpServer.baseUrl()
+            runtimeInfo.getHttpBaseUrl()
             + BIBLIOTEK_EKSPORT_BIBLEV_PATH);
         when(environment.readEnv(BasebibliotekFetchHandler.BASEBIBLILOTEK_USERNAME_ENVIRONMENT_NAME)).thenReturn(
             "ignored");
@@ -79,11 +77,6 @@ public class BaseBibliotekFetchHandlerTest {
         when(environment.readEnv(BasebibliotekFetchHandler.S3_BUCKET_ENVIRONMENT_NAME)).thenReturn(S3_BUCKET_NAME);
         HttpClient httpClient = WiremockHttpClient.create();
         baseBibliotekFetchHandler = new BasebibliotekFetchHandler(s3Client, httpClient, environment);
-    }
-
-    @AfterEach
-    public void tearDown() {
-        httpServer.stop();
     }
 
     @Test
@@ -222,11 +215,6 @@ public class BaseBibliotekFetchHandlerTest {
                    Every.everyItem(hasSize(lessThanOrEqualTo(NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE))));
         //Check that baseBibliotekFetchHandler has not split bibNrs unnecessary.
         assertThat(listOfBibNr, hasSize(equalTo(expectedNumbersOfLibrariesFiles)));
-    }
-
-    private void startWiremockServer() {
-        httpServer = new WireMockServer(options().dynamicHttpsPort());
-        httpServer.start();
     }
 
     private void mockedGetRequestThatReturnsSpecifiedResponse(String response) {

@@ -1,6 +1,6 @@
 [versions]
-junit = { strictly = '5.8.2' }
-nva-commons = { strictly = '1.25.20' }
+junit = { strictly = '5.11.3' }
+nva-commons = { strictly = '1.41.3' }
 jackson = { require = '2.13.3' }
 mockito = { strictly = '5.14.2' }
 hamcrest = { strictly = '2.2' }
@@ -12,7 +12,7 @@ log4jApi = { strictly = '2.17.2' }
 slf4j = { require = '1.7.36' }
 slf4j-impl = { strictly = '2.17.2' }
 nva-language = { strictly = '1.0' }
-wiremock = { strictly = '2.33.2' }
+wiremock = { strictly = '3.10.0' }
 jaxb = { strictly = '4.0.2' }
 gson = { strictly = '2.10.1' }
 apache-commons = { strictly = '3.12.0' }
@@ -40,7 +40,8 @@ hamcrest-core = { group = 'org.hamcrest', name = 'hamcrest-core', version.ref = 
 nva-testutils = { group = 'com.github.bibsysdev', name = 'nvatestutils', version.ref = 'nva-commons' }
 nva-logutils = { group = 'com.github.bibsysdev', name = 'logutils', version.ref = 'nva-commons' }
 
-wiremock = { group = 'com.github.tomakehurst', name = 'wiremock-jre8', version.ref = 'wiremock' }
+wiremock = { group = 'org.wiremock', name = 'wiremock', version.ref = 'wiremock' }
+wiremock-jetty12 = { group = 'org.wiremock', name = 'wiremock-jetty12', version.ref = 'wiremock' }
 
 #Regular
 
@@ -87,4 +88,4 @@ activation-api = { group = 'javax.activation', name = 'javax.activation-api', ve
 jaxb-group = [ 'jaxb-xjc', 'jaxb-impl', 'jaxb-api', 'activation-api' ]
 logging = [ 'log4j-api', 'log4j-core', 'slf4j-api', 'log4j-slf4j-impl' ]
 aws-lambda = [ 'aws-lambda-java-core', 'aws-lambda-java-events', 'aws-lambda-java-log4j2' ]
-testing = [ 'junit-jupiter-api', 'junit-jupiter-params', 'mockito-core', 'hamcrest', 'hamcrest-core', 'nva-testutils', 'nva-logutils', 'wiremock' ]
+testing = [ 'junit-jupiter-api', 'junit-jupiter-params', 'mockito-core', 'hamcrest', 'hamcrest-core', 'nva-testutils', 'nva-logutils' ]
