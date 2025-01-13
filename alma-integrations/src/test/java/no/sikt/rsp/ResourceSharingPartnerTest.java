@@ -28,8 +28,8 @@ import static test.utils.HandlerTestUtils.createS3Event;
 import static test.utils.HandlerTestUtils.randomS3Path;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Path;
@@ -71,8 +71,6 @@ import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
 import org.hamcrest.core.IsNull;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -87,6 +85,7 @@ import test.utils.RecordBuilder;
 import test.utils.RecordSpecification;
 import test.utils.WireMocker;
 
+@WireMockTest
 public class ResourceSharingPartnerTest {
 
     public static final int ILL_SERVER_PORT = 9001;
@@ -115,31 +114,15 @@ public class ResourceSharingPartnerTest {
     private transient FakeS3Client s3Client;
     private transient S3Driver s3Driver;
     private transient ResourceSharingPartnerHandler resourceSharingPartnerHandler;
-    private static WireMockServer wireMockServer;
-
-    @BeforeAll
-    public static void setUp() {
-        wireMockServer = new WireMockServer(
-            WireMockConfiguration.options()
-                .http2PlainDisabled(true)
-                .http2TlsDisabled(true)
-        );
-        wireMockServer.start();
-    }
-
-    @AfterAll
-    public static void tearDown() {
-        wireMockServer.stop();
-    }
 
     @BeforeEach
-    public void init() throws IOException {
+    public void init(WireMockRuntimeInfo wmInfo) throws IOException {
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_API_HOST)).thenReturn(
-            UriWrapper.fromUri(wireMockServer.baseUrl()).toString());
+            UriWrapper.fromUri(wmInfo.getHttpBaseUrl()).toString());
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).thenReturn(
-            UriWrapper.fromUri(wireMockServer.baseUrl()).addChild(BIBLIOTEK_REST_PATH).toString());
+            UriWrapper.fromUri(wmInfo.getHttpBaseUrl()).addChild(BIBLIOTEK_REST_PATH).toString());
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.SHARED_CONFIG_BUCKET_NAME_ENV_NAME)).thenReturn(
             SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
         when(mockedEnvironment.readEnv(

@@ -64,7 +64,6 @@ import nva.commons.logutils.TestAppender;
 import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.collection.IsCollectionWithSize;
 import org.hamcrest.core.IsNull;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
@@ -77,7 +76,6 @@ import test.utils.RecordBuilder;
 import test.utils.RecordSpecification;
 import test.utils.WireMocker;
 
-@SuppressWarnings({"PMD.DataflowAnomalyAnalysis", "PMD.AvoidDuplicateLiterals"})
 @WireMockTest
 class LibraryUserManagementHandlerTest {
 
@@ -134,10 +132,6 @@ class LibraryUserManagementHandlerTest {
         s3Driver.insertFile(UnixPath.of(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH), fullLibCodeToAlmaCodeMapping);
         libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client, mockedEnvironment,
                                                                         secretsManagerClient);
-    }
-
-    @AfterEach
-    public void tearDown() {
     }
 
     @Test

@@ -45,7 +45,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-@WireMockTest(httpsEnabled = true)
+@WireMockTest
 public class BaseBibliotekFetchHandlerTest {
 
     public static final String BASEBIBLIOTEK_REDACTED_INCREMENTAL_1_XML = "basebibliotek_redacted_incremental_1.xml";
