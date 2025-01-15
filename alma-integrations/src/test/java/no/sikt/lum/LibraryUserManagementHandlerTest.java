@@ -50,6 +50,7 @@ import no.sikt.alma.user.generated.Phones;
 import no.sikt.alma.user.generated.User;
 import no.sikt.clients.alma.HttpUrlConnectionAlmaUserUpserter;
 import no.sikt.clients.basebibliotek.BaseBibliotekUtils;
+import no.sikt.clients.basebibliotek.HttpUrlConnectionBaseBibliotekApi;
 import no.sikt.commons.HandlerUtils;
 import no.sikt.rsp.AlmaCodeProvider;
 import no.sikt.rsp.LibCodeToAlmaCodeEntry;
@@ -60,7 +61,6 @@ import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
-import nva.commons.logutils.TestAppender;
 import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.collection.IsCollectionWithSize;
 import org.hamcrest.core.IsNull;
@@ -171,7 +171,7 @@ class LibraryUserManagementHandlerTest {
         s3Client = new FakeS3ClientThrowingException(expectedMessage);
         libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client, mockedEnvironment,
                                                                         secretsManagerClient);
-        var appender = LogUtils.getTestingAppenderForRootLogger();
+        var appender = LogUtils.getTestingAppender(LibraryUserManagementHandler.class);
         assertThrows(RuntimeException.class, () -> libraryUserManagementHandler.handleRequest(s3Event, CONTEXT));
         assertThat(appender.getMessages(), containsString(expectedMessage));
     }
@@ -251,7 +251,7 @@ class LibraryUserManagementHandlerTest {
         final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
         libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client, mockedEnvironment,
                                                                         secretsManagerClient);
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(LibraryUserManagementHandler.class);
         assertThrows(RuntimeException.class, () -> libraryUserManagementHandler.handleRequest(s3Event, CONTEXT));
         assertThat(appender.getMessages(), containsString(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH));
     }
@@ -272,7 +272,7 @@ class LibraryUserManagementHandlerTest {
                             IoUtils.stringFromResources(Path.of("emptyLibCodeToAlmaCodeMapping.json")));
         libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client, mockedEnvironment,
                                                                         secretsManagerClient);
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(LibraryUserManagementHandler.class);
         assertThrows(RuntimeException.class, () -> libraryUserManagementHandler.handleRequest(s3Event, CONTEXT));
         assertThat(appender.getMessages(), containsString(AlmaCodeProvider.EMPTY_MAPPING_TABLE_MESSAGE));
     }
@@ -293,7 +293,7 @@ class LibraryUserManagementHandlerTest {
                             IoUtils.stringFromResources(Path.of("invalidLibCodeToAlmaCodeMapping.json")));
         libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client, mockedEnvironment,
                                                                         secretsManagerClient);
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(LibraryUserManagementHandler.class);
         assertThrows(RuntimeException.class, () -> libraryUserManagementHandler.handleRequest(s3Event, CONTEXT));
         assertThat(appender.getMessages(), containsString(LibCodeToAlmaCodeEntry.FIELD_IS_NULL_OR_EMPTY_MESSAGE));
     }
@@ -306,7 +306,7 @@ class LibraryUserManagementHandlerTest {
             UriWrapper.fromUri("http://localhost:9999").toString());
         libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client, mockedEnvironment,
                                                                         secretsManagerClient);
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionBaseBibliotekApi.class);
         final Integer count = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
         assertThat(count, is(0));
         assertThat(appender.getMessages(), containsString(LOG_MESSAGE_COMMUNICATION_PROBLEM));
@@ -323,7 +323,7 @@ class LibraryUserManagementHandlerTest {
                                   .build();
         var s3Event = prepareBaseBibliotekFromRecords(record);
         WireMocker.mockAlmaGetResponseBadRequestNotUserNotFound(LIB_0030100_ID);
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaUserUpserter.class);
         final Integer count = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
         assertThat(count, is(0));
         assertThat(appender.getMessages(),
@@ -343,7 +343,7 @@ class LibraryUserManagementHandlerTest {
         var s3Event = prepareBaseBibliotekFromRecords(record);
         WireMocker.mockAlmaGetResponseUserNotFound(LIB_0030100_ID);
         WireMocker.mockAlmaPostResponseBadRequest();
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaUserUpserter.class);
         final Integer count = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
         assertThat(count, is(0));
         assertThat(appender.getMessages(),
@@ -360,12 +360,10 @@ class LibraryUserManagementHandlerTest {
                                   .withInst(INST)
                                   .withBiblType("FBI")
                                   .build();
-        var
-            s3Event = prepareBaseBibliotekFromRecords(record);
+        var s3Event = prepareBaseBibliotekFromRecords(record);
         WireMocker.mockAlmaGetResponse(LIB_0030100_ID);
         WireMocker.mockAlmaPutResponseBadRequest(LIB_0030100_ID);
-        final TestAppender appender =
-            LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaUserUpserter.class);
         final Integer count = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
         assertThat(count, is(0));
         assertThat(appender.getMessages(), containsString(

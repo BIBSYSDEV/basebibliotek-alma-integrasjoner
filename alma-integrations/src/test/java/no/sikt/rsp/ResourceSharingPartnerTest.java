@@ -60,6 +60,7 @@ import no.sikt.alma.partners.generated.ProfileType;
 import no.sikt.alma.partners.generated.Status;
 import no.sikt.clients.alma.HttpUrlConnectionAlmaPartnerUpserter;
 import no.sikt.clients.basebibliotek.BaseBibliotekUtils;
+import no.sikt.clients.basebibliotek.HttpUrlConnectionBaseBibliotekApi;
 import no.sikt.commons.HandlerUtils;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
@@ -69,7 +70,6 @@ import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
-import nva.commons.logutils.TestAppender;
 import org.hamcrest.core.IsNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -179,7 +179,7 @@ public class ResourceSharingPartnerTest {
         var expectedMessage = randomString();
         s3Client = new FakeS3ClientThrowingException(expectedMessage);
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
-        var appender = LogUtils.getTestingAppenderForRootLogger();
+        var appender = LogUtils.getTestingAppender(ResourceSharingPartnerHandler.class);
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
         assertThat(appender.getMessages(), containsString(expectedMessage));
     }
@@ -251,7 +251,7 @@ public class ResourceSharingPartnerTest {
 
         final List<Record> generatedRecords = new ArrayList<>();
         final S3Event s3Event = prepareBaseBibliotekFromRecordSpecifications(generatedRecords, recordSpecification);
-        var appender = LogUtils.getTestingAppenderForRootLogger();
+        var appender = LogUtils.getTestingAppender(ResourceSharingPartnerHandler.class);
         var expectedLogMessage = "Could not convert record, missing landkode, record";
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
@@ -626,7 +626,7 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
 
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(ResourceSharingPartnerHandler.class);
 
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
 
@@ -657,7 +657,7 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
 
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(ResourceSharingPartnerHandler.class);
 
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
 
@@ -688,7 +688,7 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
 
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(ResourceSharingPartnerHandler.class);
 
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
 
@@ -739,7 +739,7 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
 
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionBaseBibliotekApi.class);
 
         final Integer count = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -761,7 +761,7 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
 
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaPartnerUpserter.class);
 
         final Integer count = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -783,7 +783,7 @@ public class ResourceSharingPartnerTest {
 
         WireMocker.mockAlmaGetResponseBadRequestNotPartnerNotFound(NO_0030100_ID);
 
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaPartnerUpserter.class);
 
         final Integer count = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -806,7 +806,7 @@ public class ResourceSharingPartnerTest {
         WireMocker.mockAlmaGetResponsePartnerNotFound(NO_0030100_ID);
         WireMocker.mockAlmaPostResponseBadRequest();
 
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaPartnerUpserter.class);
 
         final Integer count = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -829,7 +829,7 @@ public class ResourceSharingPartnerTest {
         WireMocker.mockAlmaGetResponse(NO_0030100_ID);
         WireMocker.mockAlmaPutResponseBadRequest(NO_0030100_ID);
 
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaPartnerUpserter.class);
 
         final Integer count = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 

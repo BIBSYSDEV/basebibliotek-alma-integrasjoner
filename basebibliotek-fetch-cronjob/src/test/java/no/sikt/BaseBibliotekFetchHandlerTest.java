@@ -64,7 +64,7 @@ public class BaseBibliotekFetchHandlerTest {
 
     @BeforeEach
     public void init(WireMockRuntimeInfo runtimeInfo) {
-        appender = LogUtils.getTestingAppenderForRootLogger();
+        appender = LogUtils.getTestingAppender(BasebibliotekFetchHandler.class);
         s3Client = mock(S3Client.class);
         Environment environment = mock(Environment.class);
         when(environment.readEnv(BasebibliotekFetchHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).thenReturn(
