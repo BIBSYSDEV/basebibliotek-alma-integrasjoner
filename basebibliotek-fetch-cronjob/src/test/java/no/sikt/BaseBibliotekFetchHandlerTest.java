@@ -63,12 +63,12 @@ public class BaseBibliotekFetchHandlerTest {
     private transient TestAppender appender;
 
     @BeforeEach
-    public void init(WireMockRuntimeInfo runtimeInfo) {
+    public void init(WireMockRuntimeInfo wireMockInfo) {
         appender = LogUtils.getTestingAppender(BasebibliotekFetchHandler.class);
         s3Client = mock(S3Client.class);
         Environment environment = mock(Environment.class);
         when(environment.readEnv(BasebibliotekFetchHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).thenReturn(
-            runtimeInfo.getHttpBaseUrl()
+            wireMockInfo.getHttpBaseUrl()
             + BIBLIOTEK_EKSPORT_BIBLEV_PATH);
         when(environment.readEnv(BasebibliotekFetchHandler.BASEBIBLILOTEK_USERNAME_ENVIRONMENT_NAME)).thenReturn(
             "ignored");

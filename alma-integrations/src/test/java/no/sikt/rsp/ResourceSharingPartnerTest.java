@@ -116,13 +116,13 @@ public class ResourceSharingPartnerTest {
     private transient ResourceSharingPartnerHandler resourceSharingPartnerHandler;
 
     @BeforeEach
-    public void init(WireMockRuntimeInfo wmInfo) throws IOException {
+    public void init(WireMockRuntimeInfo wireMockInfo) throws IOException {
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_API_HOST)).thenReturn(
-            UriWrapper.fromUri(wmInfo.getHttpBaseUrl()).toString());
+            UriWrapper.fromUri(wireMockInfo.getHttpBaseUrl()).toString());
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).thenReturn(
-            UriWrapper.fromUri(wmInfo.getHttpBaseUrl()).addChild(BIBLIOTEK_REST_PATH).toString());
+            UriWrapper.fromUri(wireMockInfo.getHttpBaseUrl()).addChild(BIBLIOTEK_REST_PATH).toString());
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.SHARED_CONFIG_BUCKET_NAME_ENV_NAME)).thenReturn(
             SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
         when(mockedEnvironment.readEnv(
