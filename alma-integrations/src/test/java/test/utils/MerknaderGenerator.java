@@ -41,32 +41,20 @@ public final class MerknaderGenerator {
     }
 
     private static Object randomAdgangOrBetalMrkOrFjGen(int index) {
-        switch (index % 12) {
-            case 0:
-                return randomAdgang();
-            case 1:
-                return randomBetalMrk();
-            case 2:
-                return randomFjGen();
-            case 3:
-                return randomFjMrk();
-            case 4:
-                return randomFjSpes();
-            case 5:
-                return randomIndSyst();
-            case 6:
-                return randomKlass();
-            case 7:
-                return randomKlassNoter();
-            case 8:
-                return randomKopGeb();
-            case 9:
-                return randomKopMrk();
-            case 10:
-                return randomOmtale();
-            default:
-                return randomSpesSaml();
-        }
+        return switch (index % 12) {
+            case 0 -> randomAdgang();
+            case 1 -> randomBetalMrk();
+            case 2 -> randomFjGen();
+            case 3 -> randomFjMrk();
+            case 4 -> randomFjSpes();
+            case 5 -> randomIndSyst();
+            case 6 -> randomKlass();
+            case 7 -> randomKlassNoter();
+            case 8 -> randomKopGeb();
+            case 9 -> randomKopMrk();
+            case 10 -> randomOmtale();
+            default -> randomSpesSaml();
+        };
     }
 
     private static Omtale randomOmtale() {

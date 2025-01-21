@@ -101,14 +101,13 @@ class LibraryUserManagementHandlerTest {
     private transient int numberOfAlmaInstances;
 
     private transient SecretsManagerClient secretsManagerClient;
-    private transient GetSecretValueResponse getSecretValueResponse;
 
     @BeforeEach
     public void init(final WireMockRuntimeInfo wmRuntimeInfo) throws IOException {
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
         secretsManagerClient = mock(SecretsManagerClient.class);
-        getSecretValueResponse = mock(GetSecretValueResponse.class);
+        var getSecretValueResponse = mock(GetSecretValueResponse.class);
 
         when(mockedEnvironment.readEnv(LibraryUserManagementHandler.ALMA_API_HOST)).thenReturn(
             UriWrapper.fromUri(wmRuntimeInfo.getHttpBaseUrl()).toString());
@@ -215,7 +214,7 @@ class LibraryUserManagementHandlerTest {
         libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
         var users = libraryUserManagementHandler.getUsers();
         Entry<String, List<User>> entry = users.entrySet().iterator().next();
-        assertContactInfo(entry.getValue().get(0).getContactInfo(), basebibliotek.getRecord().get(0));
+        assertContactInfo(entry.getValue().getFirst().getContactInfo(), basebibliotek.getRecord().getFirst());
     }
 
     @Test
@@ -521,7 +520,7 @@ class LibraryUserManagementHandlerTest {
         assertThat(email, is(IsNull.notNullValue()));
         assertThat(email.getEmailTypes().getEmailType(), IsCollectionWithSize.hasSize(1));
         var expectedEmailType = ContactInfoConverter.WORK;
-        assertThat(email.getEmailTypes().getEmailType().get(0).getDesc(), is(equalTo(expectedEmailType)));
+        assertThat(email.getEmailTypes().getEmailType().getFirst().getDesc(), is(equalTo(expectedEmailType)));
         var expectedEmailAddress = Objects.nonNull(emailAddress) ? emailAddress : EMPTY_STRING;
         assertThat(email.getEmailAddress(), is(equalTo(expectedEmailAddress)));
         assertThat(email.isPreferred(), is(equalTo(shouldBePreferred)));
@@ -533,10 +532,10 @@ class LibraryUserManagementHandlerTest {
 
     private void assertPhone(Phones phones, Record record) {
         assertThat(phones.getPhone(), IsCollectionWithSize.hasSize(1));
-        var phone = phones.getPhone().get(0);
+        var phone = phones.getPhone().getFirst();
         assertThat(phone.isPreferred(), is(equalTo(true)));
         assertThat(phone.getPhoneTypes().getPhoneType(), IsCollectionWithSize.hasSize(1));
-        assertThat(phone.getPhoneTypes().getPhoneType().get(0).getDesc(), is(equalTo(ContactInfoConverter.OFFICE)));
+        assertThat(phone.getPhoneTypes().getPhoneType().getFirst().getDesc(), is(equalTo(ContactInfoConverter.OFFICE)));
         if (nva.commons.core.StringUtils.isEmpty(record.getTlf())) {
             assertThat(phone.getPhoneNumber(), is(equalTo(EMPTY_STRING)));
         } else {
@@ -590,7 +589,7 @@ class LibraryUserManagementHandlerTest {
         assertThat(address.getCountry().getValue(), is(equalTo(expectedCountry.toUpperCase(Locale.ROOT))));
         var expectedAddressType = ContactInfoConverter.WORK;
         assertThat(address.getAddressTypes().getAddressType(), IsCollectionWithSize.hasSize(1));
-        assertThat(address.getAddressTypes().getAddressType().get(0).getDesc(), is(equalTo(expectedAddressType)));
+        assertThat(address.getAddressTypes().getAddressType().getFirst().getDesc(), is(equalTo(expectedAddressType)));
     }
 
     private boolean hasLine1CorrespondingToRecord(Address address, String recordAddr) {

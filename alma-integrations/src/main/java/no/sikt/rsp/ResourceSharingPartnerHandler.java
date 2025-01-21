@@ -55,6 +55,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     private final transient BaseBibliotekApi baseBibliotekApi;
 
     @JacocoGenerated
+    @SuppressWarnings("unused")
     public ResourceSharingPartnerHandler() {
         this(S3Driver.defaultS3Client().build(), new Environment());
     }
@@ -142,7 +143,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
                 //Errors in individual libraries should not cause crash in entire execution.
                 logger.info(COULD_NOT_CONVERT_TO_PARTNER_ERROR_MESSAGE, e);
                 reportStringBuilder
-                    .append(baseBibliotek.getRecord().get(0).getBibnr())
+                    .append(baseBibliotek.getRecord().getFirst().getBibnr())
                     .append(COULD_NOT_CONVERT_TO_PARTNER_REPORT_MESSAGE);
             }
         }

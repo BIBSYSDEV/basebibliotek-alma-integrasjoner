@@ -214,7 +214,7 @@ public class ResourceSharingPartnerTest {
                                   .build();
         final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
-        var contactInfo = resourceSharingPartnerHandler.getPartners().get(0).getContactInfo();
+        var contactInfo = resourceSharingPartnerHandler.getPartners().getFirst().getContactInfo();
         assertContactInfo(contactInfo, record, alpha3Code);
     }
 
@@ -236,7 +236,7 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), nationalDepotLibraryBibNr);
         var s3Event = createS3Event(uri);
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
-        var partnerDetails = resourceSharingPartnerHandler.getPartners().get(0).getPartnerDetails();
+        var partnerDetails = resourceSharingPartnerHandler.getPartners().getFirst().getPartnerDetails();
 
         assertThat(partnerDetails.getInstitutionCode(), is(NATIONAL_DEPOT_LIBRARY_INSTITUTION_CODE));
         assertThat(partnerDetails.getLocateProfile().getValue(), is(NATIONAL_DEPOT_LIBRARY_LOCATE_PROFILE_VALUE));
@@ -261,12 +261,12 @@ public class ResourceSharingPartnerTest {
         if (yieldsError) {
             assertThat(appender.getMessages(), containsString(expectedLogMessage));
         } else {
-            var recordWithoutIsilButContainingBibNrAndLandKode = generatedRecords.get(0);
+            var recordWithoutIsilButContainingBibNrAndLandKode = generatedRecords.getFirst();
             var expectedCraftedPartnerCode = recordWithoutIsilButContainingBibNrAndLandKode.getLandkode()
                                                  .toUpperCase(Locale.ROOT)
                                              + "-"
                                              + recordWithoutIsilButContainingBibNrAndLandKode.getBibnr();
-            assertThat(partners.get(0).getPartnerDetails().getCode(), is(equalTo(expectedCraftedPartnerCode)));
+            assertThat(partners.getFirst().getPartnerDetails().getCode(), is(equalTo(expectedCraftedPartnerCode)));
         }
     }
 
@@ -293,16 +293,16 @@ public class ResourceSharingPartnerTest {
 
         var expectedHoldingCode =
             isAlmaOrBibsys ? BIBNR_RESOLVABLE_TO_ALMA_CODE : null;
-        assertThat(partners.get(0).getPartnerDetails().getHoldingCode(), is(equalTo(expectedHoldingCode)));
+        assertThat(partners.getFirst().getPartnerDetails().getHoldingCode(), is(equalTo(expectedHoldingCode)));
 
         var expectedSystemTypeValueValue =
             isAlmaOrBibsys ? PartnerConverter.SYSTEM_TYPE_VALUE_ALMA : PartnerConverter.SYSTEM_TYPE_VALUE_OTHER;
-        assertThat(partners.get(0).getPartnerDetails().getSystemType().getValue(),
+        assertThat(partners.getFirst().getPartnerDetails().getSystemType().getValue(),
                    is(equalTo(expectedSystemTypeValueValue)));
 
         var expectedSystemTypeValueDesc = isAlmaOrBibsys ? PartnerConverter.SYSTEM_TYPE_DESC_ALMA
                                               : PartnerConverter.SYSTEM_TYPE_DESC_OTHER;
-        assertThat(partners.get(0).getPartnerDetails().getSystemType().getDesc(),
+        assertThat(partners.getFirst().getPartnerDetails().getSystemType().getDesc(),
                    is(equalTo(expectedSystemTypeValueDesc)));
     }
 
@@ -324,7 +324,7 @@ public class ResourceSharingPartnerTest {
         final List<Partner> partners = resourceSharingPartnerHandler.getPartners();
 
         // we should have only ony partner from the one record we have:
-        final Partner partner = partners.get(0);
+        final Partner partner = partners.getFirst();
 
         assertIsoProfileDetailsPopulatedCorrectly(partner, record.getLandkode(), record.getBibnr());
     }
@@ -351,7 +351,7 @@ public class ResourceSharingPartnerTest {
         final List<Partner> partners = resourceSharingPartnerHandler.getPartners();
 
         // we should have only ony partner from the one record we have:
-        final Partner partner = partners.get(0);
+        final Partner partner = partners.getFirst();
 
         assertNncipProfileDetailsPopulatedCorrectly(partner, record.getLandkode(), record.getBibnr(), EMAIL_BEST);
     }
@@ -378,7 +378,7 @@ public class ResourceSharingPartnerTest {
         var partners = resourceSharingPartnerHandler.getPartners();
 
         // we should have only ony partner from the one record we have:
-        Partner partner = partners.get(0);
+        Partner partner = partners.getFirst();
 
         assertNncipProfileDetailsPopulatedCorrectly(partner, record.getLandkode(), record.getBibnr(), emailAdr);
     }
@@ -405,7 +405,7 @@ public class ResourceSharingPartnerTest {
         var partners = resourceSharingPartnerHandler.getPartners();
 
         // we should have only ony partner from the one record we have:
-        Partner partner = partners.get(0);
+        Partner partner = partners.getFirst();
 
         assertNncipProfileDetailsPopulatedCorrectly(partner, record.getLandkode(), record.getBibnr(), null);
     }
@@ -429,7 +429,7 @@ public class ResourceSharingPartnerTest {
         final List<Partner> partners = resourceSharingPartnerHandler.getPartners();
 
         // we should have only ony partner from the one record we have:
-        final Partner partner = partners.get(0);
+        final Partner partner = partners.getFirst();
 
         assertEmailProfileDetailsPopulatedCorrectly(partner, EMAIL_ADR);
     }
@@ -455,7 +455,7 @@ public class ResourceSharingPartnerTest {
 
         final List<Partner> partners = resourceSharingPartnerHandler.getPartners();
 
-        final Partner partner = partners.get(0);
+        final Partner partner = partners.getFirst();
 
         assertEmailProfileDetailsPopulatedCorrectly(partner, email);
     }
@@ -478,7 +478,7 @@ public class ResourceSharingPartnerTest {
 
         var partners = resourceSharingPartnerHandler.getPartners();
         // we should have only ony partner from the one record we have:
-        Partner partner = partners.get(0);
+        Partner partner = partners.getFirst();
 
         assertEmailProfileDetailsPopulatedCorrectly(partner, EMAIL_BEST);
     }
@@ -502,7 +502,7 @@ public class ResourceSharingPartnerTest {
         final List<Partner> partners = resourceSharingPartnerHandler.getPartners();
 
         // we should have only ony partner from the one record we have:
-        final Partner partner = partners.get(0);
+        final Partner partner = partners.getFirst();
 
         assertEmailProfileDetailsPopulatedCorrectly(partner, email);
     }
@@ -527,7 +527,7 @@ public class ResourceSharingPartnerTest {
         final List<Partner> partners = resourceSharingPartnerHandler.getPartners();
 
         // we should have only ony partner from the one record we have:
-        final Partner partner = partners.get(0);
+        final Partner partner = partners.getFirst();
 
         assertEmailProfileDetailsPopulatedCorrectly(partner, "");
     }
@@ -549,7 +549,7 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var partners = resourceSharingPartnerHandler.getPartners();
-        assertThat(partners.get(0).getPartnerDetails().getStatus(), is(equalTo(expectedStatus)));
+        assertThat(partners.getFirst().getPartnerDetails().getStatus(), is(equalTo(expectedStatus)));
     }
 
     @Test
@@ -598,7 +598,7 @@ public class ResourceSharingPartnerTest {
         final List<Partner> partners = resourceSharingPartnerHandler.getPartners();
 
         // we should have only ony partner from the one record we have:
-        final Partner partner = partners.get(0);
+        final Partner partner = partners.getFirst();
 
         final String expectedInstitutionCode;
         if (BaseBibliotekUtils.isAlmaOrBibsysLibrary(katsyst)) {
@@ -717,7 +717,7 @@ public class ResourceSharingPartnerTest {
         final List<Partner> partners = resourceSharingPartnerHandler.getPartners();
 
         // we should have only ony partner from the one record we have:
-        final Partner partner = partners.get(0);
+        final Partner partner = partners.getFirst();
 
         final LocateProfile locateProfile = partner.getPartnerDetails().getLocateProfile();
         if (BaseBibliotekUtils.isAlmaOrBibsysLibrary(katsyst)) {
@@ -850,7 +850,7 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
-        final Partner partner = resourceSharingPartnerHandler.getPartners().get(0);
+        final Partner partner = resourceSharingPartnerHandler.getPartners().getFirst();
 
         final String emailIn2062200xml = "biblioteket@krodsherad.kommune.no";
         assertEmailProfileDetailsPopulatedCorrectly(partner, emailIn2062200xml);
@@ -869,23 +869,25 @@ public class ResourceSharingPartnerTest {
 
         var partners = resourceSharingPartnerHandler.getPartners();
 
-        var expectedName = Objects.nonNull(generatedRecords.get(0).getInst())
-                               ? generatedRecords.get(0).getInst().replaceAll("\n", " - ")
+        var expectedName = Objects.nonNull(generatedRecords.getFirst().getInst())
+                               ? generatedRecords.getFirst().getInst().replaceAll("\n", " - ")
                                : StringUtils.EMPTY_STRING;
 
-        assertThat(partners.get(0).getPartnerDetails().getName(), is(equalTo(expectedName)));
+        assertThat(partners.getFirst().getPartnerDetails().getName(), is(equalTo(expectedName)));
         var expectedAvgSupplyTime = 1;
-        assertThat(partners.get(0).getPartnerDetails().getAvgSupplyTime(), is(equalTo(expectedAvgSupplyTime)));
+        assertThat(partners.getFirst().getPartnerDetails().getAvgSupplyTime(), is(equalTo(expectedAvgSupplyTime)));
         var expectedDeliveryDelay = 0;
-        assertThat(partners.get(0).getPartnerDetails().getDeliveryDelay(), is(equalTo(expectedDeliveryDelay)));
+        assertThat(partners.getFirst().getPartnerDetails().getDeliveryDelay(), is(equalTo(expectedDeliveryDelay)));
         var expectedLendingSupported = true;
-        assertThat(partners.get(0).getPartnerDetails().isLendingSupported(), is(equalTo(expectedLendingSupported)));
+        assertThat(partners.getFirst().getPartnerDetails().isLendingSupported(), is(equalTo(expectedLendingSupported)));
         var expectedLendingWorkflow = "Lending";
-        assertThat(partners.get(0).getPartnerDetails().getLendingWorkflow(), is(equalTo(expectedLendingWorkflow)));
+        assertThat(partners.getFirst().getPartnerDetails().getLendingWorkflow(), is(equalTo(expectedLendingWorkflow)));
         var expectedBorrowingSupported = true;
-        assertThat(partners.get(0).getPartnerDetails().isBorrowingSupported(), is(equalTo(expectedBorrowingSupported)));
+        assertThat(partners.getFirst().getPartnerDetails().isBorrowingSupported(),
+                   is(equalTo(expectedBorrowingSupported)));
         var expectedBorrowingWorkflow = "Borrowing";
-        assertThat(partners.get(0).getPartnerDetails().getBorrowingWorkflow(), is(equalTo(expectedBorrowingWorkflow)));
+        assertThat(partners.getFirst().getPartnerDetails().getBorrowingWorkflow(),
+                   is(equalTo(expectedBorrowingWorkflow)));
     }
 
     @Test
@@ -1186,7 +1188,7 @@ public class ResourceSharingPartnerTest {
     private void assertPhone(Phones phones, Record record) {
         var expectedPhoneTypes = List.of("claimPhone", "orderPhone", "paymentPhone", "returnsPhone");
         assertThat(phones.getPhone(), hasSize(1));
-        var phone = phones.getPhone().get(0);
+        var phone = phones.getPhone().getFirst();
         assertThat(phone.isPreferred(), is(equalTo(true)));
         assertThat(phone.getPhoneTypes().getPhoneType(), hasSize(expectedPhoneTypes.size()));
         expectedPhoneTypes.forEach(expectedPhoneType -> assertThat(phone.getPhoneTypes().getPhoneType(),
