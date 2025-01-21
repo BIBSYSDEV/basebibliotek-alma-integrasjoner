@@ -7,6 +7,15 @@ dependencies {
     testImplementation libs.bundles.testing
     testImplementation libs.aws.http.client.spi
     testRuntimeOnly libs.junit.jupiter.engine
+    testImplementation libs.wiremock.jetty12
+
+    // For fixing nebula lint warnings
+    testImplementation (libs.wiremock) {
+        exclude group: 'org.eclipse.jetty', module: 'jetty-servlet'
+        exclude group: 'org.eclipse.jetty', module: 'jetty-servlets'
+        exclude group: 'org.eclipse.jetty', module: 'jetty-webapp'
+        exclude group: 'org.eclipse.jetty.http2', module: 'http2-server'
+    }
 
     implementation libs.bundles.aws.lambda
     implementation libs.aws.sdk2.s3
