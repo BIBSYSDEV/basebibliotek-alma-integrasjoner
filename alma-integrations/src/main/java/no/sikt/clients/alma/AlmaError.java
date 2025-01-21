@@ -1,5 +1,6 @@
 package no.sikt.clients.alma;
 
+@SuppressWarnings("unused")
 class AlmaError {
 
     private String errorCode;
