@@ -116,11 +116,11 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
 
     private static String getAlmaApiKeyFromSecretsManager(SecretsManagerClient secretsManagerClient) {
 
-        String secretName = "alma_api_keys";
+        var secretName = "alma_api_keys_full";
 
-        GetSecretValueRequest getSecretValueRequest = GetSecretValueRequest.builder()
-                                                          .secretId(secretName)
-                                                          .build();
+        var getSecretValueRequest = GetSecretValueRequest.builder()
+                                        .secretId(secretName)
+                                        .build();
         try {
             var getSecretValueResponse = secretsManagerClient.getSecretValue(getSecretValueRequest);
             // Decrypts secret using the associated KMS key.
