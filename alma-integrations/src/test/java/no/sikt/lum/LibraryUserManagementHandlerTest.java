@@ -10,6 +10,7 @@ import static no.sikt.clients.AbstractHttpUrlConnectionApi.LOG_MESSAGE_COMMUNICA
 import static no.sikt.commons.HandlerUtils.COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE;
 import static no.sikt.commons.HandlerUtils.HYPHEN;
 import static no.sikt.lum.UserConverter.LIB_USER_PREFIX;
+import static no.sikt.lum.UserConverter.USER_IDENTIFIER_REALMS;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.StringUtils.EMPTY_STRING;
@@ -451,6 +452,35 @@ class LibraryUserManagementHandlerTest {
             UnixPath.of(HandlerUtils.extractReportFilename(s3Event, LibraryUserManagementHandler.HANDLER_NAME)));
         assertThat(report, containsString(
             bibNr + LibraryUserManagementHandler.COULD_NOT_CONVERT_TO_USER_REPORT_MESSAGE));
+    }
+
+    @Test
+    public void shouldHaveAllIdentifiersInAlmaPayload() throws IOException {
+        var withPaddr = true;
+        var withVaddr = true;
+        var specification = new RecordSpecification(BIBNR_RESOLVABLE_TO_ALMA_CODE,
+                                                    true,
+                                                    null,
+                                                    randomBoolean(),
+                                                    randomBoolean(),
+                                                    withPaddr,
+                                                    withVaddr,
+                                                    randomBoolean(),
+                                                    randomString());
+        var basebibliotekGenerator = new BasebibliotekGenerator(specification);
+        var basebibliotek = basebibliotekGenerator.generateBaseBibliotek();
+        var basebibliotekXml = BasebibliotekGenerator.toXml(basebibliotek);
+        WireMocker.mockBasebibliotekXml(basebibliotekXml, BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        WireMocker.mockAlmaGetResponse(LIB_0030100_ID);
+        WireMocker.mockAlmaPutResponse(LIB_0030100_ID);
+        var uri = s3Driver.insertFile(HandlerTestUtils.randomS3Path(), BIBNR_RESOLVABLE_TO_ALMA_CODE);
+        var s3Event = HandlerTestUtils.createS3Event(uri);
+        libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
+        var requests = WireMocker.readAlmaPutRequests(LIB_0030100_ID);
+
+        requests.forEach(request -> assertThat(USER_IDENTIFIER_REALMS.stream()
+                                                   .allMatch(request.getBodyAsString()::contains),
+                                               equalTo(true)));
     }
 
     private S3Event prepareBaseBibliotekFromRecords(final UnixPath s3Path, final Record... records) throws IOException {
