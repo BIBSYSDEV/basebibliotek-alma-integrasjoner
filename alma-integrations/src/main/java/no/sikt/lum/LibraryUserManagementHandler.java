@@ -77,6 +77,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         final String almaApiKeys = getAlmaApiKeyFromSecretsManager(secretsManagerClient);
         final URI almaUri = UriWrapper.fromUri(environment.readEnv(ALMA_API_HOST)).getUri();
         almaApiKeyMap = readAlmaApiKeys(almaApiKeys);
+        logger.info("Found {} api keys for alma", almaApiKeyMap.size());
         this.almaUserUpserter = new HttpUrlConnectionAlmaUserUpserter(almaUri);
         final URI basebibliotekUri =
             UriWrapper.fromUri(environment.readEnv(BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).getUri();
