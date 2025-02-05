@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import no.nb.basebibliotek.generated.Aut;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.nb.basebibliotek.generated.Record;
@@ -89,7 +91,7 @@ public class UserConverter extends AlmaObjectConverter {
     public static final String EXTERNAL = "External";
     public static final String UNIV_ID = "UNIV_ID";
     public static final String UNIVERSITY_ID = "University ID";
-    private static final String BIBSYS_FEIDE_REALM = "@bibsys.no";
+    public static final Set<String> USER_IDENTIFIER_REALMS = Set.of("@bibsys.no", "@basebibliotek.no");
     private final transient String targetAlmaCode;
 
     public UserConverter(AlmaCodeProvider almaCodeProvider, BaseBibliotek baseBibliotek, String targetAlmaCode) {
@@ -291,17 +293,32 @@ public class UserConverter extends AlmaObjectConverter {
     }
 
     private UserIdentifiers extractUserIdentifiers(Record record) {
-        UserIdentifier userIdentifier = new UserIdentifier();
-        userIdentifier.setValue(getLibraryNumber(record) + BIBSYS_FEIDE_REALM);
+        var allUserIdentifiers = createAllUserIdentifiers(record);
+        var userIdentifiers = new UserIdentifiers();
+        userIdentifiers.getUserIdentifier().addAll(allUserIdentifiers);
+
+        return userIdentifiers;
+    }
+
+    private List<UserIdentifier> createAllUserIdentifiers(Record record) {
+        return USER_IDENTIFIER_REALMS
+                   .stream()
+                   .map(realm -> createUserIdentifier(record, realm))
+                   .collect(Collectors.toList());
+    }
+
+    private UserIdentifier createUserIdentifier(Record record, String realm) {
+        var userIdentifier = new UserIdentifier();
+        userIdentifier.setValue(getLibraryNumber(record) + realm);
         userIdentifier.setStatus(ACTIVE.toUpperCase(Locale.ROOT));
         userIdentifier.setSegmentType(EXTERNAL);
-        UserIdentifier.IdType value = new UserIdentifier.IdType();
+
+        var value = new UserIdentifier.IdType();
         value.setValue(UNIV_ID);
         value.setDesc(UNIVERSITY_ID);
         userIdentifier.setIdType(value);
-        UserIdentifiers userIdentifiers = new UserIdentifiers();
-        userIdentifiers.getUserIdentifier().add(userIdentifier);
-        return userIdentifiers;
+
+        return userIdentifier;
     }
 
     private String getLibraryNumber(Record record) {
