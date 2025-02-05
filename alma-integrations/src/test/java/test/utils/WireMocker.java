@@ -2,17 +2,21 @@ package test.utils;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.badRequest;
+import static com.github.tomakehurst.wiremock.client.WireMock.findAll;
 import static com.github.tomakehurst.wiremock.client.WireMock.forbidden;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.put;
+import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static nva.commons.core.StringUtils.EMPTY_STRING;
 import com.github.tomakehurst.wiremock.http.Fault;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import java.nio.file.Path;
+import java.util.List;
 import nva.commons.core.ioutils.IoUtils;
 
 public class WireMocker {
@@ -108,5 +112,13 @@ public class WireMocker {
 
     public static void mockBassebibliotekFailure(String bibNr) {
         stubFor(get(urlPathMatching(URL_PATH_BASEBIBLIOTEK_REST_BIBNR + bibNr)).willReturn(forbidden()));
+    }
+
+    public static List<LoggedRequest> readAlmaPutRequests(String almaCode) {
+        return readPutRequests(URL_PATH_USERS + SLASH + almaCode);
+    }
+
+    public static List<LoggedRequest> readPutRequests(String urlPath) {
+        return findAll(putRequestedFor(urlPathEqualTo(urlPath)));
     }
 }
