@@ -9,13 +9,14 @@ import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static no.sikt.clients.AbstractHttpUrlConnectionApi.LOG_MESSAGE_COMMUNICATION_PROBLEM;
 import static no.sikt.commons.HandlerUtils.COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE;
 import static no.sikt.commons.HandlerUtils.HYPHEN;
+import static no.sikt.lum.LibraryUserManagementHandler.FAILURE_WHEN_UPDATING_ALMA;
+import static no.sikt.lum.LibraryUserManagementHandler.OK_REPORT_MESSAGE;
 import static no.sikt.lum.UserConverter.LIB_USER_PREFIX;
 import static no.sikt.lum.UserConverter.USER_IDENTIFIER_REALMS;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.StringUtils.EMPTY_STRING;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -95,6 +96,8 @@ class LibraryUserManagementHandlerTest {
     private static final String INVALID_BASEBIBLIOTEK_XML_STRING = "invalid";
     private static final String EMAIL_ADR = "adr@example.com";
     private static final String EMAIL_BEST = "best@example.com";
+    private static final String SINGLE_ALMA_ID = "Alma ID: MOLDESYK";
+
     private static final Environment mockedEnvironment = mock(Environment.class);
     private transient FakeS3Client s3Client;
     private transient S3Driver s3Driver;
@@ -391,9 +394,10 @@ class LibraryUserManagementHandlerTest {
         var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
         var report = reports3Driver.getFile(
             UnixPath.of(HandlerUtils.extractReportFilename(s3Event, LibraryUserManagementHandler.HANDLER_NAME)));
-        assertThat(report, startsWith(LIB_USER_PREFIX + bibNr + nva.commons.core.StringUtils.SPACE));
-        assertThat(report,
-                   endsWith(nva.commons.core.StringUtils.SPACE + LibraryUserManagementHandler.OK_REPORT_MESSAGE));
+
+        assertThat(report, startsWith(LIB_USER_PREFIX + bibNr));
+        assertThat(report, containsString(OK_REPORT_MESSAGE));
+        assertThat(report, containsString(SINGLE_ALMA_ID));
     }
 
     @Test
@@ -415,8 +419,10 @@ class LibraryUserManagementHandlerTest {
         var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
         var report = reports3Driver.getFile(
             UnixPath.of(HandlerUtils.extractReportFilename(s3Event, LibraryUserManagementHandler.HANDLER_NAME)));
-        assertThat(report, containsString(
-            bibNr + LibraryUserManagementHandler.COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE));
+
+        assertThat(report, startsWith(LIB_USER_PREFIX + bibNr));
+        assertThat(report, containsString(FAILURE_WHEN_UPDATING_ALMA));
+        assertThat(report, containsString(SINGLE_ALMA_ID));
     }
 
     @Test
