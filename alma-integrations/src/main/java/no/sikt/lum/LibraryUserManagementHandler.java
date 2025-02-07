@@ -27,7 +27,6 @@ import no.sikt.rsp.AlmaCodeProvider;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
-import nva.commons.core.StringUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
@@ -40,18 +39,23 @@ import software.amazon.awssdk.services.secretsmanager.model.SecretsManagerExcept
 
 public class LibraryUserManagementHandler implements RequestHandler<S3Event, Integer> {
 
+    private static final Logger logger = LoggerFactory.getLogger(LibraryUserManagementHandler.class);
+
     public static final String SHARED_CONFIG_BUCKET_NAME_ENV_NAME = "SHARED_CONFIG_BUCKET";
     public static final String REPORT_BUCKET_ENVIRONMENT_NAME = "REPORT_BUCKET";
     public static final String LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY =
         "LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH";
-    public static final String OK_REPORT_MESSAGE = "OK\n";
-    public static final String COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE = " could not contact Alma\n";
+    public static final String OK_REPORT_MESSAGE = "OK";
+    public static final String FAILURE_WHEN_UPDATING_ALMA = "Failure when updating Alma";
     public static final String COULD_NOT_CONVERT_TO_USER_REPORT_MESSAGE = " could not convert to user\n";
     public static final String ALMA_API_HOST = "ALMA_API_HOST";
     public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_REST_URL";
     public static final String HANDLER_NAME = "lum";
-    private static final Logger logger = LoggerFactory.getLogger(LibraryUserManagementHandler.class);
     private static final String EVENT = "event";
+    public static final String LINE_BREAK = "\n";
+    public static final String TAB = "\t";
+    public static final String ALMA_ID_TEXT = "Alma ID: ";
+
     private final transient S3Client s3Client;
     private final transient Environment environment;
     private final transient String reportS3BucketName;
@@ -140,7 +144,10 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         int counter = 0;
         for (String almaCode : almaApiKeyMap.keySet()) {
             List<User> users = generateUsers(almaCodeProvider, baseBibliotekList, reportStringBuilder, almaCode);
-            counter += sendToAlmaAndCountSuccess(users, almaApiKeyMap.get(almaCode), reportStringBuilder);
+            counter += sendToAlmaAndCountSuccess(users,
+                                                 almaCode,
+                                                 almaApiKeyMap.get(almaCode),
+                                                 reportStringBuilder);
             usersPerAlmaInstanceMap.put(almaCode, users);
         }
         return counter;
@@ -157,8 +164,9 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         return users;
     }
 
-    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
-    private int sendToAlmaAndCountSuccess(List<User> users, String almaApikey,
+    private int sendToAlmaAndCountSuccess(List<User> users,
+                                          String almaId,
+                                          String almaApikey,
                                           StringBuilder reportStringBuilder) {
         var counter = 0;
         for (User user : users) {
@@ -167,16 +175,21 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
                 counter++;
                 reportStringBuilder
                     .append(primaryId)
-                    .append(StringUtils.SPACE)
-                    .append(almaApikey)
-                    .append(StringUtils.SPACE)
-                    .append(OK_REPORT_MESSAGE);
+                    .append(TAB + TAB)
+                    .append(OK_REPORT_MESSAGE)
+                    .append(TAB + TAB)
+                    .append(ALMA_ID_TEXT)
+                    .append(almaId)
+                    .append(LINE_BREAK);
             } else {
                 reportStringBuilder
                     .append(primaryId)
-                    .append(COULD_NOT_CONTACT_ALMA_REPORT_MESSAGE)
-                    .append(StringUtils.SPACE)
-                    .append(almaApikey);
+                    .append(TAB + TAB)
+                    .append(FAILURE_WHEN_UPDATING_ALMA)
+                    .append(TAB + TAB)
+                    .append(ALMA_ID_TEXT)
+                    .append(almaId)
+                    .append(LINE_BREAK);
             }
         }
         return counter;
