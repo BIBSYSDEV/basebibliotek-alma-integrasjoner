@@ -23,6 +23,9 @@ import no.sikt.clients.alma.AlmaUserUpserter;
 import no.sikt.clients.alma.HttpUrlConnectionAlmaUserUpserter;
 import no.sikt.clients.basebibliotek.HttpUrlConnectionBaseBibliotekApi;
 import no.sikt.commons.HandlerUtils;
+import no.sikt.lum.reporting.AlmaReportBuilder;
+import no.sikt.lum.reporting.ReportBuilder;
+import no.sikt.lum.reporting.UserReportBuilder;
 import no.sikt.rsp.AlmaCodeProvider;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
@@ -37,6 +40,7 @@ import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest;
 import software.amazon.awssdk.services.secretsmanager.model.SecretsManagerException;
 
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class LibraryUserManagementHandler implements RequestHandler<S3Event, Integer> {
 
     private static final Logger logger = LoggerFactory.getLogger(LibraryUserManagementHandler.class);
@@ -45,16 +49,11 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     public static final String REPORT_BUCKET_ENVIRONMENT_NAME = "REPORT_BUCKET";
     public static final String LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY =
         "LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH";
-    public static final String OK_REPORT_MESSAGE = "OK";
-    public static final String FAILURE_WHEN_UPDATING_ALMA = "Failure when updating Alma";
-    public static final String COULD_NOT_CONVERT_TO_USER_REPORT_MESSAGE = " could not convert to user\n";
     public static final String ALMA_API_HOST = "ALMA_API_HOST";
     public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_REST_URL";
     public static final String HANDLER_NAME = "lum";
     private static final String EVENT = "event";
     public static final String LINE_BREAK = "\n";
-    public static final String TAB = "\t";
-    public static final String ALMA_ID_TEXT = "Alma ID: ";
 
     private final transient S3Client s3Client;
     private final transient Environment environment;
@@ -106,7 +105,14 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
             var reportStringBuilder = new StringBuilder();
             var baseBibliotekList =
                 HandlerUtils.generateBasebibliotek(bibnrList, reportStringBuilder, baseBibliotekApi);
-            int counter = sendBaseBibliotekToAlma(almaCodeProvider, reportStringBuilder, baseBibliotekList);
+            List<ReportBuilder> reports = new ArrayList<>();
+            final int counter = sendBaseBibliotekToAlma(almaCodeProvider,
+                                                        reports,
+                                                        baseBibliotekList);
+            if (!reportStringBuilder.isEmpty()) {
+                reportStringBuilder.append(LINE_BREAK);
+            }
+            reports.forEach(report -> reportStringBuilder.append(report.generateReport()));
             HandlerUtils.reportToS3Bucket(reportStringBuilder, s3event, s3Client, reportS3BucketName, HANDLER_NAME);
             return counter;
         } catch (Exception exception) {
@@ -139,27 +145,36 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         }
     }
 
-    private int sendBaseBibliotekToAlma(AlmaCodeProvider almaCodeProvider, StringBuilder reportStringBuilder,
+    private int sendBaseBibliotekToAlma(AlmaCodeProvider almaCodeProvider,
+                                        List<ReportBuilder> reports,
                                         List<BaseBibliotek> baseBibliotekList) {
         int counter = 0;
+        var userReportBuilder = new UserReportBuilder(); // TODO: Change to GenericReportBuilder?
+        var almaReportBuilder = new AlmaReportBuilder();
         for (String almaCode : almaApiKeyMap.keySet()) {
-            List<User> users = generateUsers(almaCodeProvider, baseBibliotekList, reportStringBuilder, almaCode);
+            List<User> users = generateUsers(almaCodeProvider,
+                                             baseBibliotekList,
+                                             userReportBuilder,
+                                             almaCode);
             counter += sendToAlmaAndCountSuccess(users,
                                                  almaCode,
                                                  almaApiKeyMap.get(almaCode),
-                                                 reportStringBuilder);
+                                                 almaReportBuilder);
             usersPerAlmaInstanceMap.put(almaCode, users);
         }
+        reports.add(userReportBuilder);
+        reports.add(almaReportBuilder);
         return counter;
     }
 
-    private List<User> generateUsers(AlmaCodeProvider almaCodeProvider, List<BaseBibliotek> baseBibliotekList,
-                                     StringBuilder reportStringBuilder,
+    private List<User> generateUsers(AlmaCodeProvider almaCodeProvider,
+                                     List<BaseBibliotek> baseBibliotekList,
+                                     UserReportBuilder userReportBuilder,
                                      String targetAlmaCode) {
         var users = new ArrayList<User>();
         for (BaseBibliotek baseBibliotek : baseBibliotekList) {
             users.addAll(
-                new UserConverter(almaCodeProvider, baseBibliotek, targetAlmaCode).toUsers(reportStringBuilder));
+                new UserConverter(almaCodeProvider, baseBibliotek, targetAlmaCode).toUsers(userReportBuilder));
         }
         return users;
     }
@@ -167,29 +182,15 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     private int sendToAlmaAndCountSuccess(List<User> users,
                                           String almaId,
                                           String almaApikey,
-                                          StringBuilder reportStringBuilder) {
+                                          AlmaReportBuilder almaReportBuilder) {
         var counter = 0;
         for (User user : users) {
             var primaryId = user.getPrimaryId();
             if (sendToAlma(user, almaApikey)) {
                 counter++;
-                reportStringBuilder
-                    .append(primaryId)
-                    .append(TAB + TAB)
-                    .append(OK_REPORT_MESSAGE)
-                    .append(TAB + TAB)
-                    .append(ALMA_ID_TEXT)
-                    .append(almaId)
-                    .append(LINE_BREAK);
+                almaReportBuilder.addSuccess(primaryId);
             } else {
-                reportStringBuilder
-                    .append(primaryId)
-                    .append(TAB + TAB)
-                    .append(FAILURE_WHEN_UPDATING_ALMA)
-                    .append(TAB + TAB)
-                    .append(ALMA_ID_TEXT)
-                    .append(almaId)
-                    .append(LINE_BREAK);
+                almaReportBuilder.addFailure(primaryId, almaId);
             }
         }
         return counter;

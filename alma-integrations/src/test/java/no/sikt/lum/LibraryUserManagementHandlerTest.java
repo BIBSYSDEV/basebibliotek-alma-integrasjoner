@@ -9,8 +9,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static no.sikt.clients.AbstractHttpUrlConnectionApi.LOG_MESSAGE_COMMUNICATION_PROBLEM;
 import static no.sikt.commons.HandlerUtils.COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE;
 import static no.sikt.commons.HandlerUtils.HYPHEN;
-import static no.sikt.lum.LibraryUserManagementHandler.FAILURE_WHEN_UPDATING_ALMA;
-import static no.sikt.lum.LibraryUserManagementHandler.OK_REPORT_MESSAGE;
 import static no.sikt.lum.UserConverter.LIB_USER_PREFIX;
 import static no.sikt.lum.UserConverter.USER_IDENTIFIER_REALMS;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
@@ -19,9 +17,10 @@ import static nva.commons.core.StringUtils.EMPTY_STRING;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.StringContains.containsString;
+import static org.hamcrest.core.StringStartsWith.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -96,7 +95,6 @@ class LibraryUserManagementHandlerTest {
     private static final String INVALID_BASEBIBLIOTEK_XML_STRING = "invalid";
     private static final String EMAIL_ADR = "adr@example.com";
     private static final String EMAIL_BEST = "best@example.com";
-    private static final String SINGLE_ALMA_ID = "Alma ID: MOLDESYK";
 
     private static final Environment mockedEnvironment = mock(Environment.class);
     private transient FakeS3Client s3Client;
@@ -395,13 +393,11 @@ class LibraryUserManagementHandlerTest {
         var report = reports3Driver.getFile(
             UnixPath.of(HandlerUtils.extractReportFilename(s3Event, LibraryUserManagementHandler.HANDLER_NAME)));
 
-        assertThat(report, startsWith(LIB_USER_PREFIX + bibNr));
-        assertThat(report, containsString(OK_REPORT_MESSAGE));
-        assertThat(report, containsString(SINGLE_ALMA_ID));
+        assertThat(report, containsString("lib1000000 \t ok:83 \t failures:0 \t failed:[]"));
     }
 
     @Test
-    void shouldGenerateReportWhenAlmaContactFailure() throws IOException {
+    void shouldGenerateReportWhenAlmaContactFailureWithListOfFailures() throws IOException {
         var bibNr = "1234567";
         var record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
                          .withBibnr(bibNr)
@@ -420,9 +416,14 @@ class LibraryUserManagementHandlerTest {
         var report = reports3Driver.getFile(
             UnixPath.of(HandlerUtils.extractReportFilename(s3Event, LibraryUserManagementHandler.HANDLER_NAME)));
 
-        assertThat(report, startsWith(LIB_USER_PREFIX + bibNr));
-        assertThat(report, containsString(FAILURE_WHEN_UPDATING_ALMA));
-        assertThat(report, containsString(SINGLE_ALMA_ID));
+        assertThat(report, containsString(LIB_USER_PREFIX + bibNr));
+        assertThat(report, containsString("ok:0"));
+        assertThat(report, containsString("failures:83"));
+        assertThat(report, containsString("failed:["));
+        assertThat(report, containsString("NTNU"));
+        assertThat(report, containsString("MOLDESYK"));
+
+        assertThat(report, not(containsString("failed:[]")));
     }
 
     @Test
@@ -456,8 +457,10 @@ class LibraryUserManagementHandlerTest {
         var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
         var report = reports3Driver.getFile(
             UnixPath.of(HandlerUtils.extractReportFilename(s3Event, LibraryUserManagementHandler.HANDLER_NAME)));
-        assertThat(report, containsString(
-            bibNr + LibraryUserManagementHandler.COULD_NOT_CONVERT_TO_USER_REPORT_MESSAGE));
+
+        assertThat(report, containsString("failures:83"));
+        assertThat(report, startsWith(bibNr));
+        assertThat(report, containsString("Could not convert to user"));
     }
 
     @Test
