@@ -1,6 +1,6 @@
 package no.sikt.lum.reporting;
 
-public interface ReportBuilder {
+public interface ReportGenerator {
 
     StringBuilder generateReport();
 

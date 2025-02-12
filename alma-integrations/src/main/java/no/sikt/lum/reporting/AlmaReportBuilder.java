@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class AlmaReportBuilder implements ReportBuilder {
+public class AlmaReportBuilder implements ReportGenerator {
 
     // Example: lib1000000 ok:70 failures:2 failed:[MOLDESYS, NTNU]
     public static final String TEMPLATE = "%s \t ok:%s \t failures:%s \t failed:[%s]";

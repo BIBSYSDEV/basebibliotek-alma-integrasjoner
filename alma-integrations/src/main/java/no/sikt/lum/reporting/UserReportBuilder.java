@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class UserReportBuilder implements ReportBuilder {
+public class UserReportBuilder implements ReportGenerator {
 
     // Example: 1000000 failures:2 Could not convert to user failed:[MOLDESYS, NTNU]
     public static final String TEMPLATE = "%s \t failures:%s \t Could not convert to user \t failed:[%s]";

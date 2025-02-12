@@ -24,7 +24,7 @@ import no.sikt.clients.alma.HttpUrlConnectionAlmaUserUpserter;
 import no.sikt.clients.basebibliotek.HttpUrlConnectionBaseBibliotekApi;
 import no.sikt.commons.HandlerUtils;
 import no.sikt.lum.reporting.AlmaReportBuilder;
-import no.sikt.lum.reporting.ReportBuilder;
+import no.sikt.lum.reporting.ReportGenerator;
 import no.sikt.lum.reporting.UserReportBuilder;
 import no.sikt.rsp.AlmaCodeProvider;
 import no.unit.nva.s3.S3Driver;
@@ -104,7 +104,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
             var reportStringBuilder = new StringBuilder();
             var baseBibliotekList =
                 HandlerUtils.generateBasebibliotek(bibnrList, reportStringBuilder, baseBibliotekApi);
-            List<ReportBuilder> reports = new ArrayList<>();
+            List<ReportGenerator> reports = new ArrayList<>();
             final int counter = sendBaseBibliotekToAlma(almaCodeProvider,
                                                         reports,
                                                         baseBibliotekList);
@@ -142,7 +142,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     }
 
     private int sendBaseBibliotekToAlma(AlmaCodeProvider almaCodeProvider,
-                                        List<ReportBuilder> reports,
+                                        List<ReportGenerator> reports,
                                         List<BaseBibliotek> baseBibliotekList) {
         int counter = 0;
         var userReportBuilder = new UserReportBuilder();
