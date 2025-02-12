@@ -53,7 +53,6 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_REST_URL";
     public static final String HANDLER_NAME = "lum";
     private static final String EVENT = "event";
-    public static final String LINE_BREAK = "\n";
 
     private final transient S3Client s3Client;
     private final transient Environment environment;
@@ -109,9 +108,6 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
             final int counter = sendBaseBibliotekToAlma(almaCodeProvider,
                                                         reports,
                                                         baseBibliotekList);
-            if (!reportStringBuilder.isEmpty()) {
-                reportStringBuilder.append(LINE_BREAK);
-            }
             reports.forEach(report -> reportStringBuilder.append(report.generateReport()));
             HandlerUtils.reportToS3Bucket(reportStringBuilder, s3event, s3Client, reportS3BucketName, HANDLER_NAME);
             return counter;
