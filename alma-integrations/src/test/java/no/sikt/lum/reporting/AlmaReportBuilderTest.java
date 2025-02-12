@@ -6,12 +6,6 @@ import org.junit.jupiter.api.Test;
 
 class AlmaReportBuilderTest {
 
-    /*
-    lib001 ok:1 failures:0 failed:[]
-    lib002 ok:1 failures:0 failed:[]
-    lib003 ok:2 failures:2 failed:[NTNU, NORDFORSK]
-    */
-
     @Test
     void shouldCreateReportStringWithCorrectNumberOfSuccessesAndFailures() {
         var reportBuilder = new AlmaReportBuilder();

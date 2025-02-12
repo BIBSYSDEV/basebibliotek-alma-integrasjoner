@@ -6,11 +6,6 @@ import org.junit.jupiter.api.Test;
 
 class UserReportBuilderTest {
 
-    /*
-    003 failures:2 Could not convert to user failed:[NTNU, NORDFORSK]
-    004 failures:1 Could not convert to user failed:[NORDFORSK]
-    */
-
     @Test
     void shouldCreateReportStringWithCorrectNumberOfFailures() {
         var reportBuilder = new UserReportBuilder();

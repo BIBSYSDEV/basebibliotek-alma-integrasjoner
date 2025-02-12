@@ -461,6 +461,11 @@ class LibraryUserManagementHandlerTest {
         assertThat(report, containsString("failures:83"));
         assertThat(report, startsWith(bibNr));
         assertThat(report, containsString("Could not convert to user"));
+        assertThat(report, containsString("failed:["));
+        assertThat(report, containsString("NTNU"));
+        assertThat(report, containsString("MOLDESYK"));
+
+        assertThat(report, not(containsString("failed:[]")));
     }
 
     @Test
