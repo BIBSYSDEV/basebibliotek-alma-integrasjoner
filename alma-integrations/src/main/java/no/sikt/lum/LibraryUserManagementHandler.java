@@ -149,7 +149,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
                                         List<ReportBuilder> reports,
                                         List<BaseBibliotek> baseBibliotekList) {
         int counter = 0;
-        var userReportBuilder = new UserReportBuilder(); // TODO: Change to GenericReportBuilder?
+        var userReportBuilder = new UserReportBuilder();
         var almaReportBuilder = new AlmaReportBuilder();
         for (String almaCode : almaApiKeyMap.keySet()) {
             List<User> users = generateUsers(almaCodeProvider,
