@@ -16,7 +16,6 @@ import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.nb.basebibliotek.generated.Record;
 import no.sikt.alma.user.generated.User;
 import no.sikt.alma.user.generated.User.AccountType;
-import no.sikt.alma.user.generated.User.CampusCode;
 import no.sikt.alma.user.generated.User.Gender;
 import no.sikt.alma.user.generated.User.RecordType;
 import no.sikt.alma.user.generated.User.Status;
@@ -28,7 +27,6 @@ import no.sikt.alma.user.generated.UserStatistic;
 import no.sikt.alma.user.generated.UserStatistics;
 import no.sikt.commons.AlmaObjectConverter;
 import no.sikt.commons.HandlerUtils;
-import no.sikt.rsp.AlmaCodeProvider;
 import nva.commons.core.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,7 +79,6 @@ public class UserConverter extends AlmaObjectConverter {
     public static final String NONE = "NONE";
     public static final String DEFAULT_PATRON_ROLE_200 = "200";
     public static final String PATRON_ROLE = "Patron";
-    public static final String COULD_NOT_GENERATE_A_CAMPUS_CODE_FOR = "Could not generate a campus-code for %s";
     public static final String STATISTICS_CATEGORY_BIM = "BIM";
     public static final String STATISTICS_TYPE_USER_UPDATE = "USER_UPDATE";
     public static final String STATISTICS_TYPE_BRUKEROPPDATERING = "Brukeroppdatering";
@@ -94,8 +91,8 @@ public class UserConverter extends AlmaObjectConverter {
     public static final Set<String> USER_IDENTIFIER_REALMS = Set.of("@bibsys.no", "@basebibliotek.no");
     private final transient String targetAlmaCode;
 
-    public UserConverter(AlmaCodeProvider almaCodeProvider, BaseBibliotek baseBibliotek, String targetAlmaCode) {
-        super(almaCodeProvider, baseBibliotek);
+    public UserConverter(BaseBibliotek baseBibliotek, String targetAlmaCode) {
+        super(baseBibliotek);
         this.targetAlmaCode = targetAlmaCode;
     }
 
@@ -156,7 +153,6 @@ public class UserConverter extends AlmaObjectConverter {
         extractPreferredLanguage(record, user);
         user.setUserGroup(UserGroupConverter.extractUserGroup(record));
         user.setUserRoles(defineUserRoles());
-        user.setCampusCode(defineCampusCode());
         user.setUserStatistics(defaultUserStatistics());
         user.setExternalId(EXTERNAL_ID_SIS);
         user.setAccountType(defaultAccountType());
@@ -236,21 +232,6 @@ public class UserConverter extends AlmaObjectConverter {
         UserRoles userRoles = new UserRoles();
         userRoles.getUserRole().add(userRole);
         return userRoles;
-    }
-
-    //Møte: tror ikke den trengs. Audun sender slack melding.
-    private CampusCode defineCampusCode() {
-        // Todo: this might be not precise enough. As it uses the libCode to the alma-instance the libUser is updated to
-        // (as defined in the libCodeToAlmaCode mapping config file used in RSP)
-        Optional<String> libCode = almaCodeProvider.getLibCode(targetAlmaCode);
-        if (libCode.isPresent()) {
-            User.CampusCode campusCode = new User.CampusCode();
-            campusCode.setValue(libCode.get());
-            campusCode.setDesc(libCode.get());
-            return campusCode;
-        }
-        //todo: what to do, when we do not have anything in that file??? @Audun
-        throw new RuntimeException(String.format(COULD_NOT_GENERATE_A_CAMPUS_CODE_FOR, targetAlmaCode));
     }
 
     private UserStatistics defaultUserStatistics() {

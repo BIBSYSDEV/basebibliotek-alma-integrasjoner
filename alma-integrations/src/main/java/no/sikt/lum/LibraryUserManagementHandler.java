@@ -23,11 +23,9 @@ import no.sikt.clients.alma.AlmaUserUpserter;
 import no.sikt.clients.alma.HttpUrlConnectionAlmaUserUpserter;
 import no.sikt.clients.basebibliotek.HttpUrlConnectionBaseBibliotekApi;
 import no.sikt.commons.HandlerUtils;
-import no.sikt.rsp.AlmaCodeProvider;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
-import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,10 +39,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
 
     private static final Logger logger = LoggerFactory.getLogger(LibraryUserManagementHandler.class);
 
-    public static final String SHARED_CONFIG_BUCKET_NAME_ENV_NAME = "SHARED_CONFIG_BUCKET";
     public static final String REPORT_BUCKET_ENVIRONMENT_NAME = "REPORT_BUCKET";
-    public static final String LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY =
-        "LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH";
     public static final String OK_REPORT_MESSAGE = "OK";
     public static final String FAILURE_WHEN_UPDATING_ALMA = "Failure when updating Alma";
     public static final String COULD_NOT_CONVERT_TO_USER_REPORT_MESSAGE = " could not convert to user\n";
@@ -57,7 +52,6 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     public static final String ALMA_ID_TEXT = "Alma ID: ";
 
     private final transient S3Client s3Client;
-    private final transient Environment environment;
     private final transient String reportS3BucketName;
     private final transient Gson gson = new Gson();
 
@@ -77,7 +71,6 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     public LibraryUserManagementHandler(S3Client s3Client, Environment environment,
                                         SecretsManagerClient secretsManagerClient) {
         this.s3Client = s3Client;
-        this.environment = environment;
         final String almaApiKeys = getAlmaApiKeyFromSecretsManager(secretsManagerClient);
         final URI almaUri = UriWrapper.fromUri(environment.readEnv(ALMA_API_HOST)).getUri();
         almaApiKeyMap = readAlmaApiKeys(almaApiKeys);
@@ -91,22 +84,14 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     @Override
     public Integer handleRequest(S3Event s3event, Context context) {
         logger.info(EVENT + gson.toJson(s3event));
-        String sharedConfigBucketName = environment.readEnv(SHARED_CONFIG_BUCKET_NAME_ENV_NAME);
-        S3Driver driver = new S3Driver(s3Client, sharedConfigBucketName);
-        String libCodeToAlmaCodeMappingFilePath = environment.readEnv(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY);
-        logger.info("done setting up drivers and reading environment");
-        logger.info(sharedConfigBucketName);
         try {
             var bibNrFile = HandlerUtils.readFile(s3event, s3Client);
             logger.info("done collecting bibNrFile");
-            final String instRegAsJson = driver.getFile(UnixPath.of(libCodeToAlmaCodeMappingFilePath));
-            logger.info("done collecting instreg");
-            AlmaCodeProvider almaCodeProvider = new AlmaCodeProvider(instRegAsJson);
             var bibnrList = HandlerUtils.getBibNrList(bibNrFile);
             var reportStringBuilder = new StringBuilder();
             var baseBibliotekList =
                 HandlerUtils.generateBasebibliotek(bibnrList, reportStringBuilder, baseBibliotekApi);
-            int counter = sendBaseBibliotekToAlma(almaCodeProvider, reportStringBuilder, baseBibliotekList);
+            int counter = sendBaseBibliotekToAlma(reportStringBuilder, baseBibliotekList);
             HandlerUtils.reportToS3Bucket(reportStringBuilder, s3event, s3Client, reportS3BucketName, HANDLER_NAME);
             return counter;
         } catch (Exception exception) {
@@ -139,11 +124,11 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         }
     }
 
-    private int sendBaseBibliotekToAlma(AlmaCodeProvider almaCodeProvider, StringBuilder reportStringBuilder,
+    private int sendBaseBibliotekToAlma(StringBuilder reportStringBuilder,
                                         List<BaseBibliotek> baseBibliotekList) {
         int counter = 0;
         for (String almaCode : almaApiKeyMap.keySet()) {
-            List<User> users = generateUsers(almaCodeProvider, baseBibliotekList, reportStringBuilder, almaCode);
+            List<User> users = generateUsers(baseBibliotekList, reportStringBuilder, almaCode);
             counter += sendToAlmaAndCountSuccess(users,
                                                  almaCode,
                                                  almaApiKeyMap.get(almaCode),
@@ -153,13 +138,12 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         return counter;
     }
 
-    private List<User> generateUsers(AlmaCodeProvider almaCodeProvider, List<BaseBibliotek> baseBibliotekList,
+    private List<User> generateUsers(List<BaseBibliotek> baseBibliotekList,
                                      StringBuilder reportStringBuilder,
                                      String targetAlmaCode) {
         var users = new ArrayList<User>();
         for (BaseBibliotek baseBibliotek : baseBibliotekList) {
-            users.addAll(
-                new UserConverter(almaCodeProvider, baseBibliotek, targetAlmaCode).toUsers(reportStringBuilder));
+            users.addAll(new UserConverter(baseBibliotek, targetAlmaCode).toUsers(reportStringBuilder));
         }
         return users;
     }
