@@ -21,7 +21,6 @@ import no.sikt.lum.reporting.ReportGenerator;
 import no.sikt.lum.reporting.UserReportBuilder;
 import no.sikt.lum.secret.AlmaKeysFetcher;
 import no.sikt.lum.secret.SecretFetcher;
-import no.sikt.rsp.AlmaCodeProvider;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
