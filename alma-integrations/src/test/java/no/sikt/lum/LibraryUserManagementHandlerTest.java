@@ -53,7 +53,7 @@ import no.sikt.clients.alma.HttpUrlConnectionAlmaUserUpserter;
 import no.sikt.clients.basebibliotek.BaseBibliotekUtils;
 import no.sikt.clients.basebibliotek.HttpUrlConnectionBaseBibliotekApi;
 import no.sikt.commons.HandlerUtils;
-import no.sikt.lum.secret.AlmaSecretFetcher;
+import no.sikt.lum.secret.AlmaKeysFetcher;
 import no.sikt.rsp.AlmaCodeProvider;
 import no.sikt.rsp.LibCodeToAlmaCodeEntry;
 import no.unit.nva.s3.S3Driver;
@@ -103,14 +103,14 @@ class LibraryUserManagementHandlerTest {
     private transient LibraryUserManagementHandler libraryUserManagementHandler;
     private transient int numberOfAlmaInstances;
 
-    private transient AlmaSecretFetcher almaSecretFetcher;
+    private transient AlmaKeysFetcher almaKeysFetcher;
 
     @BeforeEach
     public void init(final WireMockRuntimeInfo wmRuntimeInfo) throws IOException {
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
         var secretsManagerClient = mock(SecretsManagerClient.class);
-        almaSecretFetcher = new AlmaSecretFetcher(secretsManagerClient);
+        almaKeysFetcher = new AlmaKeysFetcher(secretsManagerClient);
         var getSecretValueResponse = mock(GetSecretValueResponse.class);
 
         when(mockedEnvironment.readEnv(LibraryUserManagementHandler.ALMA_API_HOST)).thenReturn(
@@ -135,7 +135,7 @@ class LibraryUserManagementHandlerTest {
         s3Driver.insertFile(UnixPath.of(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH), fullLibCodeToAlmaCodeMapping);
         libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client,
                                                                         mockedEnvironment,
-                                                                        almaSecretFetcher);
+                                                                        almaKeysFetcher);
     }
 
     @Test
@@ -175,7 +175,7 @@ class LibraryUserManagementHandlerTest {
         s3Client = new FakeS3ClientThrowingException(expectedMessage);
         libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client,
                                                                         mockedEnvironment,
-                                                                        almaSecretFetcher);
+                                                                        almaKeysFetcher);
         var appender = LogUtils.getTestingAppender(LibraryUserManagementHandler.class);
         assertThrows(RuntimeException.class, () -> libraryUserManagementHandler.handleRequest(s3Event, CONTEXT));
         assertThat(appender.getMessages(), containsString(expectedMessage));
@@ -256,7 +256,7 @@ class LibraryUserManagementHandlerTest {
         final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
         libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client,
                                                                         mockedEnvironment,
-                                                                        almaSecretFetcher);
+                                                                        almaKeysFetcher);
         final var appender = LogUtils.getTestingAppender(LibraryUserManagementHandler.class);
         assertThrows(RuntimeException.class, () -> libraryUserManagementHandler.handleRequest(s3Event, CONTEXT));
         assertThat(appender.getMessages(), containsString(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH));
@@ -278,7 +278,7 @@ class LibraryUserManagementHandlerTest {
                             IoUtils.stringFromResources(Path.of("emptyLibCodeToAlmaCodeMapping.json")));
         libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client,
                                                                         mockedEnvironment,
-                                                                        almaSecretFetcher);
+                                                                        almaKeysFetcher);
         final var appender = LogUtils.getTestingAppender(LibraryUserManagementHandler.class);
         assertThrows(RuntimeException.class, () -> libraryUserManagementHandler.handleRequest(s3Event, CONTEXT));
         assertThat(appender.getMessages(), containsString(AlmaCodeProvider.EMPTY_MAPPING_TABLE_MESSAGE));
@@ -300,7 +300,7 @@ class LibraryUserManagementHandlerTest {
                             IoUtils.stringFromResources(Path.of("invalidLibCodeToAlmaCodeMapping.json")));
         libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client,
                                                                         mockedEnvironment,
-                                                                        almaSecretFetcher);
+                                                                        almaKeysFetcher);
         final var appender = LogUtils.getTestingAppender(LibraryUserManagementHandler.class);
         assertThrows(RuntimeException.class, () -> libraryUserManagementHandler.handleRequest(s3Event, CONTEXT));
         assertThat(appender.getMessages(), containsString(LibCodeToAlmaCodeEntry.FIELD_IS_NULL_OR_EMPTY_MESSAGE));
@@ -314,7 +314,7 @@ class LibraryUserManagementHandlerTest {
             UriWrapper.fromUri("http://localhost:9999").toString());
         libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client,
                                                                         mockedEnvironment,
-                                                                        almaSecretFetcher);
+                                                                        almaKeysFetcher);
         final var appender = LogUtils.getTestingAppender(HttpUrlConnectionBaseBibliotekApi.class);
         final Integer count = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
         assertThat(count, is(0));

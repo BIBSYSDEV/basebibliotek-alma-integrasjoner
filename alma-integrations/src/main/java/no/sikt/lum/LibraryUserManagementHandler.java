@@ -19,7 +19,7 @@ import no.sikt.commons.HandlerUtils;
 import no.sikt.lum.reporting.AlmaReportBuilder;
 import no.sikt.lum.reporting.ReportGenerator;
 import no.sikt.lum.reporting.UserReportBuilder;
-import no.sikt.lum.secret.AlmaSecretFetcher;
+import no.sikt.lum.secret.AlmaKeysFetcher;
 import no.sikt.lum.secret.SecretFetcher;
 import no.sikt.rsp.AlmaCodeProvider;
 import no.unit.nva.s3.S3Driver;
@@ -62,19 +62,19 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     public LibraryUserManagementHandler() {
         this(S3Driver.defaultS3Client().build(),
              new Environment(),
-             new AlmaSecretFetcher(SecretsManagerClient.builder()
-                                       .region(Region.EU_WEST_1)
-                                       .build())
+             new AlmaKeysFetcher(SecretsManagerClient.builder()
+                                     .region(Region.EU_WEST_1)
+                                     .build())
         );
     }
 
     public LibraryUserManagementHandler(S3Client s3Client,
                                         Environment environment,
-                                        SecretFetcher<Map<String,String>> secretFetcher) {
+                                        SecretFetcher<Map<String,String>> almaKeysFetcher) {
         this.s3Client = s3Client;
         this.environment = environment;
         final URI almaUri = UriWrapper.fromUri(environment.readEnv(ALMA_API_HOST)).getUri();
-        almaApiKeyMap = secretFetcher.fetchSecret();
+        almaApiKeyMap = almaKeysFetcher.fetchSecret();
         this.almaUserUpserter = new HttpUrlConnectionAlmaUserUpserter(almaUri);
         final URI basebibliotekUri =
             UriWrapper.fromUri(environment.readEnv(BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).getUri();

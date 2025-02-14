@@ -9,9 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 
-public class AlmaSecretFetcher implements SecretFetcher<Map<String, String>> {
+public class AlmaKeysFetcher implements SecretFetcher<Map<String, String>> {
 
-    private static final Logger logger = LoggerFactory.getLogger(AlmaSecretFetcher.class);
+    private static final Logger logger = LoggerFactory.getLogger(AlmaKeysFetcher.class);
 
     public static final String ALMA_API_KEYS_ID = "alma_api_keys_full";
     public static final String KEYS_FOR_ALMA_FOUND_MESSAGE = "Found {} api keys for alma";
@@ -21,7 +21,7 @@ public class AlmaSecretFetcher implements SecretFetcher<Map<String, String>> {
     /**
      * Fetches alma keys from secrets manager using a client.
      **/
-    public AlmaSecretFetcher(SecretsManagerClient secretsManagerClient) {
+    public AlmaKeysFetcher(SecretsManagerClient secretsManagerClient) {
         this.secretsManagerClient = secretsManagerClient;
     }
 
