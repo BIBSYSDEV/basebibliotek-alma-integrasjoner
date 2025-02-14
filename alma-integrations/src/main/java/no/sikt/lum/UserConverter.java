@@ -28,6 +28,7 @@ import no.sikt.alma.user.generated.UserStatistic;
 import no.sikt.alma.user.generated.UserStatistics;
 import no.sikt.commons.AlmaObjectConverter;
 import no.sikt.commons.HandlerUtils;
+import no.sikt.lum.reporting.UserReportBuilder;
 import no.sikt.rsp.AlmaCodeProvider;
 import nva.commons.core.StringUtils;
 import org.slf4j.Logger;
@@ -39,7 +40,6 @@ public class UserConverter extends AlmaObjectConverter {
     public static final String COUNTRYCODE_NORWAY = "NO";
     private static final Logger logger = LoggerFactory.getLogger(UserConverter.class);
     public static final String COULD_NOT_CONVERT_TO_USER_ERROR_MESSAGE = " Could not convert to user";
-    public static final String COULD_NOT_CONVERT_TO_USER_REPORT_MESSAGE = " could not convert to user\n";
     public static final String INST = "inst";
     public static final String BIBLTYPE = "bibltype";
     public static final String PUBLIC = "Public";
@@ -106,17 +106,17 @@ public class UserConverter extends AlmaObjectConverter {
         throw new RuntimeException(String.format(COULD_NOT_CONVERT_RECORD, missingParameters, toXml(record)));
     }
 
-    public List<User> toUsers(StringBuilder reportStringBuilder) {
+    public List<User> toUsers(UserReportBuilder userReportBuilder) {
         List<User> users = new ArrayList<>();
         baseBibliotek
             .getRecord()
-            .forEach(record -> convertRecordToUserWhenConstraintsSatisfied(record, reportStringBuilder)
+            .forEach(record -> convertRecordToUserWhenConstraintsSatisfied(record, userReportBuilder)
                 .ifPresent(users::add));
         return users;
     }
 
     private Optional<User> convertRecordToUserWhenConstraintsSatisfied(Record record,
-                                                                       StringBuilder reportStringBuilder) {
+                                                                       UserReportBuilder userReportBuilder) {
         try {
             if (satisfiesConstraints(record)) {
                 return Optional.of(convertRecordToUser(record));
@@ -127,9 +127,7 @@ public class UserConverter extends AlmaObjectConverter {
         } catch (Exception e) {
             //Errors in individual libraries should not cause crash in entire execution.
             logger.info(COULD_NOT_CONVERT_TO_USER_ERROR_MESSAGE, e);
-            reportStringBuilder
-                .append(baseBibliotek.getRecord().getFirst().getBibnr())
-                .append(COULD_NOT_CONVERT_TO_USER_REPORT_MESSAGE);
+            userReportBuilder.addFailure(baseBibliotek.getRecord().getFirst().getBibnr(), targetAlmaCode);
             return Optional.empty();
         }
     }
