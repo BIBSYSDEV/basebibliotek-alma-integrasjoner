@@ -9,8 +9,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static no.sikt.clients.AbstractHttpUrlConnectionApi.LOG_MESSAGE_COMMUNICATION_PROBLEM;
 import static no.sikt.commons.HandlerUtils.COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE;
 import static no.sikt.commons.HandlerUtils.HYPHEN;
-import static no.sikt.lum.LibraryUserManagementHandler.FAILURE_WHEN_UPDATING_ALMA;
-import static no.sikt.lum.LibraryUserManagementHandler.OK_REPORT_MESSAGE;
 import static no.sikt.lum.UserConverter.LIB_USER_PREFIX;
 import static no.sikt.lum.UserConverter.USER_IDENTIFIER_REALMS;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
@@ -19,9 +17,10 @@ import static nva.commons.core.StringUtils.EMPTY_STRING;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.StringContains.containsString;
+import static org.hamcrest.core.StringStartsWith.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -54,6 +53,7 @@ import no.sikt.clients.alma.HttpUrlConnectionAlmaUserUpserter;
 import no.sikt.clients.basebibliotek.BaseBibliotekUtils;
 import no.sikt.clients.basebibliotek.HttpUrlConnectionBaseBibliotekApi;
 import no.sikt.commons.HandlerUtils;
+import no.sikt.lum.secret.AlmaKeysFetcher;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
@@ -92,7 +92,6 @@ class LibraryUserManagementHandlerTest {
     private static final String INVALID_BASEBIBLIOTEK_XML_STRING = "invalid";
     private static final String EMAIL_ADR = "adr@example.com";
     private static final String EMAIL_BEST = "best@example.com";
-    private static final String SINGLE_ALMA_ID = "Alma ID: MOLDESYK";
 
     private static final Environment mockedEnvironment = mock(Environment.class);
     private transient FakeS3Client s3Client;
@@ -100,13 +99,14 @@ class LibraryUserManagementHandlerTest {
     private transient LibraryUserManagementHandler libraryUserManagementHandler;
     private transient int numberOfAlmaInstances;
 
-    private transient SecretsManagerClient secretsManagerClient;
+    private transient AlmaKeysFetcher almaKeysFetcher;
 
     @BeforeEach
     public void init(final WireMockRuntimeInfo wmRuntimeInfo) {
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
-        secretsManagerClient = mock(SecretsManagerClient.class);
+        var secretsManagerClient = mock(SecretsManagerClient.class);
+        almaKeysFetcher = new AlmaKeysFetcher(secretsManagerClient);
         var getSecretValueResponse = mock(GetSecretValueResponse.class);
 
         when(mockedEnvironment.readEnv(LibraryUserManagementHandler.ALMA_API_HOST)).thenReturn(
@@ -122,8 +122,9 @@ class LibraryUserManagementHandlerTest {
         when(secretsManagerClient.getSecretValue(any(GetSecretValueRequest.class)))
             .thenReturn(getSecretValueResponse);
         numberOfAlmaInstances = StringUtils.countMatches(fullAlmaCodeAlmaApiKeyMapping, "almaCode");
-        libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client, mockedEnvironment,
-                                                                        secretsManagerClient);
+        libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client,
+                                                                        mockedEnvironment,
+                                                                        almaKeysFetcher);
     }
 
     @Test
@@ -161,8 +162,9 @@ class LibraryUserManagementHandlerTest {
         var s3Event = HandlerTestUtils.createS3Event(randomString());
         var expectedMessage = randomString();
         s3Client = new FakeS3ClientThrowingException(expectedMessage);
-        libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client, mockedEnvironment,
-                                                                        secretsManagerClient);
+        libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client,
+                                                                        mockedEnvironment,
+                                                                        almaKeysFetcher);
         var appender = LogUtils.getTestingAppender(LibraryUserManagementHandler.class);
         assertThrows(RuntimeException.class, () -> libraryUserManagementHandler.handleRequest(s3Event, CONTEXT));
         assertThat(appender.getMessages(), containsString(expectedMessage));
@@ -238,8 +240,9 @@ class LibraryUserManagementHandlerTest {
         var s3Event = HandlerTestUtils.createS3Event(uri);
         when(mockedEnvironment.readEnv(LibraryUserManagementHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).thenReturn(
             UriWrapper.fromUri("http://localhost:9999").toString());
-        libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client, mockedEnvironment,
-                                                                        secretsManagerClient);
+        libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client,
+                                                                        mockedEnvironment,
+                                                                        almaKeysFetcher);
         final var appender = LogUtils.getTestingAppender(HttpUrlConnectionBaseBibliotekApi.class);
         final Integer count = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
         assertThat(count, is(0));
@@ -326,13 +329,11 @@ class LibraryUserManagementHandlerTest {
         var report = reports3Driver.getFile(
             UnixPath.of(HandlerUtils.extractReportFilename(s3Event, LibraryUserManagementHandler.HANDLER_NAME)));
 
-        assertThat(report, startsWith(LIB_USER_PREFIX + bibNr));
-        assertThat(report, containsString(OK_REPORT_MESSAGE));
-        assertThat(report, containsString(SINGLE_ALMA_ID));
+        assertThat(report, containsString("lib1000000 \t ok:83 \t failures:0 \t failed:[]"));
     }
 
     @Test
-    void shouldGenerateReportWhenAlmaContactFailure() throws IOException {
+    void shouldGenerateReportWhenAlmaContactFailureWithListOfFailures() throws IOException {
         var bibNr = "1234567";
         var record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
                          .withBibnr(bibNr)
@@ -351,9 +352,14 @@ class LibraryUserManagementHandlerTest {
         var report = reports3Driver.getFile(
             UnixPath.of(HandlerUtils.extractReportFilename(s3Event, LibraryUserManagementHandler.HANDLER_NAME)));
 
-        assertThat(report, startsWith(LIB_USER_PREFIX + bibNr));
-        assertThat(report, containsString(FAILURE_WHEN_UPDATING_ALMA));
-        assertThat(report, containsString(SINGLE_ALMA_ID));
+        assertThat(report, containsString(LIB_USER_PREFIX + bibNr));
+        assertThat(report, containsString("ok:0"));
+        assertThat(report, containsString("failures:83"));
+        assertThat(report, containsString("failed:["));
+        assertThat(report, containsString("NTNU"));
+        assertThat(report, containsString("MOLDESYK"));
+
+        assertThat(report, not(containsString("failed:[]")));
     }
 
     @Test
@@ -387,8 +393,15 @@ class LibraryUserManagementHandlerTest {
         var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
         var report = reports3Driver.getFile(
             UnixPath.of(HandlerUtils.extractReportFilename(s3Event, LibraryUserManagementHandler.HANDLER_NAME)));
-        assertThat(report, containsString(
-            bibNr + LibraryUserManagementHandler.COULD_NOT_CONVERT_TO_USER_REPORT_MESSAGE));
+
+        assertThat(report, containsString("failures:83"));
+        assertThat(report, startsWith(bibNr));
+        assertThat(report, containsString("Could not convert to user"));
+        assertThat(report, containsString("failed:["));
+        assertThat(report, containsString("NTNU"));
+        assertThat(report, containsString("MOLDESYK"));
+
+        assertThat(report, not(containsString("failed:[]")));
     }
 
     @Test
