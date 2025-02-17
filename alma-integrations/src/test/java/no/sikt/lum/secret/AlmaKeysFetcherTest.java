@@ -1,6 +1,7 @@
 package no.sikt.lum.secret;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -8,6 +9,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import java.nio.file.Path;
 import nva.commons.core.ioutils.IoUtils;
+import nva.commons.logutils.LogUtils;
 import nva.commons.secrets.ErrorReadingSecretException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,7 +52,10 @@ class AlmaKeysFetcherTest {
 
         almaKeysFetcher = new AlmaKeysFetcher(secretsManagerClient);
 
+        var logAppender = LogUtils.getTestingAppender(AlmaKeysFetcher.class);
+
         assertThrows(ErrorReadingSecretException.class, () -> almaKeysFetcher.fetchSecret());
+        assertThat(logAppender.getMessages(), containsString("Could not parse secret into data model"));
     }
 
     void mockSecret(String secret) {
