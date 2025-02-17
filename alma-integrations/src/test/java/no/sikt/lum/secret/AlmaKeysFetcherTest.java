@@ -1,5 +1,6 @@
 package no.sikt.lum.secret;
 
+import static no.sikt.lum.secret.AlmaKeysFetcher.COULD_NOT_PARSE_SECRET;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -55,7 +56,7 @@ class AlmaKeysFetcherTest {
         var logAppender = LogUtils.getTestingAppender(AlmaKeysFetcher.class);
 
         assertThrows(ErrorReadingSecretException.class, () -> almaKeysFetcher.fetchSecret());
-        assertThat(logAppender.getMessages(), containsString("Could not parse secret into data model"));
+        assertThat(logAppender.getMessages(), containsString(COULD_NOT_PARSE_SECRET));
     }
 
     void mockSecret(String secret) {

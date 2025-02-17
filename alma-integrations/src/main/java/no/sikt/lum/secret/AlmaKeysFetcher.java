@@ -18,6 +18,7 @@ public class AlmaKeysFetcher implements SecretFetcher<Map<String, String>> {
 
     public static final String ALMA_API_KEYS_ID = "alma_api_keys_full";
     public static final String KEYS_FOR_ALMA_FOUND_MESSAGE = "Found {} api keys for alma";
+    public static final String COULD_NOT_PARSE_SECRET = "Could not parse secret into data model";
 
     private final SecretsManagerClient secretsManagerClient;
 
@@ -44,7 +45,7 @@ public class AlmaKeysFetcher implements SecretFetcher<Map<String, String>> {
         try {
             return new ObjectMapper().readValue(secretString, AlmaCodeAlmaApiKeyPair[].class);
         } catch (JsonProcessingException ex) {
-            logger.error("Could not parse secret into data model");
+            logger.error(COULD_NOT_PARSE_SECRET);
             throw new ErrorReadingSecretException();
         }
     }
