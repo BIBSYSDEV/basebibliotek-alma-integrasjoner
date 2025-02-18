@@ -109,8 +109,6 @@ Resources:
         Variables:
           REPORT_BUCKET: !Sub '${ReportBucketName}-${AWS::AccountId}'
           BASEBIBLIOTEK_REST_URL: !Ref BasebibliotekRestUrl
-          SHARED_CONFIG_BUCKET: !Ref SharedConfigBucketName
-          LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH: !Ref LibCodeToAlmaCodeFilePath
           ALMA_API_HOST: !Ref AlmaApiHost
       Events:
         BasebibliotekFileUpload:
