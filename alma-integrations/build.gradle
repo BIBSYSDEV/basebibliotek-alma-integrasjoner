@@ -20,6 +20,7 @@ dependencies {
     implementation libs.nva.commons.core
     implementation libs.nva.s3
     implementation libs.nva.language
+    implementation libs.nva.secrets
     implementation libs.bundles.aws.lambda
     implementation libs.aws.sdk2.s3
     implementation libs.aws.sdk2.secrets //Possible version mismatch with existing

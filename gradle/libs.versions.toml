@@ -48,6 +48,7 @@ wiremock-jetty12 = { group = 'org.wiremock', name = 'wiremock-jetty12', version.
 nva-commons-core = { group = 'com.github.bibsysdev', name = 'core', version.ref = 'nva-commons' }
 nva-s3 = { group = 'com.github.bibsysdev', name = 's3', version.ref = 'nva-commons' }
 nva-language = { group = 'com.github.bibsysdev', name = 'nva-language', version.ref = 'nva-language' }
+nva-secrets = { group = 'com.github.bibsysdev', name = 'secrets', version.ref = 'nva-commons' }
 
 jackson-databind = { group = 'com.fasterxml.jackson.core', name = 'jackson-databind', version.ref = 'jackson' }
 jackson-annotations = { group = 'com.fasterxml.jackson.core', name = 'jackson-annotations', version.ref = 'jackson' }
