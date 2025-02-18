@@ -61,6 +61,7 @@ import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
+import nva.commons.secrets.ErrorReadingSecretException;
 import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.collection.IsCollectionWithSize;
 import org.hamcrest.core.IsNull;
@@ -431,6 +432,24 @@ class LibraryUserManagementHandlerTest {
         requests.forEach(request -> assertThat(USER_IDENTIFIER_REALMS.stream()
                                                    .allMatch(request.getBodyAsString()::contains),
                                                equalTo(true)));
+    }
+
+    @Test
+    void shouldThrowCorrectExceptionWhenAlmaApiKeysCannotBeMapped() {
+        var invalidAlmaKeyMapping = "Hello";
+        var getSecretValueResponse = mock(GetSecretValueResponse.class);
+        var secretsManagerClient = mock(SecretsManagerClient.class);
+
+        when(getSecretValueResponse.secretString())
+            .thenReturn(invalidAlmaKeyMapping);
+        when(secretsManagerClient.getSecretValue(any(GetSecretValueRequest.class)))
+            .thenReturn(getSecretValueResponse);
+
+        almaKeysFetcher = new AlmaKeysFetcher(secretsManagerClient);
+
+        assertThrows(ErrorReadingSecretException.class, () -> new LibraryUserManagementHandler(s3Client,
+                                                                                               mockedEnvironment,
+                                                                                               almaKeysFetcher));
     }
 
     private S3Event prepareBaseBibliotekFromRecords(final UnixPath s3Path, final Record... records) throws IOException {
