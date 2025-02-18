@@ -507,7 +507,7 @@ class LibraryUserManagementHandlerTest {
     }
 
     @Test
-    void shouldHandleErrorWhenAlmaApiKeysCannotBeMapped() {
+    void shouldThrowCorrectExceptionWhenAlmaApiKeysCannotBeMapped() {
         var invalidAlmaKeyMapping = "Hello";
         var getSecretValueResponse = mock(GetSecretValueResponse.class);
         var secretsManagerClient = mock(SecretsManagerClient.class);
