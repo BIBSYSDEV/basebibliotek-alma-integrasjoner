@@ -21,6 +21,10 @@ public abstract class AlmaObjectConverter {
     protected final transient AlmaCodeProvider almaCodeProvider;
     protected final transient BaseBibliotek baseBibliotek;
 
+    public AlmaObjectConverter(BaseBibliotek baseBibliotek) {
+        this(null, baseBibliotek);
+    }
+
     public AlmaObjectConverter(AlmaCodeProvider almaCodeProvider, BaseBibliotek baseBibliotek) {
         this.almaCodeProvider = almaCodeProvider;
         this.baseBibliotek = baseBibliotek;
