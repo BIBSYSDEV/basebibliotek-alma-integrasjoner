@@ -1,334 +1,334 @@
 [
   {
     "almaCode": "AASENTUN",
-    "almaApiKey": "almaApiKey_AASENTUN"
+    "apiKey": "almaApiKey_AASENTUN"
   },
   {
     "almaCode": "AHO",
-    "almaApiKey": "almaApiKey_AHO"
+    "apiKey": "almaApiKey_AHO"
   },
   {
     "almaCode": "AHUS",
-    "almaApiKey": "almaApiKey_AHUS"
+    "apiKey": "almaApiKey_AHUS"
   },
   {
     "almaCode": "AMH",
-    "almaApiKey": "almaApiKey_AMH"
+    "apiKey": "almaApiKey_AMH"
   },
   {
     "almaCode": "BI",
-    "almaApiKey": "almaApiKey_BI"
+    "apiKey": "almaApiKey_BI"
   },
   {
     "almaCode": "BRC",
-    "almaApiKey": "almaApiKey_BRC"
+    "apiKey": "almaApiKey_BRC"
   },
   {
     "almaCode": "BREDK",
-    "almaApiKey": "almaApiKey_BREDK"
+    "apiKey": "almaApiKey_BREDK"
   },
   {
     "almaCode": "BUSKSYK",
-    "almaApiKey": "almaApiKey_BUSKSYK"
+    "apiKey": "almaApiKey_BUSKSYK"
   },
   {
     "almaCode": "DEPSS",
-    "almaApiKey": "almaApiKey_DEPSS"
+    "apiKey": "almaApiKey_DEPSS"
   },
   {
     "almaCode": "DIAKON",
-    "almaApiKey": "almaApiKey_DIAKON"
+    "apiKey": "almaApiKey_DIAKON"
   },
   {
     "almaCode": "DIASYK",
-    "almaApiKey": "almaApiKey_DIASYK"
+    "apiKey": "almaApiKey_DIASYK"
   },
   {
     "almaCode": "DMMH",
-    "almaApiKey": "almaApiKey_DMMH"
+    "apiKey": "almaApiKey_DMMH"
   },
   {
     "almaCode": "ERFKOMP",
-    "almaApiKey": "almaApiKey_ERFKOMP"
+    "apiKey": "almaApiKey_ERFKOMP"
   },
   {
     "almaCode": "FFI_BIBL",
-    "almaApiKey": "almaApiKey_FFI_BIBL"
+    "apiKey": "almaApiKey_FFI_BIBL"
   },
   {
     "almaCode": "FHS",
-    "almaApiKey": "almaApiKey_FHS"
+    "apiKey": "almaApiKey_FHS"
   },
   {
     "almaCode": "FISKDIR",
-    "almaApiKey": "almaApiKey_FISKDIR"
+    "apiKey": "almaApiKey_FISKDIR"
   },
   {
     "almaCode": "FOLKEMUS",
-    "almaApiKey": "almaApiKey_FOLKEMUS"
+    "apiKey": "almaApiKey_FOLKEMUS"
   },
   {
     "almaCode": "FORBRUK",
-    "almaApiKey": "almaApiKey_FORBRUK"
+    "apiKey": "almaApiKey_FORBRUK"
   },
   {
     "almaCode": "GLOMDAL",
-    "almaApiKey": "almaApiKey_GLOMDAL"
+    "apiKey": "almaApiKey_GLOMDAL"
   },
   {
     "almaCode": "GRANDE",
-    "almaApiKey": "almaApiKey_GRANDE"
+    "apiKey": "almaApiKey_GRANDE"
   },
   {
     "almaCode": "HH",
-    "almaApiKey": "almaApiKey_HH"
+    "apiKey": "almaApiKey_HH"
   },
   {
     "almaCode": "HIB",
-    "almaApiKey": "almaApiKey_HIB"
+    "apiKey": "almaApiKey_HIB"
   },
   {
     "almaCode": "HIM",
-    "almaApiKey": "almaApiKey_HIM"
+    "apiKey": "almaApiKey_HIM"
   },
   {
     "almaCode": "HIO",
-    "almaApiKey": "almaApiKey_HIO"
+    "apiKey": "almaApiKey_HIO"
   },
   {
     "almaCode": "HIOA",
-    "almaApiKey": "almaApiKey_HIOA"
+    "apiKey": "almaApiKey_HIOA"
   },
   {
     "almaCode": "HIT",
-    "almaApiKey": "almaApiKey_HIT"
+    "apiKey": "almaApiKey_HIT"
   },
   {
     "almaCode": "HVO",
-    "almaApiKey": "almaApiKey_HVO"
+    "apiKey": "almaApiKey_HVO"
   },
   {
     "almaCode": "IFE",
-    "almaApiKey": "almaApiKey_IFE"
+    "apiKey": "almaApiKey_IFE"
   },
   {
     "almaCode": "JBV",
-    "almaApiKey": "almaApiKey_JBV"
+    "apiKey": "almaApiKey_JBV"
   },
   {
     "almaCode": "JUSDEP",
-    "almaApiKey": "almaApiKey_JUSDEP"
+    "apiKey": "almaApiKey_JUSDEP"
   },
   {
     "almaCode": "KHIO",
-    "almaApiKey": "almaApiKey_KHIO"
+    "apiKey": "almaApiKey_KHIO"
   },
   {
     "almaCode": "KRUS",
-    "almaApiKey": "almaApiKey_KRUS"
+    "apiKey": "almaApiKey_KRUS"
   },
   {
     "almaCode": "KT",
-    "almaApiKey": "almaApiKey_KT"
+    "apiKey": "almaApiKey_KT"
   },
   {
     "almaCode": "LOVISHS",
-    "almaApiKey": "almaApiKey_LOVISHS"
+    "apiKey": "almaApiKey_LOVISHS"
   },
   {
     "almaCode": "MAIHAUG",
-    "almaApiKey": "almaApiKey_MAIHAUG"
+    "apiKey": "almaApiKey_MAIHAUG"
   },
   {
     "almaCode": "MF",
-    "almaApiKey": "almaApiKey_MF"
+    "apiKey": "almaApiKey_MF"
   },
   {
     "almaCode": "MH",
-    "almaApiKey": "almaApiKey_MH"
+    "apiKey": "almaApiKey_MH"
   },
   {
     "almaCode": "MIGRDIR",
-    "almaApiKey": "almaApiKey_MIGRDIR"
+    "apiKey": "almaApiKey_MIGRDIR"
   },
   {
     "almaCode": "MOLDESYK",
-    "almaApiKey": "almaApiKey_MOLDESYK"
+    "apiKey": "almaApiKey_MOLDESYK"
   },
   {
     "almaCode": "NAV",
-    "almaApiKey": "almaApiKey_NAV"
+    "apiKey": "almaApiKey_NAV"
   },
   {
     "almaCode": "NB",
-    "almaApiKey": "almaApiKey_NB"
+    "apiKey": "almaApiKey_NB"
   },
   {
     "almaCode": "NBANK",
-    "almaApiKey": "almaApiKey_NBANK"
+    "apiKey": "almaApiKey_NBANK"
   },
   {
     "almaCode": "NBI",
-    "almaApiKey": "almaApiKey_NBI"
+    "apiKey": "almaApiKey_NBI"
   },
   {
     "almaCode": "NHHB",
-    "almaApiKey": "almaApiKey_NHHB"
+    "apiKey": "almaApiKey_NHHB"
   },
   {
     "almaCode": "NIFU",
-    "almaApiKey": "almaApiKey_NIFU"
+    "apiKey": "almaApiKey_NIFU"
   },
   {
     "almaCode": "NIH",
-    "almaApiKey": "almaApiKey_NIH"
+    "apiKey": "almaApiKey_NIH"
   },
   {
     "almaCode": "NILU",
-    "almaApiKey": "almaApiKey_NILU"
+    "apiKey": "almaApiKey_NILU"
   },
   {
     "almaCode": "NINA_DN",
-    "almaApiKey": "almaApiKey_NINA_DN"
+    "apiKey": "almaApiKey_NINA_DN"
   },
   {
     "almaCode": "NISK",
-    "almaApiKey": "almaApiKey_NISK"
+    "apiKey": "almaApiKey_NISK"
   },
   {
     "almaCode": "NLA",
-    "almaApiKey": "almaApiKey_NLA"
+    "apiKey": "almaApiKey_NLA"
   },
   {
     "almaCode": "NM",
-    "almaApiKey": "almaApiKey_NM"
+    "apiKey": "almaApiKey_NM"
   },
   {
     "almaCode": "NMBU",
-    "almaApiKey": "almaApiKey_NMBU"
+    "apiKey": "almaApiKey_NMBU"
   },
   {
     "almaCode": "NMH",
-    "almaApiKey": "almaApiKey_NMH"
+    "apiKey": "almaApiKey_NMH"
   },
   {
     "almaCode": "NOBEL",
-    "almaApiKey": "almaApiKey_NOBEL"
+    "apiKey": "almaApiKey_NOBEL"
   },
   {
     "almaCode": "NOFIMA",
-    "almaApiKey": "almaApiKey_NOFINA"
+    "apiKey": "almaApiKey_NOFINA"
   },
   {
     "almaCode": "NOM",
-    "almaApiKey": "almaApiKey_NOM"
+    "apiKey": "almaApiKey_NOM"
   },
   {
     "almaCode": "NORCE",
-    "almaApiKey": "almaApiKey_NORGE"
+    "apiKey": "almaApiKey_NORGE"
   },
   {
     "almaCode": "NPOLAR",
-    "almaApiKey": "almaApiKey_NPOLAR"
+    "apiKey": "almaApiKey_NPOLAR"
   },
   {
     "almaCode": "NTNU_UB",
-    "almaApiKey": "almaApiKey_NTNU_UB"
+    "apiKey": "almaApiKey_NTNU_UB"
   },
   {
     "almaCode": "OSTFSYK",
-    "almaApiKey": "almaApiKey_OSTFSYK"
+    "apiKey": "almaApiKey_OSTFSYK"
   },
   {
     "almaCode": "POLITIHS",
-    "almaApiKey": "almaApiKey_POLITIHS"
+    "apiKey": "almaApiKey_POLITIHS"
   },
   {
     "almaCode": "RBUP_OS",
-    "almaApiKey": "almaApiKey_RBUP_OS"
+    "apiKey": "almaApiKey_RBUP_OS"
   },
   {
     "almaCode": "RIKSANT",
-    "almaApiKey": "almaApiKey_RIKSANT"
+    "apiKey": "almaApiKey_RIKSANT"
   },
   {
     "almaCode": "SAMALL",
-    "almaApiKey": "almaApiKey_SAMALL"
+    "apiKey": "almaApiKey_SAMALL"
   },
   {
     "almaCode": "SAMBIB",
-    "almaApiKey": "almaApiKey_SAMBIB"
+    "apiKey": "almaApiKey_SAMBIB"
   },
   {
     "almaCode": "SIHF",
-    "almaApiKey": "almaApiKey_SIHF"
+    "apiKey": "almaApiKey_SIHF"
   },
   {
     "almaCode": "SIRUS",
-    "almaApiKey": "almaApiKey_SIRUS"
+    "apiKey": "almaApiKey_SIRUS"
   },
   {
     "almaCode": "SKOFIMUS",
-    "almaApiKey": "almaApiKey_SKOFIMUS"
+    "apiKey": "almaApiKey_SKOFIMUS"
   },
   {
     "almaCode": "SSB",
-    "almaApiKey": "almaApiKey_SSB"
+    "apiKey": "almaApiKey_SSB"
   },
   {
     "almaCode": "SSHF",
-    "almaApiKey": "almaApiKey_SSHF"
+    "apiKey": "almaApiKey_SSHF"
   },
   {
     "almaCode": "STAMI",
-    "almaApiKey": "almaApiKey_STAMI"
+    "apiKey": "almaApiKey_STAMI"
   },
   {
     "almaCode": "STAVMUS",
-    "almaApiKey": "almaApiKey_STAVMUS"
+    "apiKey": "almaApiKey_STAVMUS"
   },
   {
     "almaCode": "STORTING",
-    "almaApiKey": "almaApiKey_STORTING"
+    "apiKey": "almaApiKey_STORTING"
   },
   {
     "almaCode": "TEKNMUS",
-    "almaApiKey": "almaApiKey_TEKNMUS"
+    "apiKey": "almaApiKey_TEKNMUS"
   },
   {
     "almaCode": "TELSYK",
-    "almaApiKey": "almaApiKey_TELSYK"
+    "apiKey": "almaApiKey_TELSYK"
   },
   {
     "almaCode": "UBA",
-    "almaApiKey": "almaApiKey_UBA"
+    "apiKey": "almaApiKey_UBA"
   },
   {
     "almaCode": "UBB",
-    "almaApiKey": "almaApiKey_UBB"
+    "apiKey": "almaApiKey_UBB"
   },
   {
     "almaCode": "UBIN",
-    "almaApiKey": "almaApiKey_UBIN"
+    "apiKey": "almaApiKey_UBIN"
   },
   {
     "almaCode": "UBIS",
-    "almaApiKey": "almaApiKey_UBIS"
+    "apiKey": "almaApiKey_UBIS"
   },
   {
     "almaCode": "UBO",
-    "almaApiKey": "almaApiKey_UBO"
+    "apiKey": "almaApiKey_UBO"
   },
   {
     "almaCode": "UBTO",
-    "almaApiKey": "almaApiKey_UBTO"
+    "apiKey": "almaApiKey_UBTO"
   },
   {
     "almaCode": "UNIS",
-    "almaApiKey": "almaApiKey_UNIS"
+    "apiKey": "almaApiKey_UNIS"
   },
   {
     "almaCode": "VEGDIR",
-    "almaApiKey": "almaApiKey_VEGDIR"
+    "apiKey": "almaApiKey_VEGDIR"
   }
 ]
