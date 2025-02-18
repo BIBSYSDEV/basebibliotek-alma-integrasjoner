@@ -122,6 +122,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         int counter = 0;
         var userReportBuilder = new UserReportBuilder();
         var almaReportBuilder = new AlmaReportBuilder();
+
         for (String almaCode : almaApiKeyMap.keySet()) {
             List<User> users = generateUsers(almaCodeProvider,
                                              baseBibliotekList,
@@ -133,8 +134,10 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
                                                  almaReportBuilder);
             usersPerAlmaInstanceMap.put(almaCode, users);
         }
+
         reports.add(userReportBuilder);
         reports.add(almaReportBuilder);
+
         return counter;
     }
 
