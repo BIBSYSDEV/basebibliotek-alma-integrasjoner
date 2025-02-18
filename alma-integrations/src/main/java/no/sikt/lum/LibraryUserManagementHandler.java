@@ -54,7 +54,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
 
     private final transient BaseBibliotekApi baseBibliotekApi;
     private final transient AlmaUserUpserter almaUserUpserter;
-    private final transient SecretFetcher<Map<String, String>> almaKeysFetcher;
+    private final transient Map<String, String> almaApiKeyMap;
     private final transient Map<String, List<User>> usersPerAlmaInstanceMap = new ConcurrentHashMap<>();
 
     @JacocoGenerated
@@ -74,7 +74,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         this.s3Client = s3Client;
         this.environment = environment;
         final URI almaUri = UriWrapper.fromUri(environment.readEnv(ALMA_API_HOST)).getUri();
-        this.almaKeysFetcher = almaKeysFetcher;
+        almaApiKeyMap = almaKeysFetcher.fetchSecret();
         this.almaUserUpserter = new HttpUrlConnectionAlmaUserUpserter(almaUri);
         final URI basebibliotekUri =
             UriWrapper.fromUri(environment.readEnv(BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).getUri();
@@ -122,7 +122,6 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         int counter = 0;
         var userReportBuilder = new UserReportBuilder();
         var almaReportBuilder = new AlmaReportBuilder();
-        var almaApiKeyMap = almaKeysFetcher.fetchSecret();
 
         for (String almaCode : almaApiKeyMap.keySet()) {
             List<User> users = generateUsers(almaCodeProvider,

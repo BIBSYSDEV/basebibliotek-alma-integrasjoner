@@ -507,12 +507,7 @@ class LibraryUserManagementHandlerTest {
     }
 
     @Test
-    void shouldHandleErrorWhenAlmaApiKeysCannotBeMapped() throws Exception {
-        final Map<String, String> bibNrToXmlMap = Collections.singletonMap(BIBNR_RESOLVABLE_TO_ALMA_CODE,
-                                                                           IoUtils.stringFromResources(
-                                                                               Path.of(BASEBIBLIOTEK_0030100_XML)));
-        final S3Event s3Event = HandlerTestUtils.prepareBaseBibliotekFromXml(bibNrToXmlMap, s3Driver);
-
+    void shouldHandleErrorWhenAlmaApiKeysCannotBeMapped() {
         var invalidAlmaKeyMapping = "Hello";
         var getSecretValueResponse = mock(GetSecretValueResponse.class);
         var secretsManagerClient = mock(SecretsManagerClient.class);
@@ -524,12 +519,9 @@ class LibraryUserManagementHandlerTest {
 
         almaKeysFetcher = new AlmaKeysFetcher(secretsManagerClient);
 
-        libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client,
-                                                                        mockedEnvironment,
-                                                                        almaKeysFetcher);
-
-        assertThrows(ErrorReadingSecretException.class, () -> libraryUserManagementHandler.handleRequest(s3Event,
-                                                                                                         CONTEXT));
+        assertThrows(ErrorReadingSecretException.class, () -> new LibraryUserManagementHandler(s3Client,
+                                                                                               mockedEnvironment,
+                                                                                               almaKeysFetcher));
     }
 
     private S3Event prepareBaseBibliotekFromRecords(final UnixPath s3Path, final Record... records) throws IOException {
