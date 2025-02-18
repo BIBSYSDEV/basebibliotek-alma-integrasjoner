@@ -36,7 +36,7 @@ public class AlmaKeysFetcher implements SecretFetcher<Map<String, String>> {
         var keyPairs = parseSecretString(secretString);
         var keyPairMap = Arrays.stream(keyPairs)
                              .collect(Collectors.toMap(a -> a.almaCode,
-                                                       a -> a.almaApikey));
+                                                       a -> a.apiKey));
         logger.info(KEYS_FOR_ALMA_FOUND_MESSAGE, keyPairMap.size());
         return keyPairMap;
     }
@@ -54,8 +54,8 @@ public class AlmaKeysFetcher implements SecretFetcher<Map<String, String>> {
 
         @JsonProperty("almaCode")
         private transient String almaCode;
-        @JsonProperty("almaApiKey")
-        private transient String almaApikey;
+        @JsonProperty("apiKey")
+        private transient String apiKey;
     }
 
 }
