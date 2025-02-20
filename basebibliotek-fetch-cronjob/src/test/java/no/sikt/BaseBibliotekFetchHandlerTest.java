@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.ScheduledEvent;
@@ -145,7 +146,7 @@ public class BaseBibliotekFetchHandlerTest {
         //verify that the s3client has been called to putobjects:
         var expectedUpload = "0030100\n0030101\n7049304\n0030103";
         Mockito
-            .verify(this.s3Client)
+            .verify(this.s3Client, times(2))
             .putObject(any(PutObjectRequest.class),
                        argThat(new RequestBodyMatches(RequestBody.fromString(expectedUpload))));
     }
