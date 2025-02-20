@@ -1,5 +1,6 @@
 package no.sikt;
 
+import static java.util.Objects.nonNull;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -21,7 +22,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -64,6 +64,9 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
     // anymore.
     public static final int NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE = 100;
     public static final String BIBNR_FILENAME_DELIMITER = "_";
+    public static final String FOLDER_DELIMITER = "/";
+    public static final String LUM_FOLDER_NAME = "lum";
+    public static final String RSP_FOLDER_NAME = "rsp";
     private final transient S3Client s3Client;
     private final transient HttpClient httpClient;
     private final transient String basebibliotekUri;
@@ -135,7 +138,7 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
     }
 
     private Optional<String> getBibnrFromRecord(Record record) {
-        return Objects.nonNull(record.getBibnr()) ? Optional.of(record.getBibnr()) : logRecordWithMissingBibnr(record);
+        return nonNull(record.getBibnr()) ? Optional.of(record.getBibnr()) : logRecordWithMissingBibnr(record);
     }
 
     private Optional<String> logRecordWithMissingBibnr(Record record) {
@@ -168,10 +171,14 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
     }
 
     private void putObjectToS3(List<String> subsetBibNr, String subsetNumber) {
-        attempt(() -> s3Client.putObject(createPutObjectRequest(subsetNumber),
-                                         RequestBody.fromString(craftBibnrString(subsetBibNr))))
-            .orElseThrow(fail -> logExpectionAndThrowRuntimeError(fail.getException(),
-                                                                  COULD_NOT_UPLOAD_FILE_TO_S_3_ERROR_MESSAGE));
+        try {
+            s3Client.putObject(createPutObjectRequest(subsetNumber, RSP_FOLDER_NAME),
+                               RequestBody.fromString(craftBibnrString(subsetBibNr)));
+            s3Client.putObject(createPutObjectRequest(subsetNumber, LUM_FOLDER_NAME),
+                               RequestBody.fromString(craftBibnrString(subsetBibNr)));
+        } catch (Exception ex) {
+            throw logExpectionAndThrowRuntimeError(ex, COULD_NOT_UPLOAD_FILE_TO_S_3_ERROR_MESSAGE);
+        }
     }
 
     private String craftBibnrString(List<String> bibNrs) {
@@ -185,14 +192,21 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
                    : new RuntimeException(exception);
     }
 
-    private PutObjectRequest createPutObjectRequest(String subsetNumber) {
-        Date date = new Date();
-        SimpleDateFormat formatter = new SimpleDateFormat(DD_MM_YYYY_PATTERN, Locale.ROOT);
-        String filename = formatter.format(date) + BIBNR_FILENAME_DELIMITER + subsetNumber + TXT;
+    private PutObjectRequest createPutObjectRequest(String subsetNumber, String folder) {
+        var filename = createFileName(subsetNumber);
+        var folderAndFileNameKey = nonNull(folder) ? folder + FOLDER_DELIMITER + filename : filename;
+
         return PutObjectRequest.builder()
                    .bucket(s3BasebibliotekXmlBucket)
-                   .key(filename)
+                   .key(folderAndFileNameKey)
                    .build();
+    }
+
+    private String createFileName(String subsetNumber) {
+        Date date = new Date();
+        SimpleDateFormat formatter = new SimpleDateFormat(DD_MM_YYYY_PATTERN, Locale.ROOT);
+
+        return formatter.format(date) + BIBNR_FILENAME_DELIMITER + subsetNumber + TXT;
     }
 
     private List<String> fetchBasebibliotekXmls(List<String> filenames) {

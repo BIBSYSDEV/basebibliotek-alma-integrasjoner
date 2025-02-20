@@ -86,26 +86,25 @@ class LibraryUserManagementHandlerTest {
     public static final String INST = "Inst";
     public static final Context CONTEXT = mock(Context.class);
     public static final String BIBLTYPE = "Bibltype";
-    private static final String SHARED_CONFIG_BUCKET_NAME_ENV_VALUE = "SharedConfigBucket";
     private static final String BIBNR_RESOLVABLE_TO_ALMA_CODE = "0030100";
     private static final String BASEBIBLIOTEK_0030100_XML = "bb_0030100.xml";
     private static final String LIB_0030100_ID = "lib0030100";
     private static final String INVALID_BASEBIBLIOTEK_XML_STRING = "invalid";
     private static final String EMAIL_ADR = "adr@example.com";
     private static final String EMAIL_BEST = "best@example.com";
+    private static final String BUCKET_NAME = "bucket";
 
     private static final Environment mockedEnvironment = mock(Environment.class);
     private transient FakeS3Client s3Client;
     private transient S3Driver s3Driver;
     private transient LibraryUserManagementHandler libraryUserManagementHandler;
     private transient int numberOfAlmaInstances;
-
     private transient AlmaKeysFetcher almaKeysFetcher;
 
     @BeforeEach
     public void init(final WireMockRuntimeInfo wmRuntimeInfo) {
         s3Client = new FakeS3Client();
-        s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
+        s3Driver = new S3Driver(s3Client, BUCKET_NAME);
         var secretsManagerClient = mock(SecretsManagerClient.class);
         almaKeysFetcher = new AlmaKeysFetcher(secretsManagerClient);
         var getSecretValueResponse = mock(GetSecretValueResponse.class);
