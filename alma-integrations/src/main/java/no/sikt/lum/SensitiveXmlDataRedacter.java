@@ -8,7 +8,7 @@ import no.sikt.commons.Redacter;
 
 public class SensitiveXmlDataRedacter implements Redacter {
 
-    private static final String PATTERN_STRING = "<%s(.*?)</%s>";
+    private static final String PATTERN_STRING = "<%s(>| .*?>).*?</%s>";
     private static final String REPLACEMENT_STRING = "<%s>redacted</%s>";
     private static final Set<String> DEFAULT_TAGS = Set.of("aut", "password");
 
