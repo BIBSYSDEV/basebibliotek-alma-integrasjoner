@@ -15,6 +15,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import no.sikt.alma.user.generated.User;
 import no.sikt.clients.AbstractHttpUrlConnectionApi;
+import no.sikt.commons.Redacter;
+import no.sikt.lum.SensitiveXmlDataRedacter;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,15 +56,20 @@ public class HttpUrlConnectionAlmaUserUpserter extends AbstractHttpUrlConnection
     private static final ObjectMapper objectMapper = new ObjectMapper()
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
                    false);
+    private final Redacter redacter;
 
     public HttpUrlConnectionAlmaUserUpserter(final URI almaApiHost) {
-        this(HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build(), almaApiHost);
+        this(HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build(),
+             almaApiHost,
+             new SensitiveXmlDataRedacter());
     }
 
     public HttpUrlConnectionAlmaUserUpserter(final HttpClient httpClient,
-                                             final URI almaApiHost) {
+                                             final URI almaApiHost,
+                                             Redacter redacter) {
         super(httpClient);
         this.almaApiHost = almaApiHost;
+        this.redacter = redacter;
     }
 
     private Optional<String> fetchUser(final String userID, String almaApikey) {
@@ -129,7 +136,7 @@ public class HttpUrlConnectionAlmaUserUpserter extends AbstractHttpUrlConnection
                 final String message = String.format(
                     UNEXPECTED_RESPONSE_UPDATING_USER_MESSAGE_FORMAT,
                     user.getPrimaryId(),
-                    userAsString,
+                    redacter.redact(userAsString),
                     response.statusCode(),
                     response.body());
                 throw new RuntimeException(message);
@@ -159,7 +166,7 @@ public class HttpUrlConnectionAlmaUserUpserter extends AbstractHttpUrlConnection
                 final String message = String.format(
                     UNEXPECTED_RESPONSE_CREATING_USER_MESSAGE_FORMAT,
                     user.getPrimaryId(),
-                    userAsString,
+                    redacter.redact(userAsString),
                     response.statusCode(),
                     response.body());
                 throw new RuntimeException(message);

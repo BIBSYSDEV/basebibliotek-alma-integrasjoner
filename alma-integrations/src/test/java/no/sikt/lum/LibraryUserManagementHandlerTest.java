@@ -88,7 +88,9 @@ class LibraryUserManagementHandlerTest {
     public static final String BIBLTYPE = "Bibltype";
     private static final String BIBNR_RESOLVABLE_TO_ALMA_CODE = "0030100";
     private static final String BASEBIBLIOTEK_0030100_XML = "bb_0030100.xml";
+    private static final String BASEBIBLIOTEK_2062200_XML = "bb_2062200.xml";
     private static final String LIB_0030100_ID = "lib0030100";
+    private static final String LIB_2062200_ID = "lib2062200";
     private static final String INVALID_BASEBIBLIOTEK_XML_STRING = "invalid";
     private static final String EMAIL_ADR = "adr@example.com";
     private static final String EMAIL_BEST = "best@example.com";
@@ -305,6 +307,36 @@ class LibraryUserManagementHandlerTest {
         assertThat(count, is(0));
         assertThat(appender.getMessages(), containsString(
             HttpUrlConnectionAlmaUserUpserter.UNEXPECTED_RESPONSE_UPDATING_USER_LOG_MESSAGE_PREFIX));
+    }
+
+    @Test
+    public void shouldRedactSensitiveDataFromExceptionWhenAlmaCreateFail() throws IOException {
+        var bibNrToXmlMap = Collections.singletonMap(BIBNR_RESOLVABLE_TO_ALMA_CODE,
+                                                     IoUtils.stringFromResources(Path.of(BASEBIBLIOTEK_2062200_XML)));
+        var s3Event = HandlerTestUtils.prepareBaseBibliotekFromXml(bibNrToXmlMap, s3Driver);
+        WireMocker.mockAlmaGetResponseUserNotFound(LIB_2062200_ID);
+        WireMocker.mockAlmaPostResponseBadRequest();
+        var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaUserUpserter.class);
+
+        libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
+
+        assertThat(appender.getMessages(), not(containsString("<password>***masked***</password>")));
+        assertThat(appender.getMessages(), containsString("<password>redacted</password>"));
+    }
+
+    @Test
+    public void shouldRedactSensitiveDataFromExceptionWhenAlmaUpdateFail() throws IOException {
+        var bibNrToXmlMap = Collections.singletonMap(BIBNR_RESOLVABLE_TO_ALMA_CODE,
+                                                     IoUtils.stringFromResources(Path.of(BASEBIBLIOTEK_2062200_XML)));
+        var s3Event = HandlerTestUtils.prepareBaseBibliotekFromXml(bibNrToXmlMap, s3Driver);
+        WireMocker.mockAlmaGetResponse(LIB_2062200_ID);
+        WireMocker.mockAlmaPutResponseBadRequest(LIB_2062200_ID);
+        var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaUserUpserter.class);
+
+        libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
+
+        assertThat(appender.getMessages(), not(containsString("<password>***masked***</password>")));
+        assertThat(appender.getMessages(), containsString("<password>redacted</password>"));
     }
 
     @Test
