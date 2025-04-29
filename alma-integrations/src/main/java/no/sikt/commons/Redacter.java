@@ -1,5 +1,6 @@
 package no.sikt.commons;
 
+@FunctionalInterface
 public interface Redacter {
 
     /**
