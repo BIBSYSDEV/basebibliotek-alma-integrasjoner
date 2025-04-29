@@ -18,7 +18,7 @@ subprojects {
             apply plugin: 'jacoco'
 
             pmd {
-                toolVersion = '7.8.0'
+                toolVersion = '7.13.0'
                 ruleSetConfig = rootProject.resources.text.fromFile('config/pmd/ruleset.xml')
                 ruleSets = []
                 ignoreFailures = false
