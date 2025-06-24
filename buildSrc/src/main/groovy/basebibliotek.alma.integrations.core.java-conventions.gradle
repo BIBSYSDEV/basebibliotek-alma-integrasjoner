@@ -12,24 +12,30 @@ repositories {
 
 subprojects {
     subproject ->
-        if (!subproject.name.endsWith("-generated")) {
-            apply plugin: 'pmd'
-            apply plugin: 'checkstyle'
-            apply plugin: 'jacoco'
+        if (!subproject.name.endsWith("generated")) {
+            subproject.pluginManager.apply('pmd')
+            subproject.pluginManager.apply('checkstyle')
+            subproject.pluginManager.apply('jacoco')
+
 
             pmd {
-                toolVersion = '7.13.0'
+                toolVersion = '7.14.0'
                 ruleSetConfig = rootProject.resources.text.fromFile('config/pmd/ruleset.xml')
                 ruleSets = []
                 ignoreFailures = false
             }
 
             checkstyle {
+                toolVersion = '10.17.0'
                 configFile = rootProject.resources.text.fromFile('config/checkstyle/checkstyle.xml').asFile()
                 configProperties.checkstyleSuppressionsPath =
                         rootProject.resources.text
                                 .fromFile('config/checkstyle/checkstyle-suppressions.xml').asFile()
                 showViolations = true
+            }
+
+            jacoco {
+                toolVersion = '0.8.11'
             }
 
             jacocoTestReport {
@@ -43,6 +49,14 @@ subprojects {
         }
 }
 
+sourceSets {
+    test {
+        resources {
+            exclude '**/*.java' , '*/*.xml', '*generated'
+        }
+    }
+
+}
 // Running tests using gradle
 tasks.named('test', Test) {
     useJUnitPlatform()
@@ -58,9 +72,21 @@ tasks.named('build').configure {
     dependsOn tasks.named('shadowJar')
 }
 
+tasks.named('testCodeCoverageReport', JacocoReport) {
+
+    reports {
+        html.required.set(true)
+        xml.required.set(false)
+        csv.required.set(false)
+    }
+}
+
 tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification) {
     violationRules {
         rule {
+            excludes = [
+                    '*generated'
+            ]
             limit {
                 counter = 'METHOD'
                 value = 'COVEREDRATIO'
@@ -69,6 +95,9 @@ tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification) {
         }
 
         rule {
+            excludes = [
+                    '*generated'
+            ]
             limit {
                 counter = 'CLASS'
                 value = 'COVEREDRATIO'
