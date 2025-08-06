@@ -8,6 +8,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static no.sikt.BasebibliotekFetchHandler.NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
@@ -28,8 +29,11 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
+import java.text.SimpleDateFormat;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 import no.unit.nva.stubs.WiremockHttpClient;
@@ -40,6 +44,7 @@ import nva.commons.logutils.TestAppender;
 import org.hamcrest.core.Every;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -143,12 +148,24 @@ public class BaseBibliotekFetchHandlerTest {
         WireMock.verify(0,
                         getRequestedFor(urlEqualTo(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_FULL_XML)));
 
+        var putObjectRequestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+
         //verify that the s3client has been called to putobjects:
         var expectedUpload = "0030100\n0030101\n7049304\n0030103";
         Mockito
             .verify(this.s3Client, times(2))
-            .putObject(any(PutObjectRequest.class),
+            .putObject(putObjectRequestCaptor.capture(),
                        argThat(new RequestBodyMatches(RequestBody.fromString(expectedUpload))));
+
+        var s3Keys = putObjectRequestCaptor
+                         .getAllValues()
+                         .stream()
+                         .map(PutObjectRequest::key)
+                         .toList();
+        var filename = createFileName();
+        var expectedKeys = List.of("lum/" + filename, "rsp/" + filename);
+
+        assertThat(s3Keys, containsInAnyOrder(expectedKeys.toArray()));
     }
 
     @Test
@@ -240,6 +257,13 @@ public class BaseBibliotekFetchHandlerTest {
                                     .withHeader(CONTENT_TYPE, "application/xml")
                                     .withStatus(HttpURLConnection.HTTP_OK)
                                     .withBody(body)));
+    }
+
+    private String createFileName() {
+        Date date = new Date();
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
+
+        return formatter.format(date) + "_0.txt";
     }
 
     static class RequestBodyMatches implements ArgumentMatcher<RequestBody> {
