@@ -19,14 +19,14 @@ subprojects {
 
 
             pmd {
-                toolVersion = '7.14.0'
+                toolVersion = '7.16.0'
                 ruleSetConfig = rootProject.resources.text.fromFile('config/pmd/ruleset.xml')
                 ruleSets = []
                 ignoreFailures = false
             }
 
             checkstyle {
-                toolVersion = '10.17.0'
+                toolVersion = '10.26.0'
                 configFile = rootProject.resources.text.fromFile('config/checkstyle/checkstyle.xml').asFile()
                 configProperties.checkstyleSuppressionsPath =
                         rootProject.resources.text
@@ -35,7 +35,7 @@ subprojects {
             }
 
             jacoco {
-                toolVersion = '0.8.11'
+                toolVersion = '0.8.13'
             }
 
             jacocoTestReport {
@@ -49,14 +49,6 @@ subprojects {
         }
 }
 
-sourceSets {
-    test {
-        resources {
-            exclude '**/*.java' , '*/*.xml', '*generated'
-        }
-    }
-
-}
 // Running tests using gradle
 tasks.named('test', Test) {
     useJUnitPlatform()
@@ -72,7 +64,7 @@ tasks.named('build').configure {
     dependsOn tasks.named('shadowJar')
 }
 
-tasks.named('testCodeCoverageReport', JacocoReport) {
+tasks.named('jacocoTestReport', JacocoReport) {
 
     reports {
         html.required.set(true)
@@ -84,9 +76,6 @@ tasks.named('testCodeCoverageReport', JacocoReport) {
 tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification) {
     violationRules {
         rule {
-            excludes = [
-                    '*generated'
-            ]
             limit {
                 counter = 'METHOD'
                 value = 'COVEREDRATIO'
@@ -95,9 +84,6 @@ tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification) {
         }
 
         rule {
-            excludes = [
-                    '*generated'
-            ]
             limit {
                 counter = 'CLASS'
                 value = 'COVEREDRATIO'
@@ -109,7 +95,6 @@ tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification) {
 }
 
 tasks.withType(Checkstyle).configureEach{
-    exclude('*generated')
     reports {
         html.required
         html.stylesheet rootProject.resources.text.fromFile('config/checkstyle/checkstyle-simple.xsl')

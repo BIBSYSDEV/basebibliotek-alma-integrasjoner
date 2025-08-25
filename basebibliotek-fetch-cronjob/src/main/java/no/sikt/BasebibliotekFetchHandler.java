@@ -15,11 +15,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -38,7 +38,6 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent, List<List<String>>> {
 
     public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_EXPORT_URL";
@@ -203,10 +202,10 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
     }
 
     private String createFileName(String subsetNumber) {
-        Date date = new Date();
-        SimpleDateFormat formatter = new SimpleDateFormat(DD_MM_YYYY_PATTERN, Locale.ROOT);
+        var formatter = DateTimeFormatter.ofPattern(DD_MM_YYYY_PATTERN, Locale.ROOT);
+        var date = LocalDate.now();
 
-        return formatter.format(date) + BIBNR_FILENAME_DELIMITER + subsetNumber + TXT;
+        return date.format(formatter) + BIBNR_FILENAME_DELIMITER + subsetNumber + TXT;
     }
 
     private List<String> fetchBasebibliotekXmls(List<String> filenames) {
