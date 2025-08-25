@@ -50,7 +50,7 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
     private static final String USERNAME_PASSWORD_DELIMITER = ":";
     private static final String COULD_NOT_UPLOAD_FILE_TO_S_3_ERROR_MESSAGE = "Could not upload file to s3";
     private static final String AUTHORIZATION = "Authorization";
-    private static final String DD_MM_YYYY_PATTERN = "dd-MM-yyyy";
+    private static final String YYYY_MM_DD_PATTERN = "yyyy-MM-dd";
     private static final String TXT = ".txt";
     private static final String COULD_NOT_GET_ERROR_MESSAGE = "could not GET ";
     private static final String BASEBIBLIOTEK_RESPONSE_ERROR =
