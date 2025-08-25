@@ -202,7 +202,7 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
     }
 
     private String createFileName(String subsetNumber) {
-        var formatter = DateTimeFormatter.ofPattern(DD_MM_YYYY_PATTERN, Locale.ROOT);
+        var formatter = DateTimeFormatter.ofPattern(YYYY_MM_DD_PATTERN, Locale.ROOT);
         var date = LocalDate.now();
 
         return date.format(formatter) + BIBNR_FILENAME_DELIMITER + subsetNumber + TXT;
