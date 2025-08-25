@@ -180,7 +180,6 @@ public class UserConverter extends AlmaObjectConverter {
         return status;
     }
 
-    @SuppressWarnings("PMD.ImplicitSwitchFallThrough")
     public String extractPrettyLibraryNameWithoutAmpersand(Record record) {
         // replace linefeed with " - "
         String libraryName = record.getInst()

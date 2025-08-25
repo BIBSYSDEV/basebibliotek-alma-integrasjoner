@@ -115,7 +115,6 @@ public class UserGroupConverter {
         return kat;
     }
 
-    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     private static BibKategori finnBibKategoriFraKundetype(String customerType) {
         BibKategori kat = null;
 

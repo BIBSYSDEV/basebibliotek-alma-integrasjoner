@@ -12,24 +12,30 @@ repositories {
 
 subprojects {
     subproject ->
-        if (!subproject.name.endsWith("-generated")) {
-            apply plugin: 'pmd'
-            apply plugin: 'checkstyle'
-            apply plugin: 'jacoco'
+        if (!subproject.name.endsWith("generated")) {
+            subproject.pluginManager.apply('pmd')
+            subproject.pluginManager.apply('checkstyle')
+            subproject.pluginManager.apply('jacoco')
+
 
             pmd {
-                toolVersion = '7.13.0'
+                toolVersion = '7.16.0'
                 ruleSetConfig = rootProject.resources.text.fromFile('config/pmd/ruleset.xml')
                 ruleSets = []
                 ignoreFailures = false
             }
 
             checkstyle {
+                toolVersion = '10.26.0'
                 configFile = rootProject.resources.text.fromFile('config/checkstyle/checkstyle.xml').asFile()
                 configProperties.checkstyleSuppressionsPath =
                         rootProject.resources.text
                                 .fromFile('config/checkstyle/checkstyle-suppressions.xml').asFile()
                 showViolations = true
+            }
+
+            jacoco {
+                toolVersion = '0.8.13'
             }
 
             jacocoTestReport {
@@ -58,6 +64,15 @@ tasks.named('build').configure {
     dependsOn tasks.named('shadowJar')
 }
 
+tasks.named('jacocoTestReport', JacocoReport) {
+
+    reports {
+        html.required.set(true)
+        xml.required.set(false)
+        csv.required.set(false)
+    }
+}
+
 tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification) {
     violationRules {
         rule {
@@ -80,7 +95,6 @@ tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification) {
 }
 
 tasks.withType(Checkstyle).configureEach{
-    exclude('*generated')
     reports {
         html.required
         html.stylesheet rootProject.resources.text.fromFile('config/checkstyle/checkstyle-simple.xsl')
