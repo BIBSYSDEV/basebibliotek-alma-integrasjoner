@@ -1,9 +1,9 @@
-
+// How Jar files are named
 group 'no.nb.basebibliotek.generated'
 version '1.0-SNAPSHOT'
 
 project.ext {
-    jaxbTargetDir = file("$buildDir/generated/sources/xjc")
+    jaxbTargetDir = file("${layout.buildDirectory.asFile.get()}/generated/sources/xjc")
 }
 
 sourceSets.main.java.srcDirs += jaxbTargetDir
@@ -13,14 +13,12 @@ configurations {
 }
 
 dependencies {
-    implementation group: 'org.glassfish.jaxb', name: 'jaxb-runtime', version: '4.0.2'
-    jaxb group: 'com.sun.xml.bind', name: 'jaxb-xjc', version: '4.0.2'
-    jaxb group: 'com.sun.xml.bind', name: 'jaxb-impl', version: '4.0.2'
-    jaxb group: 'javax.xml.bind', name: 'jaxb-api', version: '2.4.0-b180830.0359'
-    jaxb group: 'javax.activation', name:'javax.activation-api', version: '1.2.0'
+    implementation libs.jaxb.runtime
+    implementation libs.jakarta.xml.bind
+    jaxb libs.bundles.jaxb.group
 }
 
-task xsd2java() {
+tasks.register('xsd2java') {
     doLast {
         jaxbTargetDir.mkdirs()
         ant.taskdef(name: 'xjc', classname: 'com.sun.tools.xjc.XJC2Task', classpath: configurations.jaxb.asPath)
@@ -28,11 +26,11 @@ task xsd2java() {
         ant.xjc(
                 destdir: '${jaxbTargetDir}',
                 package: 'no.nb.basebibliotek.generated',
-                schema: 'https://www.nb.no/baser/bibliotek/eksport/basebibliotek.xsd'
+                schema: 'https://www.nb.no/basebibliotek/resources/basebibliotek.xsd'
         )
     }
 }
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     dependsOn(xsd2java)
 }

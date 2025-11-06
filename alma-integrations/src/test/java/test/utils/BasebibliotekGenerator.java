@@ -141,20 +141,14 @@ public class BasebibliotekGenerator {
     }
 
     private static JAXBElement<String> randomOaiOrSruOrArielIp(int index) {
-        switch (index % 5) {
-            case 0:
-                return randomJaxbElementString(OAI_FIELD_NAME);
-            case 1:
-                return randomJaxbElementString(NNCIP_URI_FIELD_NAME);
-            case 2:
-                return randomJaxbElementString(SRU_FIELD_NAME);
-            case 3:
-                return randomJaxbElementString(Z_INFO_FIELD_NAME);
-            case 4:
-                return randomJaxbElementString(Z_TARGET_FIELD_NAME);
-            default:
-                return randomJaxbElementString(IO_WS_FIELD_NAME);
-        }
+        return switch (index % 5) {
+            case 0 -> randomJaxbElementString(OAI_FIELD_NAME);
+            case 1 -> randomJaxbElementString(NNCIP_URI_FIELD_NAME);
+            case 2 -> randomJaxbElementString(SRU_FIELD_NAME);
+            case 3 -> randomJaxbElementString(Z_INFO_FIELD_NAME);
+            case 4 -> randomJaxbElementString(Z_TARGET_FIELD_NAME);
+            default -> randomJaxbElementString(IO_WS_FIELD_NAME);
+        };
     }
 
     private static AndreKoder generateRandomAndreKoder() {

@@ -1,0 +1,35 @@
+plugins{
+    id 'java'
+    id 'jacoco-report-aggregation'
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+// Needed for aggregated jacoco report
+dependencies {
+    // Need dependencies in all modules to be same version for this to work
+    subprojects.forEach {
+        jacocoAggregation it
+    }
+}
+
+// Needed for generating an aggregated jacoco report for all modules in base build dir
+reporting {
+    reports {
+        testCodeCoverageReport(JacocoCoverageReport) {
+            testType = TestSuiteType.UNIT_TEST
+        }
+        integrationTestCodeCoverageReport(JacocoCoverageReport) {
+            testType = TestSuiteType.INTEGRATION_TEST
+        }
+    }
+}
+
+// Executes the report generation
+tasks.named('check').configure {
+    dependsOn tasks.named('testCodeCoverageReport')
+    dependsOn tasks.named('integrationTestCodeCoverageReport')
+}

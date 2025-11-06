@@ -42,7 +42,7 @@ Globals:
   Function:
     Timeout: 900
     MemorySize: 1798
-    Runtime: java11
+    Runtime: java21
   Api:
     Cors:
       AllowMethods: "'POST,OPTIONS'"
@@ -58,6 +58,7 @@ Resources:
       CodeUri: alma-integrations
       Handler: no.sikt.rsp.ResourceSharingPartnerHandler::handleRequest
       Role: !GetAtt ResourceSharingPartnerHandlerRole.Arn
+      ReservedConcurrentExecutions: 1
       Environment:
         Variables:
           REPORT_BUCKET: !Sub '${ReportBucketName}-${AWS::AccountId}'
@@ -68,7 +69,7 @@ Resources:
           ALMA_API_HOST: !Ref AlmaApiHost
           ALMA_APIKEY: '{{resolve:secretsmanager:ALMA_APIKEY:SecretString:ALMA_APIKEY}}'
       Events:
-        BasebibliotekFileUpload:
+        BasebibliotekFileUploadForRsp:
           Type: S3
           Properties:
             Bucket: !Ref BasebibliotekXmlBucket
@@ -76,6 +77,8 @@ Resources:
             Filter:
               S3Key:
                 Rules:
+                  - Name: prefix
+                    Value: 'rsp/'
                   - Name: suffix
                     Value: '.txt'
 
@@ -96,6 +99,33 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: cron(0 20 * * ? *)
+
+  LibraryUserManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: alma-integrations
+      Handler: no.sikt.lum.LibraryUserManagementHandler::handleRequest
+      Role: !GetAtt LibraryUserManagementHandlerRole.Arn
+      ReservedConcurrentExecutions: 1
+      Environment:
+        Variables:
+          REPORT_BUCKET: !Sub '${ReportBucketName}-${AWS::AccountId}'
+          BASEBIBLIOTEK_REST_URL: !Ref BasebibliotekRestUrl
+          SHARED_CONFIG_BUCKET: !Ref SharedConfigBucketName
+          ALMA_API_HOST: !Ref AlmaApiHost
+      Events:
+        BasebibliotekFileUploadForLum:
+          Type: S3
+          Properties:
+            Bucket: !Ref BasebibliotekXmlBucket
+            Events: 's3:ObjectCreated:*'
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: 'lum/'
+                  - Name: suffix
+                    Value: '.txt'
 
   ResourceSharingPartnerHandlerRole:
     Type: AWS::IAM::Role
@@ -119,6 +149,16 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
 
+  LibraryUserManagementHandlerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
 
   DefaultLambdaPermissions:
     Type: AWS::IAM::Policy
@@ -127,6 +167,7 @@ Resources:
       Roles:
         - !Ref ResourceSharingPartnerHandlerRole
         - !Ref BasebibliotekFetchCronjobRole
+        - !Ref LibraryUserManagementHandlerRole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -137,6 +178,7 @@ Resources:
               - logs:PutLogEvents
               - lambda:InvokeFunction
             Resource: "*"
+
   BasebibliotekXmlBucketAccessPolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -144,6 +186,7 @@ Resources:
       Roles:
         - !Ref ResourceSharingPartnerHandlerRole
         - !Ref BasebibliotekFetchCronjobRole
+        - !Ref LibraryUserManagementHandlerRole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -159,6 +202,7 @@ Resources:
       PolicyName: !Sub SharedConfigBucketAccessPolicy-${AWS::StackName}
       Roles:
         - !Ref ResourceSharingPartnerHandlerRole
+        - !Ref LibraryUserManagementHandlerRole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -174,6 +218,7 @@ Resources:
       PolicyName: !Sub ReportBucketAccessPolicy-${AWS::StackName}
       Roles:
         - !Ref ResourceSharingPartnerHandlerRole
+        - !Ref LibraryUserManagementHandlerRole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -182,6 +227,21 @@ Resources:
               - 's3:*'
             Resource:
               - !Sub 'arn:aws:s3:::${ReportBucketName}-${AWS::AccountId}*'
+
+  AlmaKeysAccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub AlmaKeysAccessPolicy-${AWS::StackName}
+      Roles:
+        - !Ref LibraryUserManagementHandlerRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource:
+              - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:alma_api_keys_full*'
 
   BasebibliotekXmlBucket:
     Type: AWS::S3::Bucket

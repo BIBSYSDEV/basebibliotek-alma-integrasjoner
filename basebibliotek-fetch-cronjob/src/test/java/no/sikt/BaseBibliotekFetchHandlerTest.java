@@ -5,10 +5,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static no.sikt.BasebibliotekFetchHandler.NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
@@ -18,35 +18,40 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.ScheduledEvent;
-import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
+import java.text.SimpleDateFormat;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import no.unit.nva.stubs.WiremockHttpClient;
 import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
 import org.hamcrest.core.Every;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+@WireMockTest
 public class BaseBibliotekFetchHandlerTest {
 
     public static final String BASEBIBLIOTEK_REDACTED_INCREMENTAL_1_XML = "basebibliotek_redacted_incremental_1.xml";
@@ -58,20 +63,18 @@ public class BaseBibliotekFetchHandlerTest {
     private static final String BASEBIBLIOTEK_BB_2022_04_27_XML = "bb-2022-04-27.xml";
     private static final String BASEBIBLIOTEK_BB_2022_05_04_XML = "bb-2022-05-04.xml";
     private static final String BASEBIBLIOTEK_BB_FULL_XML = "bb-full.xml";
-    private transient WireMockServer httpServer;
     private transient BasebibliotekFetchHandler baseBibliotekFetchHandler;
     private transient S3Client s3Client;
 
     private transient TestAppender appender;
 
     @BeforeEach
-    public void init() {
-        appender = LogUtils.getTestingAppenderForRootLogger();
+    public void init(WireMockRuntimeInfo wireMockInfo) {
+        appender = LogUtils.getTestingAppender(BasebibliotekFetchHandler.class);
         s3Client = mock(S3Client.class);
-        startWiremockServer();
         Environment environment = mock(Environment.class);
         when(environment.readEnv(BasebibliotekFetchHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).thenReturn(
-            httpServer.baseUrl()
+            wireMockInfo.getHttpBaseUrl()
             + BIBLIOTEK_EKSPORT_BIBLEV_PATH);
         when(environment.readEnv(BasebibliotekFetchHandler.BASEBIBLILOTEK_USERNAME_ENVIRONMENT_NAME)).thenReturn(
             "ignored");
@@ -80,11 +83,6 @@ public class BaseBibliotekFetchHandlerTest {
         when(environment.readEnv(BasebibliotekFetchHandler.S3_BUCKET_ENVIRONMENT_NAME)).thenReturn(S3_BUCKET_NAME);
         HttpClient httpClient = WiremockHttpClient.create();
         baseBibliotekFetchHandler = new BasebibliotekFetchHandler(s3Client, httpClient, environment);
-    }
-
-    @AfterEach
-    public void tearDown() {
-        httpServer.stop();
     }
 
     @Test
@@ -150,12 +148,24 @@ public class BaseBibliotekFetchHandlerTest {
         WireMock.verify(0,
                         getRequestedFor(urlEqualTo(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_FULL_XML)));
 
+        var putObjectRequestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+
         //verify that the s3client has been called to putobjects:
         var expectedUpload = "0030100\n0030101\n7049304\n0030103";
         Mockito
-            .verify(this.s3Client)
-            .putObject(any(PutObjectRequest.class),
+            .verify(this.s3Client, times(2))
+            .putObject(putObjectRequestCaptor.capture(),
                        argThat(new RequestBodyMatches(RequestBody.fromString(expectedUpload))));
+
+        var s3Keys = putObjectRequestCaptor
+                         .getAllValues()
+                         .stream()
+                         .map(PutObjectRequest::key)
+                         .toList();
+        var filename = createFileName();
+        var expectedKeys = List.of("lum/" + filename, "rsp/" + filename);
+
+        assertThat(s3Keys, containsInAnyOrder(expectedKeys.toArray()));
     }
 
     @Test
@@ -214,18 +224,15 @@ public class BaseBibliotekFetchHandlerTest {
         List<List<String>> listOfBibNr = baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT);
         //Since this test is specific for checking bibNrs files sizes, it has been made so that the
         // numbersOfLibrariesExpected can change according to new requirements added to basebibliotek conversion.
-        var expectedNumbersOfLibrariesFiles = (int) Math.ceil(listOfBibNr.stream()
-                                                                  .mapToDouble(Collection::size)
-                                                                  .sum() / NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE);
+        var expectedNumbersOfLibrariesFiles =
+            (int) Math.ceil(listOfBibNr.stream()
+                                .mapToDouble(Collection::size)
+                                .sum() / NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE);
         //check that no bibNrs file has more than 100 elements:
-        assertThat(listOfBibNr, Every.everyItem(hasSize(lessThanOrEqualTo(NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE))));
+        assertThat(listOfBibNr,
+                   Every.everyItem(hasSize(lessThanOrEqualTo(NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE))));
         //Check that baseBibliotekFetchHandler has not split bibNrs unnecessary.
         assertThat(listOfBibNr, hasSize(equalTo(expectedNumbersOfLibrariesFiles)));
-    }
-
-    private void startWiremockServer() {
-        httpServer = new WireMockServer(options().dynamicHttpsPort());
-        httpServer.start();
     }
 
     private void mockedGetRequestThatReturnsSpecifiedResponse(String response) {
@@ -252,7 +259,14 @@ public class BaseBibliotekFetchHandlerTest {
                                     .withBody(body)));
     }
 
-    class RequestBodyMatches implements ArgumentMatcher<RequestBody> {
+    private String createFileName() {
+        Date date = new Date();
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
+
+        return formatter.format(date) + "_0.txt";
+    }
+
+    static class RequestBodyMatches implements ArgumentMatcher<RequestBody> {
 
         private final transient RequestBody left;
         transient String leftContent = "";

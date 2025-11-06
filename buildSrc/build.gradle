@@ -1,0 +1,29 @@
+plugins {
+    id 'groovy-gradle-plugin'
+}
+
+repositories {
+    gradlePluginPortal()
+}
+
+dependencies {
+    // Here we can specify versions which is not supported under plugins bracket
+    implementation group: 'nebula.lint', name: 'nebula.lint.gradle.plugin', version: '20.3.1'
+    implementation group: 'org.jacoco', name: 'org.jacoco.core', version: '0.8.13'
+    implementation group: 'org.jacoco', name: 'org.jacoco.report', version: '0.8.13'
+    implementation group: 'com.github.johnrengelman', name: 'shadow', version: '8.1.1'
+}
+
+// How Jar files are named
+group 'no.sikt'
+version '1.0-SNAPSHOT'
+
+java {
+    java.sourceCompatibility = JavaVersion.VERSION_21
+    java.targetCompatibility = JavaVersion.VERSION_21
+}
+
+wrapper {
+    distributionType = Wrapper.DistributionType.ALL
+    gradleVersion = "8.11.1"
+}

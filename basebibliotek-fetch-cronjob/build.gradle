@@ -1,37 +1,35 @@
+// How Jar files are named
+group 'no.sikt'
+version '1.0-SNAPSHOT'
+
 dependencies {
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.8.2'
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.8.2'
-    testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.8.2'
-    testImplementation group: 'com.github.bibsysdev', name: 'nvatestutils', version: '1.25.20'
-    testImplementation group: 'com.github.bibsysdev', name: 'logutils', version: '1.25.20'
-    testImplementation group: 'org.hamcrest', name: 'hamcrest', version: '2.2'
-    testImplementation group: 'org.hamcrest', name: 'hamcrest-core', version: '2.2'
-    testImplementation group: 'org.mockito', name: 'mockito-core', version: '4.5.1'
-    testImplementation group: 'com.github.tomakehurst', name: 'wiremock-jre8', version: '2.33.2'
 
-    implementation group: 'com.amazonaws', name: 'aws-lambda-java-core', version: '1.2.1'
-    implementation group: 'com.amazonaws', name: 'aws-lambda-java-log4j2', version: '1.5.1'
-    implementation group: 'com.amazonaws', name: 'aws-lambda-java-events', version: '3.11.0'
-    implementation group: 'software.amazon.awssdk', name: 's3', version: '2.17.191'
+    testImplementation libs.bundles.testing
+    testImplementation libs.aws.http.client.spi
+    testRuntimeOnly libs.junit.jupiter.engine
+    testImplementation libs.wiremock.jetty12
 
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.17.2'
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.17.2'
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j18-impl', version: '2.17.2'
-    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.36'
+    // For fixing nebula lint warnings
+    testImplementation (libs.wiremock) {
+        exclude group: 'org.eclipse.jetty', module: 'jetty-servlet'
+        exclude group: 'org.eclipse.jetty', module: 'jetty-servlets'
+        exclude group: 'org.eclipse.jetty', module: 'jetty-webapp'
+        exclude group: 'org.eclipse.jetty.http2', module: 'http2-server'
+    }
 
-    implementation group: 'com.github.bibsysdev', name: 'core', version: '1.25.20'
-    implementation group: 'com.github.bibsysdev', name: 's3', version: '1.25.20'
-    implementation group: 'com.github.bibsysdev', name: 'nva-language', version: '1.0'
+    implementation libs.bundles.aws.lambda
+    implementation libs.aws.sdk2.s3
+    implementation libs.aws.sdk.core
+    implementation libs.bundles.logging
+    implementation libs.nva.commons.core
+    implementation libs.nva.s3
+    implementation libs.nva.language
+    implementation libs.jakarta.xml.bind
+
     implementation project(path: ":basebibliotek-generated", configuration: 'default')
 
     shadowJar {
         archiveClassifier.set('')
         zip64 true
     }
-}
-
-test {
-    useJUnitPlatform()
-    failFast = true
-    finalizedBy jacocoTestReport
 }

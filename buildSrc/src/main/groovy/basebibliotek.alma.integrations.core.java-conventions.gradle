@@ -1,0 +1,104 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow'
+    id 'nebula.lint'
+    id 'jacoco-report-aggregation'
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+subprojects {
+    subproject ->
+        if (!subproject.name.endsWith("-generated")) {
+            apply plugin: 'pmd'
+            apply plugin: 'checkstyle'
+            apply plugin: 'jacoco'
+
+            pmd {
+                toolVersion = '7.13.0'
+                ruleSetConfig = rootProject.resources.text.fromFile('config/pmd/ruleset.xml')
+                ruleSets = []
+                ignoreFailures = false
+            }
+
+            checkstyle {
+                configFile = rootProject.resources.text.fromFile('config/checkstyle/checkstyle.xml').asFile()
+                configProperties.checkstyleSuppressionsPath =
+                        rootProject.resources.text
+                                .fromFile('config/checkstyle/checkstyle-suppressions.xml').asFile()
+                showViolations = true
+            }
+
+            jacocoTestReport {
+                reports {
+                    html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco"))
+                }
+            }
+
+            // We do not want a jar for our own modules, just a fatJar.
+            jar.enabled = false
+        }
+}
+
+// Running tests using gradle
+tasks.named('test', Test) {
+    useJUnitPlatform()
+    failFast = true
+    finalizedBy jacocoTestReport
+    testLogging {
+       events 'skipped', 'failed' //, 'passed'
+    }
+}
+
+// We want to compile all jars especially those from auto generated modules before building or else the build will fail
+tasks.named('build').configure {
+    dependsOn tasks.named('shadowJar')
+}
+
+tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification) {
+    violationRules {
+        rule {
+            limit {
+                counter = 'METHOD'
+                value = 'COVEREDRATIO'
+                minimum = 0.9
+            }
+        }
+
+        rule {
+            limit {
+                counter = 'CLASS'
+                value = 'COVEREDRATIO'
+                minimum = 1.0
+            }
+        }
+    }
+    dependsOn jacocoTestReport
+}
+
+tasks.withType(Checkstyle).configureEach{
+    exclude('*generated')
+    reports {
+        html.required
+        html.stylesheet rootProject.resources.text.fromFile('config/checkstyle/checkstyle-simple.xsl')
+    }
+}
+
+// Lint dependencies on gradle build using nebula lint
+gradleLint {
+    rules = ['all-dependency']
+    reportFormat = 'html'
+    reportOnlyFixableViolations = true
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'utf-8'
+}
+
+// Verify test coverage is over minimum required values
+tasks.named('check').configure {
+    dependsOn tasks.named('jacocoTestCoverageVerification')
+}

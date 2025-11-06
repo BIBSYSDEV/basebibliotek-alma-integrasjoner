@@ -2,18 +2,20 @@ package no.sikt.lum;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import no.nb.basebibliotek.generated.Aut;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.nb.basebibliotek.generated.Record;
 import no.sikt.alma.user.generated.User;
 import no.sikt.alma.user.generated.User.AccountType;
-import no.sikt.alma.user.generated.User.CampusCode;
 import no.sikt.alma.user.generated.User.Gender;
 import no.sikt.alma.user.generated.User.RecordType;
 import no.sikt.alma.user.generated.User.Status;
@@ -25,19 +27,17 @@ import no.sikt.alma.user.generated.UserStatistic;
 import no.sikt.alma.user.generated.UserStatistics;
 import no.sikt.commons.AlmaObjectConverter;
 import no.sikt.commons.HandlerUtils;
-import no.sikt.rsp.AlmaCodeProvider;
+import no.sikt.lum.reporting.UserReportBuilder;
 import nva.commons.core.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
 public class UserConverter extends AlmaObjectConverter {
 
     public static final String COUNTRYCODE_NORWAY = "NO";
-    public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss",
-                                                                                   Locale.ROOT);
     private static final Logger logger = LoggerFactory.getLogger(UserConverter.class);
     public static final String COULD_NOT_CONVERT_TO_USER_ERROR_MESSAGE = " Could not convert to user";
-    public static final String COULD_NOT_CONVERT_TO_USER_REPORT_MESSAGE = " could not convert to user\n";
     public static final String INST = "inst";
     public static final String BIBLTYPE = "bibltype";
     public static final String PUBLIC = "Public";
@@ -79,7 +79,6 @@ public class UserConverter extends AlmaObjectConverter {
     public static final String NONE = "NONE";
     public static final String DEFAULT_PATRON_ROLE_200 = "200";
     public static final String PATRON_ROLE = "Patron";
-    public static final String COULD_NOT_GENERATE_A_CAMPUS_CODE_FOR = "Could not generate a campus-code for %s";
     public static final String STATISTICS_CATEGORY_BIM = "BIM";
     public static final String STATISTICS_TYPE_USER_UPDATE = "USER_UPDATE";
     public static final String STATISTICS_TYPE_BRUKEROPPDATERING = "Brukeroppdatering";
@@ -89,11 +88,11 @@ public class UserConverter extends AlmaObjectConverter {
     public static final String EXTERNAL = "External";
     public static final String UNIV_ID = "UNIV_ID";
     public static final String UNIVERSITY_ID = "University ID";
-    private static final String BIBSYS_FEIDE_REALM = "@bibsys.no";
+    public static final Set<String> USER_IDENTIFIER_REALMS = Set.of("@bibsys.no", "@basebibliotek.no");
     private final transient String targetAlmaCode;
 
-    public UserConverter(AlmaCodeProvider almaCodeProvider, BaseBibliotek baseBibliotek, String targetAlmaCode) {
-        super(almaCodeProvider, baseBibliotek);
+    public UserConverter(BaseBibliotek baseBibliotek, String targetAlmaCode) {
+        super(baseBibliotek);
         this.targetAlmaCode = targetAlmaCode;
     }
 
@@ -104,17 +103,17 @@ public class UserConverter extends AlmaObjectConverter {
         throw new RuntimeException(String.format(COULD_NOT_CONVERT_RECORD, missingParameters, toXml(record)));
     }
 
-    public List<User> toUsers(StringBuilder reportStringBuilder) {
+    public List<User> toUsers(UserReportBuilder userReportBuilder) {
         List<User> users = new ArrayList<>();
         baseBibliotek
             .getRecord()
-            .forEach(record -> convertRecordToUserWhenConstraintsSatisfied(record, reportStringBuilder)
+            .forEach(record -> convertRecordToUserWhenConstraintsSatisfied(record, userReportBuilder)
                 .ifPresent(users::add));
         return users;
     }
 
     private Optional<User> convertRecordToUserWhenConstraintsSatisfied(Record record,
-                                                                       StringBuilder reportStringBuilder) {
+                                                                       UserReportBuilder userReportBuilder) {
         try {
             if (satisfiesConstraints(record)) {
                 return Optional.of(convertRecordToUser(record));
@@ -125,9 +124,7 @@ public class UserConverter extends AlmaObjectConverter {
         } catch (Exception e) {
             //Errors in individual libraries should not cause crash in entire execution.
             logger.info(COULD_NOT_CONVERT_TO_USER_ERROR_MESSAGE, e);
-            reportStringBuilder
-                .append(baseBibliotek.getRecord().get(0).getBibnr())
-                .append(COULD_NOT_CONVERT_TO_USER_REPORT_MESSAGE);
+            userReportBuilder.addFailure(baseBibliotek.getRecord().getFirst().getBibnr(), targetAlmaCode);
             return Optional.empty();
         }
     }
@@ -154,7 +151,6 @@ public class UserConverter extends AlmaObjectConverter {
         extractPreferredLanguage(record, user);
         user.setUserGroup(UserGroupConverter.extractUserGroup(record));
         user.setUserRoles(defineUserRoles());
-        user.setCampusCode(defineCampusCode());
         user.setUserStatistics(defaultUserStatistics());
         user.setExternalId(EXTERNAL_ID_SIS);
         user.setAccountType(defaultAccountType());
@@ -190,48 +186,19 @@ public class UserConverter extends AlmaObjectConverter {
         String libraryName = record.getInst()
             .replace(LINEFEED, StringUtils.SPACE + HandlerUtils.HYPHEN + StringUtils.SPACE);
         libraryName = StringUtils.removeMultipleWhiteSpaces(libraryName);
-        String ampersand;
-        switch (record.getLandkode().toUpperCase(Locale.ROOT)) {
-            case COUNTRYCODE_GREATBRITAIN:
-            case COUNTRYCODE_UNITEDSTATES:
-            case COUNTRYCODE_CANADA:
-            case COUNTRYCODE_AUSTRALIA:
-            case COUNTRYCODE_IRLAND:
-            case COUNTRYCODE_NEWZEALAND:
-                ampersand = AND_ENGLISH;
-                break;
-            case COUNTRYCODE_GERMANY:
-            case COUNTRYCODE_AUSTRIA:
-            case COUNTRYCODE_SWITZERLAND:
-                ampersand = AND_GERMAN;
-                break;
-            case COUNTRYCODE_FRANCE:
-            case COUNTRYCODE_BELGIUM:
-                ampersand = AND_FRENCH;
-                break;
-            case COUNTRYCODE_FINLAND:
-            case COUNTRYCODE_ESTLAND:
-                ampersand = AND_FINISH;
-                break;
-            case COUNTRYCODE_NETHERLANDS:
-                ampersand = AND_DUTCH;
-                break;
-            case COUNTRYCODE_SWEDEN:
-                ampersand = AND_SWEDISH;
-                break;
-            case COUNTRYCODE_POLAND:
-                ampersand = AND_POLISH;
-                break;
-            case COUNTRYCODE_SPAIN:
-                ampersand = AND_SPANISH;
-                break;
-            case COUNTRYCODE_PORTUGAL:
-            case COUNTRYCODE_ITALY:
-                ampersand = AND_ITALIAN_PORTUGUESE;
-                break;
-            default:
-                ampersand = AND_NORWEGIAN;
-        }
+        String ampersand = switch (record.getLandkode().toUpperCase(Locale.ROOT)) {
+            case COUNTRYCODE_GREATBRITAIN, COUNTRYCODE_UNITEDSTATES, COUNTRYCODE_CANADA, COUNTRYCODE_AUSTRALIA,
+                 COUNTRYCODE_IRLAND, COUNTRYCODE_NEWZEALAND -> AND_ENGLISH;
+            case COUNTRYCODE_GERMANY, COUNTRYCODE_AUSTRIA, COUNTRYCODE_SWITZERLAND -> AND_GERMAN;
+            case COUNTRYCODE_FRANCE, COUNTRYCODE_BELGIUM -> AND_FRENCH;
+            case COUNTRYCODE_FINLAND, COUNTRYCODE_ESTLAND -> AND_FINISH;
+            case COUNTRYCODE_NETHERLANDS -> AND_DUTCH;
+            case COUNTRYCODE_SWEDEN -> AND_SWEDISH;
+            case COUNTRYCODE_POLAND -> AND_POLISH;
+            case COUNTRYCODE_SPAIN -> AND_SPANISH;
+            case COUNTRYCODE_PORTUGAL, COUNTRYCODE_ITALY -> AND_ITALIAN_PORTUGUESE;
+            default -> AND_NORWEGIAN;
+        };
         libraryName = libraryName.replace(AMPERSAND, ampersand); // replace & with " og "
         return libraryName;
     }
@@ -265,23 +232,8 @@ public class UserConverter extends AlmaObjectConverter {
         return userRoles;
     }
 
-    //Møte: tror ikke den trengs. Audun sender slack melding.
-    private CampusCode defineCampusCode() {
-        // Todo: this might be not precise enough. As it uses the libCode to the alma-instance the libUser is updated to
-        // (as defined in the libCodeToAlmaCode mapping config file used in RSP)
-        Optional<String> libCode = almaCodeProvider.getLibCode(targetAlmaCode);
-        if (libCode.isPresent()) {
-            User.CampusCode campusCode = new User.CampusCode();
-            campusCode.setValue(libCode.get());
-            campusCode.setDesc(libCode.get());
-            return campusCode;
-        }
-        //todo: what to do, when we do not have anything in that file??? @Audun
-        throw new RuntimeException(String.format(COULD_NOT_GENERATE_A_CAMPUS_CODE_FOR, targetAlmaCode));
-    }
-
     private UserStatistics defaultUserStatistics() {
-        String now = SIMPLE_DATE_FORMAT.format(Calendar.getInstance().getTime());
+        String now = getCurrentTime();
         UserStatistic userStatistic = new UserStatistic();
         userStatistic.setStatisticNote(now);
         UserStatistic.StatisticCategory statisticCategory = new UserStatistic.StatisticCategory();
@@ -295,6 +247,12 @@ public class UserConverter extends AlmaObjectConverter {
         UserStatistics userStatistics = new UserStatistics();
         userStatistics.getUserStatistic().add(userStatistic);
         return userStatistics;
+    }
+
+    private String getCurrentTime() {
+        SimpleDateFormat patternString = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ROOT);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(patternString.toPattern());
+        return formatter.format(LocalDateTime.now());
     }
 
     private AccountType defaultAccountType() {
@@ -314,17 +272,32 @@ public class UserConverter extends AlmaObjectConverter {
     }
 
     private UserIdentifiers extractUserIdentifiers(Record record) {
-        UserIdentifier userIdentifier = new UserIdentifier();
-        userIdentifier.setValue(getLibraryNumber(record) + BIBSYS_FEIDE_REALM);
+        var allUserIdentifiers = createAllUserIdentifiers(record);
+        var userIdentifiers = new UserIdentifiers();
+        userIdentifiers.getUserIdentifier().addAll(allUserIdentifiers);
+
+        return userIdentifiers;
+    }
+
+    private List<UserIdentifier> createAllUserIdentifiers(Record record) {
+        return USER_IDENTIFIER_REALMS
+                   .stream()
+                   .map(realm -> createUserIdentifier(record, realm))
+                   .collect(Collectors.toList());
+    }
+
+    private UserIdentifier createUserIdentifier(Record record, String realm) {
+        var userIdentifier = new UserIdentifier();
+        userIdentifier.setValue(getLibraryNumber(record) + realm);
         userIdentifier.setStatus(ACTIVE.toUpperCase(Locale.ROOT));
         userIdentifier.setSegmentType(EXTERNAL);
-        UserIdentifier.IdType value = new UserIdentifier.IdType();
+
+        var value = new UserIdentifier.IdType();
         value.setValue(UNIV_ID);
         value.setDesc(UNIVERSITY_ID);
         userIdentifier.setIdType(value);
-        UserIdentifiers userIdentifiers = new UserIdentifiers();
-        userIdentifiers.getUserIdentifier().add(userIdentifier);
-        return userIdentifiers;
+
+        return userIdentifier;
     }
 
     private String getLibraryNumber(Record record) {

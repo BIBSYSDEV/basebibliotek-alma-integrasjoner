@@ -1,9 +1,8 @@
 package no.sikt.rsp;
 
 import jakarta.xml.bind.JAXBElement;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -172,7 +171,7 @@ public class PartnerConverter extends AlmaObjectConverter {
             partnerDetails.setAutoClaimSupported(AUTO_CLAIM_SUPPORTED);
             partnerDetails.setAutoClaimTime(AUTO_CLAIM_TIME);
         } else if (nncipUri.isPresent() && BaseBibliotekUtils.isNorwegian(record)) {
-            details.setProfileType(ProfileType.NCIP_P_2_P);
+            details.setProfileType(ProfileType.NCIP_P2P);
 
             final NcipP2PDetails ncipP2PDetails = new NcipP2PDetails();
 
@@ -278,13 +277,12 @@ public class PartnerConverter extends AlmaObjectConverter {
         return TEMPORARILY_CLOSED.equalsIgnoreCase(stengtStatus) || PERMANENTLY_CLOSED.equalsIgnoreCase(stengtStatus);
     }
 
-    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     private static boolean isDateInTheFuture(XMLGregorianCalendar date) {
         boolean future = true;
         if (Objects.nonNull(date)) {
-            GregorianCalendar gregorianCalendar = date.toGregorianCalendar();
-            Date currentDate = new Date();
-            future = currentDate.getTime() < gregorianCalendar.getTime().getTime();
+            Instant xmlDate = date.toGregorianCalendar().toInstant();
+            Instant currentDate = Instant.now();
+            future = currentDate.isBefore(xmlDate);
         }
         return future;
     }

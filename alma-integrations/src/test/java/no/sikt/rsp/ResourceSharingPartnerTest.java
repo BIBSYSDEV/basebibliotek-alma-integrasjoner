@@ -60,6 +60,7 @@ import no.sikt.alma.partners.generated.ProfileType;
 import no.sikt.alma.partners.generated.Status;
 import no.sikt.clients.alma.HttpUrlConnectionAlmaPartnerUpserter;
 import no.sikt.clients.basebibliotek.BaseBibliotekUtils;
+import no.sikt.clients.basebibliotek.HttpUrlConnectionBaseBibliotekApi;
 import no.sikt.commons.HandlerUtils;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
@@ -69,7 +70,6 @@ import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
-import nva.commons.logutils.TestAppender;
 import org.hamcrest.core.IsNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -85,7 +85,6 @@ import test.utils.RecordBuilder;
 import test.utils.RecordSpecification;
 import test.utils.WireMocker;
 
-@SuppressWarnings({"PMD.DataflowAnomalyAnalysis", "PMD.AvoidDuplicateLiterals"})
 @WireMockTest
 public class ResourceSharingPartnerTest {
 
@@ -117,13 +116,13 @@ public class ResourceSharingPartnerTest {
     private transient ResourceSharingPartnerHandler resourceSharingPartnerHandler;
 
     @BeforeEach
-    public void init(final WireMockRuntimeInfo wmRuntimeInfo) throws IOException {
+    public void init(WireMockRuntimeInfo wireMockInfo) throws IOException {
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_API_HOST)).thenReturn(
-            UriWrapper.fromUri(wmRuntimeInfo.getHttpBaseUrl()).toString());
+            UriWrapper.fromUri(wireMockInfo.getHttpBaseUrl()).toString());
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).thenReturn(
-            UriWrapper.fromUri(wmRuntimeInfo.getHttpBaseUrl()).addChild(BIBLIOTEK_REST_PATH).toString());
+            UriWrapper.fromUri(wireMockInfo.getHttpBaseUrl()).addChild(BIBLIOTEK_REST_PATH).toString());
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.SHARED_CONFIG_BUCKET_NAME_ENV_NAME)).thenReturn(
             SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
         when(mockedEnvironment.readEnv(
@@ -180,7 +179,7 @@ public class ResourceSharingPartnerTest {
         var expectedMessage = randomString();
         s3Client = new FakeS3ClientThrowingException(expectedMessage);
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
-        var appender = LogUtils.getTestingAppenderForRootLogger();
+        var appender = LogUtils.getTestingAppender(ResourceSharingPartnerHandler.class);
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
         assertThat(appender.getMessages(), containsString(expectedMessage));
     }
@@ -215,7 +214,7 @@ public class ResourceSharingPartnerTest {
                                   .build();
         final S3Event s3Event = prepareBaseBibliotekFromRecords(record);
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
-        var contactInfo = resourceSharingPartnerHandler.getPartners().get(0).getContactInfo();
+        var contactInfo = resourceSharingPartnerHandler.getPartners().getFirst().getContactInfo();
         assertContactInfo(contactInfo, record, alpha3Code);
     }
 
@@ -237,7 +236,7 @@ public class ResourceSharingPartnerTest {
         var uri = s3Driver.insertFile(randomS3Path(), nationalDepotLibraryBibNr);
         var s3Event = createS3Event(uri);
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
-        var partnerDetails = resourceSharingPartnerHandler.getPartners().get(0).getPartnerDetails();
+        var partnerDetails = resourceSharingPartnerHandler.getPartners().getFirst().getPartnerDetails();
 
         assertThat(partnerDetails.getInstitutionCode(), is(NATIONAL_DEPOT_LIBRARY_INSTITUTION_CODE));
         assertThat(partnerDetails.getLocateProfile().getValue(), is(NATIONAL_DEPOT_LIBRARY_LOCATE_PROFILE_VALUE));
@@ -252,7 +251,7 @@ public class ResourceSharingPartnerTest {
 
         final List<Record> generatedRecords = new ArrayList<>();
         final S3Event s3Event = prepareBaseBibliotekFromRecordSpecifications(generatedRecords, recordSpecification);
-        var appender = LogUtils.getTestingAppenderForRootLogger();
+        var appender = LogUtils.getTestingAppender(ResourceSharingPartnerHandler.class);
         var expectedLogMessage = "Could not convert record, missing landkode, record";
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
@@ -262,12 +261,12 @@ public class ResourceSharingPartnerTest {
         if (yieldsError) {
             assertThat(appender.getMessages(), containsString(expectedLogMessage));
         } else {
-            var recordWithoutIsilButContainingBibNrAndLandKode = generatedRecords.get(0);
+            var recordWithoutIsilButContainingBibNrAndLandKode = generatedRecords.getFirst();
             var expectedCraftedPartnerCode = recordWithoutIsilButContainingBibNrAndLandKode.getLandkode()
                                                  .toUpperCase(Locale.ROOT)
                                              + "-"
                                              + recordWithoutIsilButContainingBibNrAndLandKode.getBibnr();
-            assertThat(partners.get(0).getPartnerDetails().getCode(), is(equalTo(expectedCraftedPartnerCode)));
+            assertThat(partners.getFirst().getPartnerDetails().getCode(), is(equalTo(expectedCraftedPartnerCode)));
         }
     }
 
@@ -294,16 +293,16 @@ public class ResourceSharingPartnerTest {
 
         var expectedHoldingCode =
             isAlmaOrBibsys ? BIBNR_RESOLVABLE_TO_ALMA_CODE : null;
-        assertThat(partners.get(0).getPartnerDetails().getHoldingCode(), is(equalTo(expectedHoldingCode)));
+        assertThat(partners.getFirst().getPartnerDetails().getHoldingCode(), is(equalTo(expectedHoldingCode)));
 
         var expectedSystemTypeValueValue =
             isAlmaOrBibsys ? PartnerConverter.SYSTEM_TYPE_VALUE_ALMA : PartnerConverter.SYSTEM_TYPE_VALUE_OTHER;
-        assertThat(partners.get(0).getPartnerDetails().getSystemType().getValue(),
+        assertThat(partners.getFirst().getPartnerDetails().getSystemType().getValue(),
                    is(equalTo(expectedSystemTypeValueValue)));
 
         var expectedSystemTypeValueDesc = isAlmaOrBibsys ? PartnerConverter.SYSTEM_TYPE_DESC_ALMA
                                               : PartnerConverter.SYSTEM_TYPE_DESC_OTHER;
-        assertThat(partners.get(0).getPartnerDetails().getSystemType().getDesc(),
+        assertThat(partners.getFirst().getPartnerDetails().getSystemType().getDesc(),
                    is(equalTo(expectedSystemTypeValueDesc)));
     }
 
@@ -325,7 +324,7 @@ public class ResourceSharingPartnerTest {
         final List<Partner> partners = resourceSharingPartnerHandler.getPartners();
 
         // we should have only ony partner from the one record we have:
-        final Partner partner = partners.get(0);
+        final Partner partner = partners.getFirst();
 
         assertIsoProfileDetailsPopulatedCorrectly(partner, record.getLandkode(), record.getBibnr());
     }
@@ -352,7 +351,7 @@ public class ResourceSharingPartnerTest {
         final List<Partner> partners = resourceSharingPartnerHandler.getPartners();
 
         // we should have only ony partner from the one record we have:
-        final Partner partner = partners.get(0);
+        final Partner partner = partners.getFirst();
 
         assertNncipProfileDetailsPopulatedCorrectly(partner, record.getLandkode(), record.getBibnr(), EMAIL_BEST);
     }
@@ -379,7 +378,7 @@ public class ResourceSharingPartnerTest {
         var partners = resourceSharingPartnerHandler.getPartners();
 
         // we should have only ony partner from the one record we have:
-        Partner partner = partners.get(0);
+        Partner partner = partners.getFirst();
 
         assertNncipProfileDetailsPopulatedCorrectly(partner, record.getLandkode(), record.getBibnr(), emailAdr);
     }
@@ -406,7 +405,7 @@ public class ResourceSharingPartnerTest {
         var partners = resourceSharingPartnerHandler.getPartners();
 
         // we should have only ony partner from the one record we have:
-        Partner partner = partners.get(0);
+        Partner partner = partners.getFirst();
 
         assertNncipProfileDetailsPopulatedCorrectly(partner, record.getLandkode(), record.getBibnr(), null);
     }
@@ -430,7 +429,7 @@ public class ResourceSharingPartnerTest {
         final List<Partner> partners = resourceSharingPartnerHandler.getPartners();
 
         // we should have only ony partner from the one record we have:
-        final Partner partner = partners.get(0);
+        final Partner partner = partners.getFirst();
 
         assertEmailProfileDetailsPopulatedCorrectly(partner, EMAIL_ADR);
     }
@@ -456,7 +455,7 @@ public class ResourceSharingPartnerTest {
 
         final List<Partner> partners = resourceSharingPartnerHandler.getPartners();
 
-        final Partner partner = partners.get(0);
+        final Partner partner = partners.getFirst();
 
         assertEmailProfileDetailsPopulatedCorrectly(partner, email);
     }
@@ -479,7 +478,7 @@ public class ResourceSharingPartnerTest {
 
         var partners = resourceSharingPartnerHandler.getPartners();
         // we should have only ony partner from the one record we have:
-        Partner partner = partners.get(0);
+        Partner partner = partners.getFirst();
 
         assertEmailProfileDetailsPopulatedCorrectly(partner, EMAIL_BEST);
     }
@@ -503,7 +502,7 @@ public class ResourceSharingPartnerTest {
         final List<Partner> partners = resourceSharingPartnerHandler.getPartners();
 
         // we should have only ony partner from the one record we have:
-        final Partner partner = partners.get(0);
+        final Partner partner = partners.getFirst();
 
         assertEmailProfileDetailsPopulatedCorrectly(partner, email);
     }
@@ -528,7 +527,7 @@ public class ResourceSharingPartnerTest {
         final List<Partner> partners = resourceSharingPartnerHandler.getPartners();
 
         // we should have only ony partner from the one record we have:
-        final Partner partner = partners.get(0);
+        final Partner partner = partners.getFirst();
 
         assertEmailProfileDetailsPopulatedCorrectly(partner, "");
     }
@@ -550,7 +549,7 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
         var partners = resourceSharingPartnerHandler.getPartners();
-        assertThat(partners.get(0).getPartnerDetails().getStatus(), is(equalTo(expectedStatus)));
+        assertThat(partners.getFirst().getPartnerDetails().getStatus(), is(equalTo(expectedStatus)));
     }
 
     @Test
@@ -599,7 +598,7 @@ public class ResourceSharingPartnerTest {
         final List<Partner> partners = resourceSharingPartnerHandler.getPartners();
 
         // we should have only ony partner from the one record we have:
-        final Partner partner = partners.get(0);
+        final Partner partner = partners.getFirst();
 
         final String expectedInstitutionCode;
         if (BaseBibliotekUtils.isAlmaOrBibsysLibrary(katsyst)) {
@@ -627,7 +626,7 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
 
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(ResourceSharingPartnerHandler.class);
 
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
 
@@ -658,7 +657,7 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
 
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(ResourceSharingPartnerHandler.class);
 
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
 
@@ -689,7 +688,7 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
 
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(ResourceSharingPartnerHandler.class);
 
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
 
@@ -718,7 +717,7 @@ public class ResourceSharingPartnerTest {
         final List<Partner> partners = resourceSharingPartnerHandler.getPartners();
 
         // we should have only ony partner from the one record we have:
-        final Partner partner = partners.get(0);
+        final Partner partner = partners.getFirst();
 
         final LocateProfile locateProfile = partner.getPartnerDetails().getLocateProfile();
         if (BaseBibliotekUtils.isAlmaOrBibsysLibrary(katsyst)) {
@@ -740,7 +739,7 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
 
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionBaseBibliotekApi.class);
 
         final Integer count = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -762,7 +761,7 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
 
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaPartnerUpserter.class);
 
         final Integer count = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -784,7 +783,7 @@ public class ResourceSharingPartnerTest {
 
         WireMocker.mockAlmaGetResponseBadRequestNotPartnerNotFound(NO_0030100_ID);
 
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaPartnerUpserter.class);
 
         final Integer count = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -807,7 +806,7 @@ public class ResourceSharingPartnerTest {
         WireMocker.mockAlmaGetResponsePartnerNotFound(NO_0030100_ID);
         WireMocker.mockAlmaPostResponseBadRequest();
 
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaPartnerUpserter.class);
 
         final Integer count = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -830,7 +829,7 @@ public class ResourceSharingPartnerTest {
         WireMocker.mockAlmaGetResponse(NO_0030100_ID);
         WireMocker.mockAlmaPutResponseBadRequest(NO_0030100_ID);
 
-        final TestAppender appender = LogUtils.getTestingAppenderForRootLogger();
+        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaPartnerUpserter.class);
 
         final Integer count = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
@@ -851,7 +850,7 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
-        final Partner partner = resourceSharingPartnerHandler.getPartners().get(0);
+        final Partner partner = resourceSharingPartnerHandler.getPartners().getFirst();
 
         final String emailIn2062200xml = "biblioteket@krodsherad.kommune.no";
         assertEmailProfileDetailsPopulatedCorrectly(partner, emailIn2062200xml);
@@ -870,23 +869,25 @@ public class ResourceSharingPartnerTest {
 
         var partners = resourceSharingPartnerHandler.getPartners();
 
-        var expectedName = Objects.nonNull(generatedRecords.get(0).getInst())
-                               ? generatedRecords.get(0).getInst().replaceAll("\n", " - ")
+        var expectedName = Objects.nonNull(generatedRecords.getFirst().getInst())
+                               ? generatedRecords.getFirst().getInst().replaceAll("\n", " - ")
                                : StringUtils.EMPTY_STRING;
 
-        assertThat(partners.get(0).getPartnerDetails().getName(), is(equalTo(expectedName)));
+        assertThat(partners.getFirst().getPartnerDetails().getName(), is(equalTo(expectedName)));
         var expectedAvgSupplyTime = 1;
-        assertThat(partners.get(0).getPartnerDetails().getAvgSupplyTime(), is(equalTo(expectedAvgSupplyTime)));
+        assertThat(partners.getFirst().getPartnerDetails().getAvgSupplyTime(), is(equalTo(expectedAvgSupplyTime)));
         var expectedDeliveryDelay = 0;
-        assertThat(partners.get(0).getPartnerDetails().getDeliveryDelay(), is(equalTo(expectedDeliveryDelay)));
+        assertThat(partners.getFirst().getPartnerDetails().getDeliveryDelay(), is(equalTo(expectedDeliveryDelay)));
         var expectedLendingSupported = true;
-        assertThat(partners.get(0).getPartnerDetails().isLendingSupported(), is(equalTo(expectedLendingSupported)));
+        assertThat(partners.getFirst().getPartnerDetails().isLendingSupported(), is(equalTo(expectedLendingSupported)));
         var expectedLendingWorkflow = "Lending";
-        assertThat(partners.get(0).getPartnerDetails().getLendingWorkflow(), is(equalTo(expectedLendingWorkflow)));
+        assertThat(partners.getFirst().getPartnerDetails().getLendingWorkflow(), is(equalTo(expectedLendingWorkflow)));
         var expectedBorrowingSupported = true;
-        assertThat(partners.get(0).getPartnerDetails().isBorrowingSupported(), is(equalTo(expectedBorrowingSupported)));
+        assertThat(partners.getFirst().getPartnerDetails().isBorrowingSupported(),
+                   is(equalTo(expectedBorrowingSupported)));
         var expectedBorrowingWorkflow = "Borrowing";
-        assertThat(partners.get(0).getPartnerDetails().getBorrowingWorkflow(), is(equalTo(expectedBorrowingWorkflow)));
+        assertThat(partners.getFirst().getPartnerDetails().getBorrowingWorkflow(),
+                   is(equalTo(expectedBorrowingWorkflow)));
     }
 
     @Test
@@ -1105,7 +1106,7 @@ public class ResourceSharingPartnerTest {
         final PartnerDetails partnerDetails = partner.getPartnerDetails();
         final ProfileType profileType = partnerDetails.getProfileDetails().getProfileType();
 
-        assertThat(profileType, is(ProfileType.NCIP_P_2_P));
+        assertThat(profileType, is(ProfileType.NCIP_P2P));
 
         final NcipP2PDetails details = partner.getPartnerDetails().getProfileDetails().getNcipP2PDetails();
 
@@ -1187,7 +1188,7 @@ public class ResourceSharingPartnerTest {
     private void assertPhone(Phones phones, Record record) {
         var expectedPhoneTypes = List.of("claimPhone", "orderPhone", "paymentPhone", "returnsPhone");
         assertThat(phones.getPhone(), hasSize(1));
-        var phone = phones.getPhone().get(0);
+        var phone = phones.getPhone().getFirst();
         assertThat(phone.isPreferred(), is(equalTo(true)));
         assertThat(phone.getPhoneTypes().getPhoneType(), hasSize(expectedPhoneTypes.size()));
         expectedPhoneTypes.forEach(expectedPhoneType -> assertThat(phone.getPhoneTypes().getPhoneType(),
