@@ -40,6 +40,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_REST_URL";
     public static final String HANDLER_NAME = "lum";
     private static final String EVENT = "event";
+    private static final String SKIPPING_HANDLING_OF_REQUESTS = "No alma api keys found. Skipping handling of requests.";
 
     private final transient S3Client s3Client;
     private final transient String reportS3BucketName;
@@ -77,6 +78,10 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     @Override
     public Integer handleRequest(S3Event s3event, Context context) {
         logger.info(EVENT + gson.toJson(s3event));
+        if (almaApiKeyMap.isEmpty()) {
+            logger.info(SKIPPING_HANDLING_OF_REQUESTS);
+            return 0;
+        }
         try {
             var bibNrFile = HandlerUtils.readFile(s3event, s3Client);
             logger.info("done collecting bibNrFile");
