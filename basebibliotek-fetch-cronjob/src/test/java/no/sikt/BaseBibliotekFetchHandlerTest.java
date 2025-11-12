@@ -7,9 +7,12 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static no.sikt.BasebibliotekFetchHandler.NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE;
+import static no.sikt.BasebibliotekFetchHandler.NUMBER_OF_LIBRARIES_THAT_RSP_CAN_HANDLE_AT_ONCE;
+import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -30,6 +33,7 @@ import java.net.HttpURLConnection;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -38,7 +42,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import no.unit.nva.stubs.WiremockHttpClient;
 import nva.commons.core.Environment;
-import nva.commons.core.ioutils.IoUtils;
 import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
 import org.hamcrest.core.Every;
@@ -97,12 +100,10 @@ public class BaseBibliotekFetchHandlerTest {
 
     @Test
     public void shouldLogExceptionWhenBasebibliotekXmlGetRequestFails() {
-        var basebibliotekUrlsAsHtml = IoUtils.stringFromResources(
-            Path.of(BASEBIBLIOTEK_URL_HTML));
+        var basebibliotekUrlsAsHtml = stringFromResources(Path.of(BASEBIBLIOTEK_URL_HTML));
         mockedGetRequestThatReturnsSpecifiedResponse(basebibliotekUrlsAsHtml);
 
-        var basebibliotekXML2 = IoUtils.stringFromResources(
-            Path.of(BASEBIBLIOTEK_REDACTED_INCREMENTAL_2_XML));
+        var basebibliotekXML2 = stringFromResources(Path.of(BASEBIBLIOTEK_REDACTED_INCREMENTAL_2_XML));
         mockedGetRequestWithSpecifiedStatusCode(HttpURLConnection.HTTP_FORBIDDEN,
                                                 BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/"
                                                 + BASEBIBLIOTEK_BB_2022_04_27_XML);
@@ -120,14 +121,11 @@ public class BaseBibliotekFetchHandlerTest {
     @Test
     public void shouldCollectListOfBibnrAndUploadThemTos3() {
 
-        var basebibliotekUrlsAsHtml = IoUtils.stringFromResources(
-            Path.of(BASEBIBLIOTEK_URL_HTML));
+        var basebibliotekUrlsAsHtml = stringFromResources(Path.of(BASEBIBLIOTEK_URL_HTML));
         mockedGetRequestThatReturnsSpecifiedResponse(basebibliotekUrlsAsHtml);
 
-        var basebibliotekXML1 = IoUtils.stringFromResources(
-            Path.of(BASEBIBLIOTEK_REDACTED_INCREMENTAL_1_XML));
-        var basebibliotekXML2 = IoUtils.stringFromResources(
-            Path.of(BASEBIBLIOTEK_REDACTED_INCREMENTAL_2_XML));
+        var basebibliotekXML1 = stringFromResources(Path.of(BASEBIBLIOTEK_REDACTED_INCREMENTAL_1_XML));
+        var basebibliotekXML2 = stringFromResources(Path.of(BASEBIBLIOTEK_REDACTED_INCREMENTAL_2_XML));
         mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_04_27_XML, basebibliotekXML1);
         mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_05_04_XML, basebibliotekXML2);
 
@@ -170,14 +168,11 @@ public class BaseBibliotekFetchHandlerTest {
 
     @Test
     public void shouldHandleS3Exceptions() {
-        var basebibliotekUrlsAsHtml = IoUtils.stringFromResources(
-            Path.of(BASEBIBLIOTEK_URL_HTML));
+        var basebibliotekUrlsAsHtml = stringFromResources(Path.of(BASEBIBLIOTEK_URL_HTML));
         mockedGetRequestThatReturnsSpecifiedResponse(basebibliotekUrlsAsHtml);
 
-        var basebibliotekXML1 = IoUtils.stringFromResources(
-            Path.of(BASEBIBLIOTEK_REDACTED_INCREMENTAL_1_XML));
-        var basebibliotekXML2 = IoUtils.stringFromResources(
-            Path.of(BASEBIBLIOTEK_REDACTED_INCREMENTAL_2_XML));
+        var basebibliotekXML1 = stringFromResources(Path.of(BASEBIBLIOTEK_REDACTED_INCREMENTAL_1_XML));
+        var basebibliotekXML2 = stringFromResources(Path.of(BASEBIBLIOTEK_REDACTED_INCREMENTAL_2_XML));
         mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_04_27_XML, basebibliotekXML1);
         mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_05_04_XML, basebibliotekXML2);
 
@@ -192,14 +187,11 @@ public class BaseBibliotekFetchHandlerTest {
 
     @Test
     public void shouldLogRecordsThatAreMissingBibNr() {
-        var basebibliotekUrlsAsHtml = IoUtils.stringFromResources(
-            Path.of(BASEBIBLIOTEK_URL_HTML));
+        var basebibliotekUrlsAsHtml = stringFromResources(Path.of(BASEBIBLIOTEK_URL_HTML));
         mockedGetRequestThatReturnsSpecifiedResponse(basebibliotekUrlsAsHtml);
 
-        var basebibliotekXML1 = IoUtils.stringFromResources(
-            Path.of(BASEBIBLIOTEK_REDACTED_INCREMENTAL_1_XML));
-        var basebibliotekXML3 = IoUtils.stringFromResources(
-            Path.of("basebibliotek_redacted_incremental_3.xml"));
+        var basebibliotekXML1 = stringFromResources(Path.of(BASEBIBLIOTEK_REDACTED_INCREMENTAL_1_XML));
+        var basebibliotekXML3 = stringFromResources(Path.of("basebibliotek_redacted_incremental_3.xml"));
         mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_04_27_XML, basebibliotekXML1);
         mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_05_04_XML, basebibliotekXML3);
         var scheduledEvent = new ScheduledEvent();
@@ -210,16 +202,15 @@ public class BaseBibliotekFetchHandlerTest {
 
     @Test
     public void shouldSplitLargeNumberOfLibrariesIntoSmallerBibNrFiles() {
-        var basebibliotekUrlsAsHtml = IoUtils.stringFromResources(
-            Path.of(BASEBIBLIOTEK_URL_HTML));
+        var basebibliotekUrlsAsHtml = stringFromResources(Path.of(BASEBIBLIOTEK_URL_HTML));
         mockedGetRequestThatReturnsSpecifiedResponse(basebibliotekUrlsAsHtml);
 
-        var basebibliotekXML1 = IoUtils.stringFromResources(
-            Path.of("redacted_bb_full.xml"));
-        var basebibliotekXML3 = IoUtils.stringFromResources(
-            Path.of("basebibliotek_redacted_incremental_3.xml"));
-        mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_04_27_XML, basebibliotekXML1);
-        mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_05_04_XML, basebibliotekXML3);
+        var basebibliotekXML1 = stringFromResources(Path.of("redacted_bb_full.xml"));
+        var basebibliotekXML3 = stringFromResources(Path.of("basebibliotek_redacted_incremental_3.xml"));
+        mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_04_27_XML,
+                              basebibliotekXML1);
+        mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_05_04_XML,
+                              basebibliotekXML3);
         var scheduledEvent = new ScheduledEvent();
         List<List<String>> listOfBibNr = baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT);
         //Since this test is specific for checking bibNrs files sizes, it has been made so that the
@@ -227,12 +218,85 @@ public class BaseBibliotekFetchHandlerTest {
         var expectedNumbersOfLibrariesFiles =
             (int) Math.ceil(listOfBibNr.stream()
                                 .mapToDouble(Collection::size)
-                                .sum() / NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE);
+                                .sum() / NUMBER_OF_LIBRARIES_THAT_RSP_CAN_HANDLE_AT_ONCE);
         //check that no bibNrs file has more than 100 elements:
         assertThat(listOfBibNr,
-                   Every.everyItem(hasSize(lessThanOrEqualTo(NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE))));
+                   Every.everyItem(hasSize(lessThanOrEqualTo(NUMBER_OF_LIBRARIES_THAT_RSP_CAN_HANDLE_AT_ONCE))));
         //Check that baseBibliotekFetchHandler has not split bibNrs unnecessary.
         assertThat(listOfBibNr, hasSize(equalTo(expectedNumbersOfLibrariesFiles)));
+    }
+
+    @Test
+    public void shouldSplitLumFilesIntoChunksOf10AndRspFilesIntoChunksOf100() {
+        var basebibliotekUrlsAsHtml = stringFromResources(Path.of(BASEBIBLIOTEK_URL_HTML));
+        mockedGetRequestThatReturnsSpecifiedResponse(basebibliotekUrlsAsHtml);
+
+        var basebibliotekXML1 = stringFromResources(Path.of("redacted_bb_full.xml"));
+        var basebibliotekXML3 = stringFromResources(Path.of("basebibliotek_redacted_incremental_3.xml"));
+        mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_04_27_XML,
+                              basebibliotekXML1);
+        mockedWiremockStubFor(BIBLIOTEK_EKSPORT_BIBLEV_PATH + "/" + BASEBIBLIOTEK_BB_2022_05_04_XML,
+                              basebibliotekXML3);
+
+        var scheduledEvent = new ScheduledEvent();
+        baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT);
+
+        var putObjectRequestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+        var requestBodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
+
+        Mockito.verify(this.s3Client, Mockito.atLeastOnce())
+            .putObject(putObjectRequestCaptor.capture(), requestBodyCaptor.capture());
+
+        var allRequests = putObjectRequestCaptor.getAllValues();
+        var allBodies = requestBodyCaptor.getAllValues();
+
+        // Filter requests by folder
+        var lumRequests = allRequests.stream()
+            .filter(request -> request.key().startsWith("lum/"))
+            .toList();
+        var rspRequests = allRequests.stream()
+            .filter(request -> request.key().startsWith("rsp/"))
+            .toList();
+
+        // Get corresponding bodies
+        var lumBodies = new ArrayList<RequestBody>();
+        var rspBodies = new ArrayList<RequestBody>();
+
+        for (int i = 0; i < allRequests.size(); i++) {
+            if (allRequests.get(i).key().startsWith("lum/")) {
+                lumBodies.add(allBodies.get(i));
+            } else if (allRequests.get(i).key().startsWith("rsp/")) {
+                rspBodies.add(allBodies.get(i));
+            }
+        }
+
+        // Verify LUM files have at most 10 bibNrs each
+        for (RequestBody body : lumBodies) {
+            try (var stream = body.contentStreamProvider().newStream()) {
+                var content = new String(stream.readAllBytes());
+                var lineCount = content.split("\n").length;
+                assertThat("LUM file should have at most 10 bibNrs",
+                    lineCount, lessThanOrEqualTo(NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        // Verify RSP files have at most 100 bibNrs each
+        for (RequestBody body : rspBodies) {
+            try (var stream = body.contentStreamProvider().newStream()) {
+                var content = new String(stream.readAllBytes());
+                var lineCount = content.split("\n").length;
+                assertThat("RSP file should have at most 100 bibNrs",
+                    lineCount, lessThanOrEqualTo(NUMBER_OF_LIBRARIES_THAT_RSP_CAN_HANDLE_AT_ONCE));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        // Verify both folders received files
+        assertThat("LUM folder should have received files", lumBodies.size(), greaterThan(0));
+        assertThat("RSP folder should have received files", rspBodies.size(), greaterThan(0));
     }
 
     private void mockedGetRequestThatReturnsSpecifiedResponse(String response) {
