@@ -62,7 +62,8 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
     // is reduces. This ensures that the LUM handler does not exceed 15 minutes run time.
     // In the future alma might combine the 80 endpoints to a single one, and then this limit will not be needed
     // anymore.
-    public static final int NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE = 100;
+    public static final int NUMBER_OF_LIBRARIES_THAT_RSP_CAN_HANDLE_AT_ONCE = 100;
+    public static final int NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE = 10;
     public static final String BIBNR_FILENAME_DELIMITER = "_";
     public static final String FOLDER_DELIMITER = "/";
     public static final String LUM_FOLDER_NAME = "lum";
@@ -100,8 +101,7 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
                    .map(this::fetchBasebibliotekXmls)
                    .map(this::convertXmls)
                    .map(this::collectBibnrFromBaseBibliotek)
-                   .map(this::convertToListOfListOfBibNr)
-                   .map(this::putObjectsToS3)
+                   .map(this::chunkAndUploadBibNrs)
                    .orElseThrow(
                        fail -> logExpectionAndThrowRuntimeError(fail.getException(), fail.getException().getMessage()));
     }
@@ -111,13 +111,23 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
         return String.format(BASIC_AUTHORIZATION, Base64.getEncoder().encodeToString(loginPassword.getBytes()));
     }
 
-    private List<List<String>> convertToListOfListOfBibNr(Set<String> bibNr) {
+    private List<List<String>> chunkAndUploadBibNrs(Set<String> bibNr) {
+        var rspBibNrs = convertToListOfListOfBibNr(bibNr, NUMBER_OF_LIBRARIES_THAT_RSP_CAN_HANDLE_AT_ONCE);
+        var lumBibNrs = convertToListOfListOfBibNr(bibNr, NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE);
+
+        putObjectsToS3(rspBibNrs, RSP_FOLDER_NAME);
+        putObjectsToS3(lumBibNrs, LUM_FOLDER_NAME);
+
+        return rspBibNrs;
+    }
+
+    private List<List<String>> convertToListOfListOfBibNr(Set<String> bibNr, int chunkSize) {
         List<List<String>> result = new ArrayList<>();
         List<String> bibNrs = new ArrayList<>(bibNr);
 
         var startIndex = 0;
         while (startIndex < bibNrs.size()) {
-            var endIndex = Math.min(startIndex + NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE, bibNrs.size());
+            var endIndex = Math.min(startIndex + chunkSize, bibNrs.size());
             result.add(bibNrs.subList(startIndex, endIndex));
             startIndex = endIndex;
         }
@@ -163,18 +173,15 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
         return JAXB.unmarshal(new StringReader(basebibliotekXmlString), BaseBibliotek.class);
     }
 
-    private List<List<String>> putObjectsToS3(List<List<String>> bibNrs) {
+    private void putObjectsToS3(List<List<String>> bibNrs, String folderName) {
         for (int i = 0; i < bibNrs.size(); i++) {
-            putObjectToS3(bibNrs.get(i), Integer.toString(i));
+            putObjectToS3(bibNrs.get(i), Integer.toString(i), folderName);
         }
-        return bibNrs;
     }
 
-    private void putObjectToS3(List<String> subsetBibNr, String subsetNumber) {
+    private void putObjectToS3(List<String> subsetBibNr, String subsetNumber, String folderName) {
         try {
-            s3Client.putObject(createPutObjectRequest(subsetNumber, RSP_FOLDER_NAME),
-                               RequestBody.fromString(craftBibnrString(subsetBibNr)));
-            s3Client.putObject(createPutObjectRequest(subsetNumber, LUM_FOLDER_NAME),
+            s3Client.putObject(createPutObjectRequest(subsetNumber, folderName),
                                RequestBody.fromString(craftBibnrString(subsetBibNr)));
         } catch (Exception ex) {
             throw logExpectionAndThrowRuntimeError(ex, COULD_NOT_UPLOAD_FILE_TO_S_3_ERROR_MESSAGE);

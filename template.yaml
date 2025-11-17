@@ -106,7 +106,7 @@ Resources:
       CodeUri: alma-integrations
       Handler: no.sikt.lum.LibraryUserManagementHandler::handleRequest
       Role: !GetAtt LibraryUserManagementHandlerRole.Arn
-      ReservedConcurrentExecutions: 1
+      ReservedConcurrentExecutions: 10
       Environment:
         Variables:
           REPORT_BUCKET: !Sub '${ReportBucketName}-${AWS::AccountId}'
