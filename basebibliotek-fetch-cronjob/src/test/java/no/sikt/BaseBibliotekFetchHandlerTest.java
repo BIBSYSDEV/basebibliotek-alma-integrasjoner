@@ -250,14 +250,6 @@ public class BaseBibliotekFetchHandlerTest {
         var allRequests = putObjectRequestCaptor.getAllValues();
         var allBodies = requestBodyCaptor.getAllValues();
 
-        // Filter requests by folder
-        var lumRequests = allRequests.stream()
-            .filter(request -> request.key().startsWith("lum/"))
-            .toList();
-        var rspRequests = allRequests.stream()
-            .filter(request -> request.key().startsWith("rsp/"))
-            .toList();
-
         // Get corresponding bodies
         var lumBodies = new ArrayList<RequestBody>();
         var rspBodies = new ArrayList<RequestBody>();
