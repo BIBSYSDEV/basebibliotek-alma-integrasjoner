@@ -40,7 +40,9 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_REST_URL";
     public static final String HANDLER_NAME = "lum";
     private static final String EVENT = "event";
-    private static final String SKIPPING_HANDLING_OF_REQUESTS = "No alma api keys found. Skipping handling of requests.";
+    private static final String SKIPPING_HANDLING_OF_REQUESTS =
+        "No alma api keys found. Skipping handling of requests.";
+    private static final String SUCCESSFUL_UPDATES_SENT_TO_ALMA = "{} successful updates sent to Alma";
 
     private final transient S3Client s3Client;
     private final transient String reportS3BucketName;
@@ -93,6 +95,8 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
             final int counter = sendBaseBibliotekToAlma(reports, baseBibliotekList);
             reports.forEach(report -> reportStringBuilder.append(report.generateReport()));
             HandlerUtils.reportToS3Bucket(reportStringBuilder, s3event, s3Client, reportS3BucketName, HANDLER_NAME);
+            logger.info(SUCCESSFUL_UPDATES_SENT_TO_ALMA, counter);
+            logger.info(reportStringBuilder.toString());
             return counter;
         } catch (Exception exception) {
             throw logErrorAndThrowException(exception);
@@ -113,8 +117,8 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
                 var almaCode = entry.getKey();
                 var apiKey = entry.getValue();
 
-                List<User> users = generateUsers(baseBibliotekList, userReportBuilder, almaCode);
-                int successCount = sendToAlmaAndCountSuccess(users, almaCode, apiKey, almaReportBuilder);
+                var users = generateUsers(baseBibliotekList, userReportBuilder, almaCode);
+                var successCount = sendToAlmaAndCountSuccess(users, almaCode, apiKey, almaReportBuilder);
 
                 usersPerAlmaInstanceMap.put(almaCode, users);
 
