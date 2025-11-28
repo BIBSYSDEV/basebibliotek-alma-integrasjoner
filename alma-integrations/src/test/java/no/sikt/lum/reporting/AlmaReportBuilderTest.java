@@ -2,6 +2,7 @@ package no.sikt.lum.reporting;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
 class AlmaReportBuilderTest {
@@ -36,6 +37,49 @@ class AlmaReportBuilderTest {
 
         assertThat(report, containsString("ok:3"));
         assertThat(report, containsString("failures:2"));
+    }
+
+    @Test
+    void shouldHandleConcurrentAddSuccessCallsCorrectly() {
+        var reportBuilder = new AlmaReportBuilder();
+
+        // Add 1000 successes concurrently from multiple threads
+        IntStream.range(0, 1000).parallel().forEach(i -> {
+            reportBuilder.addSuccess("testLib");
+        });
+
+        var report = reportBuilder.generateReport().toString();
+        assertThat(report, containsString("testLib \t ok:1000"));
+    }
+
+    @Test
+    void shouldHandleConcurrentAddFailureCallsCorrectly() {
+        var reportBuilder = new AlmaReportBuilder();
+
+        // Add 1000 failures concurrently from multiple threads
+        IntStream.range(0, 1000).parallel().forEach(i -> {
+            reportBuilder.addFailure("testLib", "instance" + i);
+        });
+
+        var report = reportBuilder.generateReport().toString();
+        assertThat(report, containsString("testLib \t ok:0 \t failures:1000"));
+    }
+
+    @Test
+    void shouldHandleConcurrentMixedCallsCorrectly() {
+        var reportBuilder = new AlmaReportBuilder();
+
+        // Add 500 successes and 500 failures concurrently
+        IntStream.range(0, 1000).parallel().forEach(i -> {
+            if (i % 2 == 0) {
+                reportBuilder.addSuccess("mixedLib");
+            } else {
+                reportBuilder.addFailure("mixedLib", "fail" + i);
+            }
+        });
+
+        var report = reportBuilder.generateReport().toString();
+        assertThat(report, containsString("mixedLib \t ok:500 \t failures:500"));
     }
 
 }

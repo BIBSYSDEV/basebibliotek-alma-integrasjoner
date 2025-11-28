@@ -105,25 +105,27 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
 
     private int sendBaseBibliotekToAlma(List<ReportGenerator> reports,
                                         List<BaseBibliotek> baseBibliotekList) {
-        int counter = 0;
         var userReportBuilder = new UserReportBuilder();
         var almaReportBuilder = new AlmaReportBuilder();
 
-        for (String almaCode : almaApiKeyMap.keySet()) {
-            List<User> users = generateUsers(baseBibliotekList,
-                                             userReportBuilder,
-                                             almaCode);
-            counter += sendToAlmaAndCountSuccess(users,
-                                                 almaCode,
-                                                 almaApiKeyMap.get(almaCode),
-                                                 almaReportBuilder);
-            usersPerAlmaInstanceMap.put(almaCode, users);
-        }
+        var totalCounter = almaApiKeyMap.entrySet().parallelStream()
+            .mapToInt(entry -> {
+                var almaCode = entry.getKey();
+                var apiKey = entry.getValue();
+
+                List<User> users = generateUsers(baseBibliotekList, userReportBuilder, almaCode);
+                int successCount = sendToAlmaAndCountSuccess(users, almaCode, apiKey, almaReportBuilder);
+
+                usersPerAlmaInstanceMap.put(almaCode, users);
+
+                return successCount;
+            })
+            .sum();
 
         reports.add(userReportBuilder);
         reports.add(almaReportBuilder);
 
-        return counter;
+        return totalCounter;
     }
 
     private List<User> generateUsers(List<BaseBibliotek> baseBibliotekList,

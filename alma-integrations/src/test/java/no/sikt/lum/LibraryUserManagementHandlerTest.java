@@ -427,7 +427,7 @@ class LibraryUserManagementHandlerTest {
             UnixPath.of(HandlerUtils.extractReportFilename(s3Event, LibraryUserManagementHandler.HANDLER_NAME)));
 
         assertThat(report, containsString("failures:83"));
-        assertThat(report, startsWith(bibNr));
+        assertThat(report, containsString(bibNr + " \t failures:"));
         assertThat(report, containsString("Could not convert to user"));
         assertThat(report, containsString("failed:["));
         assertThat(report, containsString("NTNU"));
