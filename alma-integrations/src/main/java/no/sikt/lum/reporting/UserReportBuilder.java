@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@SuppressWarnings("PMD.AvoidSynchronizedAtMethodLevel")
 public class UserReportBuilder implements ReportGenerator {
 
     // Example: 1000000 failures:2 Could not convert to user failed:[MOLDESYS, NTNU]
@@ -25,7 +26,7 @@ public class UserReportBuilder implements ReportGenerator {
         allLibraryCodes = new LinkedHashSet<>();
     }
 
-    public void addFailure(String libraryCode, String failedInstance) {
+    public synchronized void addFailure(String libraryCode, String failedInstance) {
         allLibraryCodes.add(libraryCode);
         var failuresForLibrary = failures.getOrDefault(libraryCode, new ArrayList<>());
         failuresForLibrary.add(failedInstance);
@@ -33,7 +34,7 @@ public class UserReportBuilder implements ReportGenerator {
     }
 
     @Override
-    public StringBuilder generateReport() {
+    public synchronized StringBuilder generateReport() {
         var reportStringBuilder = new StringBuilder();
 
         allLibraryCodes.forEach(libraryCode -> {

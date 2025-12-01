@@ -107,6 +107,7 @@ Resources:
       Handler: no.sikt.lum.LibraryUserManagementHandler::handleRequest
       Role: !GetAtt LibraryUserManagementHandlerRole.Arn
       ReservedConcurrentExecutions: 5
+      MemorySize: 6144
       Environment:
         Variables:
           REPORT_BUCKET: !Sub '${ReportBucketName}-${AWS::AccountId}'
