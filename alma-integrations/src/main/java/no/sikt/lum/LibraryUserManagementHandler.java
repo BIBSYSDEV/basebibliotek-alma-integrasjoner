@@ -43,6 +43,8 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     private static final String SKIPPING_HANDLING_OF_REQUESTS =
         "No alma api keys found. Skipping handling of requests.";
     private static final String SUCCESSFUL_UPDATES_SENT_TO_ALMA = "{} successful updates sent to Alma";
+    private static final String SUCCESSFULLY_OF_TOTAL =
+        "{} users updated successfully for alma instance {}, of total {} users";
 
     private final transient S3Client s3Client;
     private final transient String reportS3BucketName;
@@ -112,7 +114,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         var userReportBuilder = new UserReportBuilder();
         var almaReportBuilder = new AlmaReportBuilder();
 
-        var totalCounter = almaApiKeyMap.entrySet().parallelStream()
+        var totalCounter = almaApiKeyMap.entrySet().stream()
             .mapToInt(entry -> {
                 var almaCode = entry.getKey();
                 var apiKey = entry.getValue();
@@ -146,17 +148,23 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
                                           String almaId,
                                           String almaApikey,
                                           AlmaReportBuilder almaReportBuilder) {
-        var counter = 0;
-        for (User user : users) {
-            var primaryId = user.getPrimaryId();
-            if (sendToAlma(user, almaApikey)) {
-                counter++;
-                almaReportBuilder.addSuccess(primaryId);
-            } else {
-                almaReportBuilder.addFailure(primaryId, almaId);
-            }
-        }
-        return counter;
+
+        var successes = users.parallelStream()
+                            .mapToInt(user -> {
+                                var primaryId = user.getPrimaryId();
+                                if (sendToAlma(user, almaApikey)) {
+                                    almaReportBuilder.addSuccess(primaryId);
+                                    return 1;
+                                } else {
+                                    almaReportBuilder.addFailure(primaryId, almaId);
+                                    return 0;
+                                }
+                            })
+                            .sum();
+
+        logger.info(SUCCESSFULLY_OF_TOTAL, successes, almaId, users.size());
+
+        return successes;
     }
 
     private boolean sendToAlma(User user, String almaApikey) {
