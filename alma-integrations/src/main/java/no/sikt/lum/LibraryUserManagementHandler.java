@@ -43,7 +43,8 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     private static final String SKIPPING_HANDLING_OF_REQUESTS =
         "No alma api keys found. Skipping handling of requests.";
     private static final String SUCCESSFUL_UPDATES_SENT_TO_ALMA = "{} successful updates sent to Alma";
-    private static final String SUCCESSFULLY_OF_TOTAL = "{} users updated successfully, of total {}";
+    private static final String SUCCESSFULLY_OF_TOTAL =
+        "{} users updated successfully for alma instance {}, of total {} users";
 
     private final transient S3Client s3Client;
     private final transient String reportS3BucketName;
@@ -161,7 +162,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
                             })
                             .sum();
 
-        logger.info(SUCCESSFULLY_OF_TOTAL, successes, users.size());
+        logger.info(SUCCESSFULLY_OF_TOTAL, successes, almaId, users.size());
 
         return successes;
     }
