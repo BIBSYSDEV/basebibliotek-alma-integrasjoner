@@ -8,6 +8,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.sikt.alma.user.generated.User;
@@ -155,6 +156,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         // This avoids JAXB thread-safety issues
         var serializedUsers = users.stream()
                                   .map(SerializerUtils::serializeUser)
+                                  .flatMap(Optional::stream)
                                   .toList();
 
         var successes = serializedUsers.parallelStream()
