@@ -4,7 +4,11 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.google.gson.Gson;
+import jakarta.xml.bind.JAXB;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +35,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class LibraryUserManagementHandler implements RequestHandler<S3Event, Integer> {
 
     private static final Logger logger = LoggerFactory.getLogger(LibraryUserManagementHandler.class);
@@ -45,6 +50,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     private static final String SUCCESSFUL_UPDATES_SENT_TO_ALMA = "{} successful updates sent to Alma";
     private static final String SUCCESSFULLY_OF_TOTAL =
         "{} users updated successfully for alma instance {}, of total {} users";
+    private static final String FAILED_TO_SERIALIZE_USER = "Failed to serialize user: ";
 
     private final transient S3Client s3Client;
     private final transient String reportS3BucketName;
@@ -149,10 +155,16 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
                                           String almaApikey,
                                           AlmaReportBuilder almaReportBuilder) {
 
-        var successes = users.parallelStream()
-                            .mapToInt(user -> {
-                                var primaryId = user.getPrimaryId();
-                                if (sendToAlma(user, almaApikey)) {
+        // Serialize all users to XML strings before entering parallelStream
+        // This avoids JAXB thread-safety issues
+        var serializedUsers = users.stream()
+                                  .map(this::serializeUser)
+                                  .toList();
+
+        var successes = serializedUsers.parallelStream()
+                            .mapToInt(serializedUser -> {
+                                var primaryId = serializedUser.primaryId();
+                                if (sendToAlma(serializedUser, almaApikey)) {
                                     almaReportBuilder.addSuccess(primaryId);
                                     return 1;
                                 } else {
@@ -167,8 +179,18 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         return successes;
     }
 
-    private boolean sendToAlma(User user, String almaApikey) {
-        return almaUserUpserter.upsertUser(user, almaApikey);
+    private SerializedUser serializeUser(User user) {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            JAXB.marshal(user, outputStream);
+            var serializedXml = outputStream.toString(StandardCharsets.UTF_8);
+            return new SerializedUser(user.getPrimaryId(), serializedXml);
+        } catch (IOException e) {
+            throw new RuntimeException(FAILED_TO_SERIALIZE_USER + user.getPrimaryId(), e);
+        }
+    }
+
+    private boolean sendToAlma(SerializedUser serializedUser, String almaApikey) {
+        return almaUserUpserter.upsertUser(serializedUser, almaApikey);
     }
 
     private RuntimeException logErrorAndThrowException(Exception exception) {

@@ -2,8 +2,6 @@ package no.sikt.clients.alma;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.xml.bind.JAXB;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -11,12 +9,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.nio.charset.StandardCharsets;
 import java.util.Optional;
-import no.sikt.alma.user.generated.User;
 import no.sikt.clients.AbstractHttpUrlConnectionApi;
 import no.sikt.commons.Redacter;
 import no.sikt.lum.SensitiveXmlDataRedacter;
+import no.sikt.lum.SerializedUser;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,16 +114,13 @@ public class HttpUrlConnectionAlmaUserUpserter extends AbstractHttpUrlConnection
                 almaError.getErrorCode()));
     }
 
-    private void updateUser(final User user, String almaApikey) {
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            JAXB.marshal(user, outputStream);
-            String userAsString = outputStream.toString(StandardCharsets.UTF_8);
-
+    private void updateUser(SerializedUser user, String almaApikey) {
+        try {
             final HttpRequest request = HttpRequest.newBuilder()
-                .PUT(HttpRequest.BodyPublishers.ofString(userAsString))
+                .PUT(HttpRequest.BodyPublishers.ofString(user.serializedXml()))
                 .uri(UriWrapper.fromUri(almaApiHost)
                          .addChild(USERS_URL_PATH)
-                         .addChild(user.getPrimaryId()).getUri())
+                         .addChild(user.primaryId()).getUri())
                 .setHeader(AUTHORIZATION_HEADER_NAME, APIKEY_KEY + SPACE_KEY + almaApikey)
                 .header(CONTENT_TYPE_HEADER_NAME, APPLICATION_XML)
                 .build();
@@ -135,8 +129,8 @@ public class HttpUrlConnectionAlmaUserUpserter extends AbstractHttpUrlConnection
             if (!successfulResponse(response)) {
                 final String message = String.format(
                     UNEXPECTED_RESPONSE_UPDATING_USER_MESSAGE_FORMAT,
-                    user.getPrimaryId(),
-                    redacter.redact(userAsString),
+                    user.primaryId(),
+                    redacter.redact(user.serializedXml()),
                     response.statusCode(),
                     response.body());
                 throw new RuntimeException(message);
@@ -146,14 +140,10 @@ public class HttpUrlConnectionAlmaUserUpserter extends AbstractHttpUrlConnection
         }
     }
 
-    private void createUser(final User user, String almaApikey) {
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            JAXB.marshal(user, outputStream);
-            String userAsString = outputStream.toString(StandardCharsets.UTF_8);
-
+    private void createUser(SerializedUser user, String almaApikey) {
+        try {
             final HttpRequest request = HttpRequest.newBuilder()
-                .POST(
-                    HttpRequest.BodyPublishers.ofString(userAsString))
+                .POST(HttpRequest.BodyPublishers.ofString(user.serializedXml()))
                 .uri(UriWrapper.fromUri(almaApiHost)
                          .addChild(USERS_URL_PATH)
                          .getUri())
@@ -165,8 +155,8 @@ public class HttpUrlConnectionAlmaUserUpserter extends AbstractHttpUrlConnection
             if (response.statusCode() != HttpURLConnection.HTTP_OK) {
                 final String message = String.format(
                     UNEXPECTED_RESPONSE_CREATING_USER_MESSAGE_FORMAT,
-                    user.getPrimaryId(),
-                    redacter.redact(userAsString),
+                    user.primaryId(),
+                    redacter.redact(user.serializedXml()),
                     response.statusCode(),
                     response.body());
                 throw new RuntimeException(message);
@@ -177,9 +167,9 @@ public class HttpUrlConnectionAlmaUserUpserter extends AbstractHttpUrlConnection
     }
 
     @Override
-    public boolean upsertUser(final User user, String almaApikey) {
+    public boolean upsertUser(SerializedUser user, String almaApikey) {
         try {
-            final Optional<String> almaUser = fetchUser(user.getPrimaryId(), almaApikey);
+            final Optional<String> almaUser = fetchUser(user.primaryId(), almaApikey);
             almaUser.ifPresentOrElse(currentPartner -> updateUser(user, almaApikey),
                                      () -> createUser(user, almaApikey));
             return true;
