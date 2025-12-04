@@ -4,11 +4,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.google.gson.Gson;
-import jakarta.xml.bind.JAXB;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +21,8 @@ import no.sikt.lum.reporting.ReportGenerator;
 import no.sikt.lum.reporting.UserReportBuilder;
 import no.sikt.lum.secret.AlmaKeysFetcher;
 import no.sikt.lum.secret.SecretFetcher;
+import no.sikt.lum.serialize.SerializedUser;
+import no.sikt.lum.serialize.SerializerUtils;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -35,7 +33,6 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class LibraryUserManagementHandler implements RequestHandler<S3Event, Integer> {
 
     private static final Logger logger = LoggerFactory.getLogger(LibraryUserManagementHandler.class);
@@ -50,7 +47,6 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     private static final String SUCCESSFUL_UPDATES_SENT_TO_ALMA = "{} successful updates sent to Alma";
     private static final String SUCCESSFULLY_OF_TOTAL =
         "{} users updated successfully for alma instance {}, of total {} users";
-    private static final String FAILED_TO_SERIALIZE_USER = "Failed to serialize user: ";
 
     private final transient S3Client s3Client;
     private final transient String reportS3BucketName;
@@ -158,7 +154,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         // Serialize all users to XML strings before entering parallelStream
         // This avoids JAXB thread-safety issues
         var serializedUsers = users.stream()
-                                  .map(this::serializeUser)
+                                  .map(SerializerUtils::serializeUser)
                                   .toList();
 
         var successes = serializedUsers.parallelStream()
@@ -177,16 +173,6 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         logger.info(SUCCESSFULLY_OF_TOTAL, successes, almaId, users.size());
 
         return successes;
-    }
-
-    private SerializedUser serializeUser(User user) {
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            JAXB.marshal(user, outputStream);
-            var serializedXml = outputStream.toString(StandardCharsets.UTF_8);
-            return new SerializedUser(user.getPrimaryId(), serializedXml);
-        } catch (IOException e) {
-            throw new RuntimeException(FAILED_TO_SERIALIZE_USER + user.getPrimaryId(), e);
-        }
     }
 
     private boolean sendToAlma(SerializedUser serializedUser, String almaApikey) {

@@ -1,6 +1,6 @@
 package no.sikt.clients.alma;
 
-import no.sikt.lum.SerializedUser;
+import no.sikt.lum.serialize.SerializedUser;
 
 @FunctionalInterface
 public interface AlmaUserUpserter {

@@ -13,7 +13,7 @@ import java.util.Optional;
 import no.sikt.clients.AbstractHttpUrlConnectionApi;
 import no.sikt.commons.Redacter;
 import no.sikt.lum.SensitiveXmlDataRedacter;
-import no.sikt.lum.SerializedUser;
+import no.sikt.lum.serialize.SerializedUser;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
