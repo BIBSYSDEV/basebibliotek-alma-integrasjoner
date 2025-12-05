@@ -1,5 +1,6 @@
 package no.sikt.lum;
 
+import static no.sikt.lum.serialize.SerializerUtils.serializeUser;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
@@ -21,6 +22,7 @@ import no.sikt.lum.reporting.ReportGenerator;
 import no.sikt.lum.reporting.UserReportBuilder;
 import no.sikt.lum.secret.AlmaKeysFetcher;
 import no.sikt.lum.secret.SecretFetcher;
+import no.sikt.lum.serialize.SerializedUser;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -45,6 +47,8 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     private static final String SUCCESSFUL_UPDATES_SENT_TO_ALMA = "{} successful updates sent to Alma";
     private static final String SUCCESSFULLY_OF_TOTAL =
         "{} users updated successfully for alma instance {}, of total {} users";
+    private static final String UNKNOWN_EXCEPTION_WHEN_SERIALIZING_USER =
+        "Unknown exception when serializing user for updating alma instance {}";
 
     private final transient S3Client s3Client;
     private final transient String reportS3BucketName;
@@ -149,10 +153,25 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
                                           String almaApikey,
                                           AlmaReportBuilder almaReportBuilder) {
 
-        var successes = users.parallelStream()
-                            .mapToInt(user -> {
-                                var primaryId = user.getPrimaryId();
-                                if (sendToAlma(user, almaApikey)) {
+        // Serialize all users to XML strings before entering parallelStream
+        // This avoids JAXB thread-safety issues
+        var serializedUsers = new ArrayList<SerializedUser>();
+
+        try {
+            users.forEach(user -> serializeUser(user)
+                                      .ifPresentOrElse(
+                                          serializedUsers::add,
+                                          () -> almaReportBuilder.addFailure(user.getPrimaryId(), almaId)
+                                      )
+            );
+        } catch (Exception e) {
+            logger.error(UNKNOWN_EXCEPTION_WHEN_SERIALIZING_USER, almaId, e);
+        }
+
+        var successes = serializedUsers.parallelStream()
+                            .mapToInt(serializedUser -> {
+                                var primaryId = serializedUser.primaryId();
+                                if (sendToAlma(serializedUser, almaApikey)) {
                                     almaReportBuilder.addSuccess(primaryId);
                                     return 1;
                                 } else {
@@ -167,8 +186,8 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         return successes;
     }
 
-    private boolean sendToAlma(User user, String almaApikey) {
-        return almaUserUpserter.upsertUser(user, almaApikey);
+    private boolean sendToAlma(SerializedUser serializedUser, String almaApikey) {
+        return almaUserUpserter.upsertUser(serializedUser, almaApikey);
     }
 
     private RuntimeException logErrorAndThrowException(Exception exception) {
