@@ -1,5 +1,6 @@
 package no.sikt.lum;
 
+import static no.sikt.lum.serialize.SerializerUtils.serializeUser;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
@@ -8,7 +9,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.sikt.alma.user.generated.User;
@@ -23,7 +23,6 @@ import no.sikt.lum.reporting.UserReportBuilder;
 import no.sikt.lum.secret.AlmaKeysFetcher;
 import no.sikt.lum.secret.SecretFetcher;
 import no.sikt.lum.serialize.SerializedUser;
-import no.sikt.lum.serialize.SerializerUtils;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -48,6 +47,8 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     private static final String SUCCESSFUL_UPDATES_SENT_TO_ALMA = "{} successful updates sent to Alma";
     private static final String SUCCESSFULLY_OF_TOTAL =
         "{} users updated successfully for alma instance {}, of total {} users";
+    private static final String UNKNOWN_EXCEPTION_WHEN_SERIALIZING_USER =
+        "Unknown exception when serializing user for updating alma instance {}";
 
     private final transient S3Client s3Client;
     private final transient String reportS3BucketName;
@@ -154,10 +155,18 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
 
         // Serialize all users to XML strings before entering parallelStream
         // This avoids JAXB thread-safety issues
-        var serializedUsers = users.stream()
-                                  .map(SerializerUtils::serializeUser)
-                                  .flatMap(Optional::stream)
-                                  .toList();
+        var serializedUsers = new ArrayList<SerializedUser>();
+
+        try {
+            users.forEach(user -> serializeUser(user)
+                                      .ifPresentOrElse(
+                                          serializedUsers::add,
+                                          () -> almaReportBuilder.addFailure(user.getPrimaryId(), almaId)
+                                      )
+            );
+        } catch (Exception e) {
+            logger.error(UNKNOWN_EXCEPTION_WHEN_SERIALIZING_USER, almaId, e);
+        }
 
         var successes = serializedUsers.parallelStream()
                             .mapToInt(serializedUser -> {
