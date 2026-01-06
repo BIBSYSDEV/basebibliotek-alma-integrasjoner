@@ -15,6 +15,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -107,7 +108,8 @@ public class BasebibliotekFetchHandler implements RequestHandler<ScheduledEvent,
 
     private String createAuthorization() {
         String loginPassword = basebibliotekUsername + USERNAME_PASSWORD_DELIMITER + basebibliotekPassword;
-        return String.format(BASIC_AUTHORIZATION, Base64.getEncoder().encodeToString(loginPassword.getBytes()));
+        return String.format(BASIC_AUTHORIZATION,
+                             Base64.getEncoder().encodeToString(loginPassword.getBytes(StandardCharsets.UTF_8)));
     }
 
     private List<List<String>> chunkAndUploadBibNrs(Set<String> bibNr) {
