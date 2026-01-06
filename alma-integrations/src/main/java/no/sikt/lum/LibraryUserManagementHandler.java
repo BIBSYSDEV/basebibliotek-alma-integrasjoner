@@ -1,5 +1,6 @@
 package no.sikt.lum;
 
+import static no.sikt.lum.serialize.SerializerUtils.serializeUser;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
@@ -21,6 +22,7 @@ import no.sikt.lum.reporting.ReportGenerator;
 import no.sikt.lum.reporting.UserReportBuilder;
 import no.sikt.lum.secret.AlmaKeysFetcher;
 import no.sikt.lum.secret.SecretFetcher;
+import no.sikt.lum.serialize.SerializedUser;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -40,6 +42,13 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_REST_URL";
     public static final String HANDLER_NAME = "lum";
     private static final String EVENT = "event";
+    private static final String SKIPPING_HANDLING_OF_REQUESTS =
+        "No alma api keys found. Skipping handling of requests.";
+    private static final String SUCCESSFUL_UPDATES_SENT_TO_ALMA = "{} successful updates sent to Alma";
+    private static final String SUCCESSFULLY_OF_TOTAL =
+        "{} users updated successfully for alma instance {}, of total {} users";
+    private static final String UNKNOWN_EXCEPTION_WHEN_SERIALIZING_USER =
+        "Unknown exception when serializing user for updating alma instance {}";
 
     private final transient S3Client s3Client;
     private final transient String reportS3BucketName;
@@ -77,6 +86,10 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     @Override
     public Integer handleRequest(S3Event s3event, Context context) {
         logger.info(EVENT + gson.toJson(s3event));
+        if (almaApiKeyMap.isEmpty()) {
+            logger.info(SKIPPING_HANDLING_OF_REQUESTS);
+            return 0;
+        }
         try {
             var bibNrFile = HandlerUtils.readFile(s3event, s3Client);
             logger.info("done collecting bibNrFile");
@@ -88,6 +101,8 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
             final int counter = sendBaseBibliotekToAlma(reports, baseBibliotekList);
             reports.forEach(report -> reportStringBuilder.append(report.generateReport()));
             HandlerUtils.reportToS3Bucket(reportStringBuilder, s3event, s3Client, reportS3BucketName, HANDLER_NAME);
+            logger.info(SUCCESSFUL_UPDATES_SENT_TO_ALMA, counter);
+            logger.info(reportStringBuilder.toString());
             return counter;
         } catch (Exception exception) {
             throw logErrorAndThrowException(exception);
@@ -100,25 +115,27 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
 
     private int sendBaseBibliotekToAlma(List<ReportGenerator> reports,
                                         List<BaseBibliotek> baseBibliotekList) {
-        int counter = 0;
         var userReportBuilder = new UserReportBuilder();
         var almaReportBuilder = new AlmaReportBuilder();
 
-        for (String almaCode : almaApiKeyMap.keySet()) {
-            List<User> users = generateUsers(baseBibliotekList,
-                                             userReportBuilder,
-                                             almaCode);
-            counter += sendToAlmaAndCountSuccess(users,
-                                                 almaCode,
-                                                 almaApiKeyMap.get(almaCode),
-                                                 almaReportBuilder);
-            usersPerAlmaInstanceMap.put(almaCode, users);
-        }
+        var totalCounter = almaApiKeyMap.entrySet().stream()
+            .mapToInt(entry -> {
+                var almaCode = entry.getKey();
+                var apiKey = entry.getValue();
+
+                var users = generateUsers(baseBibliotekList, userReportBuilder, almaCode);
+                var successCount = sendToAlmaAndCountSuccess(users, almaCode, apiKey, almaReportBuilder);
+
+                usersPerAlmaInstanceMap.put(almaCode, users);
+
+                return successCount;
+            })
+            .sum();
 
         reports.add(userReportBuilder);
         reports.add(almaReportBuilder);
 
-        return counter;
+        return totalCounter;
     }
 
     private List<User> generateUsers(List<BaseBibliotek> baseBibliotekList,
@@ -135,21 +152,42 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
                                           String almaId,
                                           String almaApikey,
                                           AlmaReportBuilder almaReportBuilder) {
-        var counter = 0;
-        for (User user : users) {
-            var primaryId = user.getPrimaryId();
-            if (sendToAlma(user, almaApikey)) {
-                counter++;
-                almaReportBuilder.addSuccess(primaryId);
-            } else {
-                almaReportBuilder.addFailure(primaryId, almaId);
-            }
+
+        // Serialize all users to XML strings before entering parallelStream
+        // This avoids JAXB thread-safety issues
+        var serializedUsers = new ArrayList<SerializedUser>();
+
+        try {
+            users.forEach(user -> serializeUser(user)
+                                      .ifPresentOrElse(
+                                          serializedUsers::add,
+                                          () -> almaReportBuilder.addFailure(user.getPrimaryId(), almaId)
+                                      )
+            );
+        } catch (Exception e) {
+            logger.error(UNKNOWN_EXCEPTION_WHEN_SERIALIZING_USER, almaId, e);
         }
-        return counter;
+
+        var successes = serializedUsers.parallelStream()
+                            .mapToInt(serializedUser -> {
+                                var primaryId = serializedUser.primaryId();
+                                if (sendToAlma(serializedUser, almaApikey)) {
+                                    almaReportBuilder.addSuccess(primaryId);
+                                    return 1;
+                                } else {
+                                    almaReportBuilder.addFailure(primaryId, almaId);
+                                    return 0;
+                                }
+                            })
+                            .sum();
+
+        logger.info(SUCCESSFULLY_OF_TOTAL, successes, almaId, users.size());
+
+        return successes;
     }
 
-    private boolean sendToAlma(User user, String almaApikey) {
-        return almaUserUpserter.upsertUser(user, almaApikey);
+    private boolean sendToAlma(SerializedUser serializedUser, String almaApikey) {
+        return almaUserUpserter.upsertUser(serializedUser, almaApikey);
     }
 
     private RuntimeException logErrorAndThrowException(Exception exception) {

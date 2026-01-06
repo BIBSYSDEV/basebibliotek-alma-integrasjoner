@@ -46,7 +46,8 @@ public class UserGroupConverter {
         "PMD.CognitiveComplexity",
         "PMD.NPathComplexity",
         "PMD.CollapsibleIfStatements",
-        "PMD.NullAssignment"
+        "PMD.NullAssignment",
+        "PMD.AvoidDeeplyNestedIfStmts"
     })
     public static BibKategori konverterBibKategori(String libnr, String kundeType) {
         if (libnr == null) {
@@ -115,7 +116,6 @@ public class UserGroupConverter {
         return kat;
     }
 
-    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     private static BibKategori finnBibKategoriFraKundetype(String customerType) {
         BibKategori kat = null;
 

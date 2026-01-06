@@ -1,9 +1,9 @@
 package no.sikt.clients.alma;
 
-import no.sikt.alma.user.generated.User;
+import no.sikt.lum.serialize.SerializedUser;
 
 @FunctionalInterface
 public interface AlmaUserUpserter {
 
-    boolean upsertUser(User user, String almaApikey);
+    boolean upsertUser(SerializedUser serializedUser, String almaApikey);
 }

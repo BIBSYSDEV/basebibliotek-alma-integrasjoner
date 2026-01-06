@@ -149,7 +149,6 @@ public class PartnerConverter extends AlmaObjectConverter {
         return locateProfile;
     }
 
-    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     private ProfileDetails extractProfileDetails(Record record, final PartnerDetails partnerDetails) {
         ProfileDetails details = new ProfileDetails();
 

@@ -20,7 +20,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.core.StringContains.containsString;
-import static org.hamcrest.core.StringStartsWith.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -427,7 +426,7 @@ class LibraryUserManagementHandlerTest {
             UnixPath.of(HandlerUtils.extractReportFilename(s3Event, LibraryUserManagementHandler.HANDLER_NAME)));
 
         assertThat(report, containsString("failures:83"));
-        assertThat(report, startsWith(bibNr));
+        assertThat(report, containsString(bibNr + " \t failures:"));
         assertThat(report, containsString("Could not convert to user"));
         assertThat(report, containsString("failed:["));
         assertThat(report, containsString("NTNU"));

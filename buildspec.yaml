@@ -6,7 +6,20 @@ phases:
     runtime-versions:
       java: corretto21
     commands:
+      - pip3 install --upgrade cfn-lint
       - pip3 install aws-sam-cli -U
+
+  pre_build:
+    commands:
+      - echo "pre_build steps for revision ${CODEBUILD_RESOLVED_SOURCE_VERSION}..."
+      - env
+      - node -v
+      - aws --version
+      - cfn-lint -v
+      - sam --version
+
+      # Lint
+      - cfn-lint # uses .cfnlintrc
 
   build:
     commands:
@@ -14,6 +27,9 @@ phases:
       # Use AWS SAM to build and package the application by using AWS CloudFormation
       - sam build
       - sam package --s3-bucket $S3_BUCKET --output-template-file packaged.yml
+
+      # Lint after 'package'
+      - cfn-lint packaged.yml
 
   post_build:
     commands:
