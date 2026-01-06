@@ -2,6 +2,7 @@ package no.sikt.lum.reporting;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
 class UserReportBuilderTest {
@@ -30,6 +31,19 @@ class UserReportBuilderTest {
         var report = reportBuilder.generateReport().toString();
 
         assertThat(report, containsString("failures:2"));
+    }
+
+    @Test
+    void shouldHandleConcurrentAddFailureCallsCorrectly() {
+        var reportBuilder = new UserReportBuilder();
+
+        // Add 1000 failures concurrently from multiple threads
+        IntStream.range(0, 1000).parallel().forEach(i -> {
+            reportBuilder.addFailure("testLib", "instance" + i);
+        });
+
+        var report = reportBuilder.generateReport().toString();
+        assertThat(report, containsString("testLib \t failures:1000"));
     }
 
 }
