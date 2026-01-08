@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@SuppressWarnings("PMD.AvoidSynchronizedAtMethodLevel")
 public class AlmaReportBuilder implements ReportGenerator {
 
     // Example: lib1000000 ok:70 failures:2 failed:[MOLDESYS, NTNU]
@@ -27,12 +28,12 @@ public class AlmaReportBuilder implements ReportGenerator {
         allLibraryCodes = new LinkedHashSet<>();
     }
 
-    public void addSuccess(String libraryCode) {
+    public synchronized void addSuccess(String libraryCode) {
         allLibraryCodes.add(libraryCode);
         successes.put(libraryCode, successes.getOrDefault(libraryCode, 0) + 1);
     }
 
-    public void addFailure(String libraryCode, String failedInstance) {
+    public synchronized void addFailure(String libraryCode, String failedInstance) {
         allLibraryCodes.add(libraryCode);
         var failuresForLibrary = failures.getOrDefault(libraryCode, new ArrayList<>());
         failuresForLibrary.add(failedInstance);
@@ -40,7 +41,7 @@ public class AlmaReportBuilder implements ReportGenerator {
     }
 
     @Override
-    public StringBuilder generateReport() {
+    public synchronized StringBuilder generateReport() {
         var reportStringBuilder = new StringBuilder();
 
         allLibraryCodes.forEach(libraryCode -> {

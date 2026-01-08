@@ -106,7 +106,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
         }
     }
 
-    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
+
     private int sendToAlmaAndCountSuccess(List<Partner> partners, StringBuilder reportStringBuilder) {
         var counter = 0;
         for (Partner partner : partners) {
