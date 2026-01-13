@@ -106,7 +106,7 @@ Resources:
       CodeUri: alma-integrations
       Handler: no.sikt.lum.LibraryUserManagementHandler::handleRequest
       Role: !GetAtt LibraryUserManagementHandlerRole.Arn
-      ReservedConcurrentExecutions: 2
+      ReservedConcurrentExecutions: 1
       MemorySize: 6144
       Environment:
         Variables:
