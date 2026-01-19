@@ -41,9 +41,6 @@ hamcrest-core = { group = 'org.hamcrest', name = 'hamcrest-core', version.ref = 
 nva-testutils = { group = 'com.github.bibsysdev', name = 'nvatestutils', version.ref = 'nva-commons' }
 nva-logutils = { group = 'com.github.bibsysdev', name = 'logutils', version.ref = 'nva-commons' }
 
-#wiremock = { group = 'org.wiremock', name = 'wiremock', version.ref = 'wiremock' }
-#wiremock-jetty12 = { group = 'org.wiremock', name = 'wiremock-jetty12', version.ref = 'wiremock' }
-
 wiremock-standalone = { group = 'org.wiremock', name = 'wiremock-standalone', version.ref = 'wiremock' }
 
 #Regular
