@@ -1,10 +1,10 @@
 [versions]
 junit-jupiter = { strictly = '5.14.1' }
 nva-commons = { strictly = '2.4.6' }
-jackson = { require = '2.19.0' }
-mockito = { strictly = '5.15.2' }
+jackson = { require = '2.19.4' }
+mockito = { strictly = '5.21.0' }
 hamcrest = { strictly = '3.0' }
-aws-lambda-java-core = { strictly = '1.2.3' }
+aws-lambda-java-core = { strictly = '1.4.0' }
 aws-lambda-java-events = { strictly = '3.15.0' }
 aws-lambda-java-log4j2 = { strictly = '1.6.0' }
 log4j = { strictly = '2.24.3' }
