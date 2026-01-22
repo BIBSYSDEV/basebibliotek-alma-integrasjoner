@@ -5,7 +5,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static com.github.tomakehurst.wiremock.common.ContentTypes.CONTENT_TYPE;
 import static no.sikt.BasebibliotekFetchHandler.NUMBER_OF_LIBRARIES_THAT_LUM_CAN_HANDLE_AT_ONCE;
 import static no.sikt.BasebibliotekFetchHandler.NUMBER_OF_LIBRARIES_THAT_RSP_CAN_HANDLE_AT_ONCE;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
