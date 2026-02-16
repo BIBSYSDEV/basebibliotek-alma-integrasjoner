@@ -1,29 +1,29 @@
 [versions]
-junit-jupiter = { strictly = '5.14.1' }
-nva-commons = { strictly = '2.4.6' }
-jackson = { require = '2.19.4' }
-mockito = { strictly = '5.21.0' }
-hamcrest = { strictly = '3.0' }
-aws-lambda-java-core = { strictly = '1.4.0' }
-aws-lambda-java-events = { strictly = '3.16.1' }
-aws-lambda-java-log4j2 = { strictly = '1.6.0' }
-log4j = { strictly = '2.25.3' }
-log4jApi = { strictly = '2.25.3' }
-slf4j-api = { require = '2.0.17' }
-slf4j-impl = { strictly = '2.25.3' }
-nva-language = { strictly = '1.2.1' }
-wiremock = { strictly = '3.13.2' }
-jaxb = { strictly = '4.0.6' }
-gson = { strictly = '2.13.2' }
-apache-commons = { strictly = '3.20.0' }
-xml-bind = { strictly = '4.0.4' }
-aws-sdk = { strictly = '2.40.9' }
+junit-jupiter = '5.14.1'
+nva-commons = '2.4.6'
+jackson = '2.19.4'
+mockito = '5.21.0'
+hamcrest = '3.0'
+aws-lambda-java-core = '1.4.0'
+aws-lambda-java-events = '3.16.1'
+aws-lambda-java-log4j2 = '1.6.0'
+log4j = '2.25.2'
+log4jApi = '2.25.2'
+slf4j-api = '2.0.17'
+slf4j-impl = '2.25.2'
+nva-language = '1.2.1'
+wiremock = '3.13.2'
+jaxb = '4.0.6'
+gson = '2.13.2'
+apache-commons = '3.20.0'
+xml-bind = '4.0.4'
+aws-sdk = '2.40.9'
 
 # Jaxb group
-jaxb-xjc = { strictly = '4.0.6' }
-jaxb-impl = { strictly = '4.0.6' }
-jakarata-xml-api = { strictly = '4.0.4' }
-activation-api = { strictly = '2.1.4' }
+jaxb-xjc = '4.0.6'
+jaxb-impl = '4.0.6'
+jakarata-xml-api = '4.0.4'
+activation-api = '2.1.4'
 
 [libraries]
 
