@@ -7,12 +7,16 @@ import no.sikt.alma.user.generated.User;
 import no.sikt.alma.user.generated.User.UserGroup;
 import nva.commons.core.StringUtils;
 
-public class UserGroupConverter {
+public final class UserGroupConverter {
 
     public static final List<String> VALID_USER_GROUPS = Arrays.asList("1", "2", "3", "4", "5", "6", "7", "8", "11",
                                                                        "12", "13", "14", "15", "16", "17", "20", "21",
                                                                        "22", "23", "24", "25", "50");
     public static final String NOTFOUND = "NOTFOUND";
+
+    private UserGroupConverter() {
+
+    }
 
     public static UserGroup extractUserGroup(Record record) {
         String libraryNumber = record.getBibnr().replaceAll("\\w+-", StringUtils.EMPTY_STRING);
