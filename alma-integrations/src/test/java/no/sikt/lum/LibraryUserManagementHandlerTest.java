@@ -7,6 +7,11 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static no.sikt.clients.AbstractHttpUrlConnectionApi.LOG_MESSAGE_COMMUNICATION_PROBLEM;
+import static no.sikt.clients.alma.HttpUrlConnectionAlmaUserUpserter.UNEXPECTED_RESPONSE_FETCHING_USER_LOG_MESSAGE_PREFIX;
+import static no.sikt.clients.basebibliotek.BaseBibliotekUtils.COUNTRY_CODE_GERMAN;
+import static no.sikt.clients.basebibliotek.BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN;
+import static no.sikt.clients.basebibliotek.BaseBibliotekUtils.KATSYST_BIBSYS;
+import static no.sikt.clients.basebibliotek.BaseBibliotekUtils.KATSYST_TIDEMANN;
 import static no.sikt.commons.HandlerUtils.COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE;
 import static no.sikt.commons.HandlerUtils.HYPHEN;
 import static no.sikt.lum.LibraryUserManagementHandler.SKIPPING_HANDLING_OF_REQUESTS;
@@ -52,7 +57,6 @@ import no.sikt.alma.user.generated.Emails;
 import no.sikt.alma.user.generated.Phones;
 import no.sikt.alma.user.generated.User;
 import no.sikt.clients.alma.HttpUrlConnectionAlmaUserUpserter;
-import no.sikt.clients.basebibliotek.BaseBibliotekUtils;
 import no.sikt.clients.basebibliotek.HttpUrlConnectionBaseBibliotekApi;
 import no.sikt.commons.HandlerUtils;
 import no.sikt.lum.secret.AlmaKeysFetcher;
@@ -219,14 +223,7 @@ class LibraryUserManagementHandlerTest {
     @Test
     public void shouldSkipWhenBasebibliotekFails() throws IOException {
         final String bibNrSuccess = "1000000";
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
-                                  .withBibnr(bibNrSuccess)
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .withEpostBest(EMAIL_BEST)
-                                  .withEpostAdr(EMAIL_ADR)
-                                  .withInst(INST)
-                                  .withBiblType(BIBLTYPE)
-                                  .build();
+        final Record record = getRecord(bibNrSuccess, KATSYST_TIDEMANN, COUNTRY_CODE_NORWEGIAN);
         final String failingBibNr = "1234567";
         final S3Event s3Event = prepareBaseBibliotekFromRecords(failingBibNr, record);
         final String almaCode = LIB_USER_PREFIX + bibNrSuccess;
@@ -256,31 +253,19 @@ class LibraryUserManagementHandlerTest {
     @Test
     public void shouldIgnoreUserAndLogProblemIfAlmaGetUserReturnsBadRequestWithUnhandledErrorCode()
         throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), "BIBSYS")
-                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .withInst(INST)
-                                  .withBiblType("UNI")
-                                  .build();
+        final Record record = getRecord(BIBNR_RESOLVABLE_TO_ALMA_CODE, KATSYST_BIBSYS, COUNTRY_CODE_NORWEGIAN);
         var s3Event = prepareBaseBibliotekFromRecords(record);
         WireMocker.mockAlmaGetResponseBadRequestNotUserNotFound(LIB_0030100_ID);
         final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaUserUpserter.class);
         final Integer count = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
         assertThat(count, is(0));
-        assertThat(appender.getMessages(),
-                   containsString(
-                       HttpUrlConnectionAlmaUserUpserter.UNEXPECTED_RESPONSE_FETCHING_USER_LOG_MESSAGE_PREFIX));
+        assertThat(appender.getMessages(), containsString(UNEXPECTED_RESPONSE_FETCHING_USER_LOG_MESSAGE_PREFIX));
     }
 
     @Test
     public void shouldIgnoreUserAndLogProblemIfAlmaCreateUserReturnsBadRequestWithUnhandledErrorCode()
         throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), "BIBSYS")
-                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .withInst(INST)
-                                  .withBiblType("ORG")
-                                  .build();
+        final Record record = getRecord(BIBNR_RESOLVABLE_TO_ALMA_CODE, KATSYST_BIBSYS, COUNTRY_CODE_NORWEGIAN);
         var s3Event = prepareBaseBibliotekFromRecords(record);
         WireMocker.mockAlmaGetResponseUserNotFound(LIB_0030100_ID);
         WireMocker.mockAlmaPostResponseBadRequest();
@@ -295,12 +280,7 @@ class LibraryUserManagementHandlerTest {
     @Test
     public void shouldIgnoreUserAndLogProblemIfAlmaUpdateUserReturnsBadRequestWithUnhandledErrorCode()
         throws IOException {
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), "BIBSYS")
-                                  .withBibnr(BIBNR_RESOLVABLE_TO_ALMA_CODE)
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                                  .withInst(INST)
-                                  .withBiblType("FBI")
-                                  .build();
+        final Record record = getRecord(BIBNR_RESOLVABLE_TO_ALMA_CODE, KATSYST_BIBSYS, COUNTRY_CODE_NORWEGIAN);
         var s3Event = prepareBaseBibliotekFromRecords(record);
         WireMocker.mockAlmaGetResponse(LIB_0030100_ID);
         WireMocker.mockAlmaPutResponseBadRequest(LIB_0030100_ID);
@@ -344,14 +324,7 @@ class LibraryUserManagementHandlerTest {
     @Test
     void shouldReportSuccessfulWhenAllWorksProperly() throws IOException {
         final String bibNr = "1000000";
-        final Record record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
-                                  .withBibnr(bibNr)
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_GERMAN)
-                                  .withEpostBest(EMAIL_BEST)
-                                  .withEpostAdr(EMAIL_ADR)
-                                  .withInst(INST)
-                                  .withBiblType(BIBLTYPE)
-                                  .build();
+        final Record record = getRecord(bibNr, KATSYST_TIDEMANN, COUNTRY_CODE_GERMAN);
         final UnixPath s3Path = HandlerTestUtils.randomS3Path();
         final S3Event s3Event = prepareBaseBibliotekFromRecords(s3Path, record);
         final String almaCode = LIB_USER_PREFIX + bibNr;
@@ -369,14 +342,7 @@ class LibraryUserManagementHandlerTest {
     @Test
     void shouldGenerateReportWhenAlmaContactFailureWithListOfFailures() throws IOException {
         var bibNr = "1234567";
-        var record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
-                         .withBibnr(bibNr)
-                         .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN)
-                         .withEpostBest(EMAIL_BEST)
-                         .withEpostAdr(EMAIL_ADR)
-                         .withInst(INST)
-                         .withBiblType("VGS")
-                         .build();
+        var record = getRecord(bibNr, KATSYST_TIDEMANN, COUNTRY_CODE_NORWEGIAN);
         var s3Path = HandlerTestUtils.randomS3Path();
         var s3Event = prepareBaseBibliotekFromRecords(s3Path, record);
         WireMocker.mockAlmaForbiddenGetResponse(LIB_USER_PREFIX + bibNr);
@@ -414,7 +380,7 @@ class LibraryUserManagementHandlerTest {
     @Test
     void shouldGenerateReportWhenConversionToUserFailure() throws IOException {
         var bibNr = "3";
-        var record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
+        var record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), KATSYST_TIDEMANN)
                          .withBibnr(bibNr)
                          .withInst(null)
                          .withEpostBest(EMAIL_BEST)
@@ -487,18 +453,6 @@ class LibraryUserManagementHandlerTest {
 
     @Test
     void shouldReturnZeroAndLogWhyWhenAlmaApiKeyMapIsEmpty() throws IOException {
-        var bibNr = "1000000";
-        var record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
-                                  .withBibnr(bibNr)
-                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_GERMAN)
-                                  .withEpostBest(EMAIL_BEST)
-                                  .withEpostAdr(EMAIL_ADR)
-                                  .withInst(INST)
-                                  .withBiblType(BIBLTYPE)
-                                  .build();
-        var s3Path = HandlerTestUtils.randomS3Path();
-        var s3Event = prepareBaseBibliotekFromRecords(s3Path, record);
-
         almaKeysFetcher = spy(almaKeysFetcher);
         doReturn(Collections.emptyMap()).when(almaKeysFetcher).fetchSecret();
 
@@ -508,10 +462,26 @@ class LibraryUserManagementHandlerTest {
                                                                         mockedEnvironment,
                                                                         almaKeysFetcher);
 
+        var bibNr = "1000000";
+        var record = getRecord(bibNr, KATSYST_TIDEMANN, COUNTRY_CODE_GERMAN);
+        var s3Path = HandlerTestUtils.randomS3Path();
+        var s3Event = prepareBaseBibliotekFromRecords(s3Path, record);
+
         var successfulLibraries = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
 
         assertThat(successfulLibraries, is(equalTo(0)));
         assertThat(appender.getMessages(), containsString(SKIPPING_HANDLING_OF_REQUESTS));
+    }
+
+    private Record getRecord(String bibNr, String katsyst, String landKode) {
+        return new RecordBuilder(BigInteger.ONE, LocalDate.now(), katsyst)
+                   .withBibnr(bibNr)
+                   .withLandkode(landKode)
+                   .withEpostBest(EMAIL_BEST)
+                   .withEpostAdr(EMAIL_ADR)
+                   .withInst(INST)
+                   .withBiblType(BIBLTYPE)
+                   .build();
     }
 
     private S3Event prepareBaseBibliotekFromRecords(final UnixPath s3Path, final Record... records) throws IOException {
