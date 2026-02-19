@@ -57,6 +57,17 @@ class AlmaCodeProviderTest {
         assertThat(exception.getMessage(), equalTo("Alma code mapping table is empty."));
     }
 
+    @Test
+    void shouldThrowErrorWhenAlmaCodeMappingsIsInvalid() {
+        var invalidAlmaCodeMappings = """
+            "invalid" : "json"
+            """;
+
+        var exception = assertThrows(RuntimeException.class, () -> new AlmaCodeProvider(invalidAlmaCodeMappings));
+
+        assertThat(exception.getMessage(), equalTo("Alma code mapping JSON is invalid."));
+    }
+
     private String readAlmaCodeMappings() {
         return IoUtils.stringFromResources(Path.of("fullLibCodeToAlmaCodeMapping.json"));
     }
