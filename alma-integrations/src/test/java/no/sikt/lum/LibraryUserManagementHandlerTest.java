@@ -28,8 +28,10 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -38,6 +40,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Optional;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -60,6 +63,7 @@ import no.sikt.clients.alma.HttpUrlConnectionAlmaUserUpserter;
 import no.sikt.clients.basebibliotek.HttpUrlConnectionBaseBibliotekApi;
 import no.sikt.commons.HandlerUtils;
 import no.sikt.lum.secret.AlmaKeysFetcher;
+import no.sikt.lum.serialize.SerializerUtils;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
@@ -471,6 +475,70 @@ class LibraryUserManagementHandlerTest {
 
         assertThat(successfulLibraries, is(equalTo(0)));
         assertThat(appender.getMessages(), containsString(SKIPPING_HANDLING_OF_REQUESTS));
+    }
+
+    @Test
+    void shouldReportFailureWhenSerializationReturnsEmpty() throws IOException {
+        var bibNr = "1000000";
+        var record = getRecord(bibNr, KATSYST_TIDEMANN, COUNTRY_CODE_NORWEGIAN);
+        var s3Path = HandlerTestUtils.randomS3Path();
+        var s3Event = prepareBaseBibliotekFromRecords(s3Path, record);
+
+        try (var mockedSerializer = mockStatic(SerializerUtils.class)) {
+            mockedSerializer.when(() -> SerializerUtils.serializeUser(any()))
+                .thenReturn(Optional.empty());
+
+            var count = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
+
+            assertThat(count, is(equalTo(0)));
+
+            var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
+            var report = reports3Driver.getFile(
+                UnixPath.of(HandlerUtils.extractReportFilename(s3Event, LibraryUserManagementHandler.HANDLER_NAME)));
+
+            assertThat(report, containsString("failures:83"));
+        }
+    }
+
+    @Test
+    void shouldLogErrorWhenSerializationThrowsException() throws IOException {
+        var bibNr = "1000000";
+        var record = getRecord(bibNr, KATSYST_TIDEMANN, COUNTRY_CODE_NORWEGIAN);
+        var s3Path = HandlerTestUtils.randomS3Path();
+        var s3Event = prepareBaseBibliotekFromRecords(s3Path, record);
+        var appender = LogUtils.getTestingAppender(LibraryUserManagementHandler.class);
+
+        try (var mockedSerializer = mockStatic(SerializerUtils.class)) {
+            mockedSerializer.when(() -> SerializerUtils.serializeUser(any()))
+                .thenThrow(new RuntimeException("serialization error"));
+
+            var count = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
+
+            assertThat(count, is(equalTo(0)));
+            assertThat(appender.getMessages(), containsString("Unknown exception when serializing user"));
+        }
+    }
+
+    @Test
+    void shouldWrapCheckedExceptionInRuntimeException() throws IOException {
+        final Map<String, String> bibNrToXmlMap = Collections.singletonMap(BIBNR_RESOLVABLE_TO_ALMA_CODE,
+                                                                           IoUtils.stringFromResources(
+                                                                               Path.of(BASEBIBLIOTEK_0030100_XML)));
+        final var s3Event = HandlerTestUtils.prepareBaseBibliotekFromXml(bibNrToXmlMap, s3Driver);
+        WireMocker.mockAlmaGetResponse(LIB_0030100_ID);
+        WireMocker.mockAlmaPutResponse(LIB_0030100_ID);
+
+        var ioException = new IOException("report write failed");
+
+        try (var mockedHandlerUtils = mockStatic(HandlerUtils.class, CALLS_REAL_METHODS)) {
+            mockedHandlerUtils.when(() -> HandlerUtils.reportToS3Bucket(any(), any(), any(), any(), any()))
+                .thenThrow(ioException);
+
+            var thrown = assertThrows(RuntimeException.class,
+                () -> libraryUserManagementHandler.handleRequest(s3Event, CONTEXT));
+
+            assertThat(thrown.getCause(), is(equalTo(ioException)));
+        }
     }
 
     private Record getRecord(String bibNr, String katsyst, String landKode) {
