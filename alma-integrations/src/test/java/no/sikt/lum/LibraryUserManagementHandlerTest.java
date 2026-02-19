@@ -9,6 +9,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static no.sikt.clients.AbstractHttpUrlConnectionApi.LOG_MESSAGE_COMMUNICATION_PROBLEM;
 import static no.sikt.commons.HandlerUtils.COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE;
 import static no.sikt.commons.HandlerUtils.HYPHEN;
+import static no.sikt.lum.LibraryUserManagementHandler.SKIPPING_HANDLING_OF_REQUESTS;
 import static no.sikt.lum.UserConverter.LIB_USER_PREFIX;
 import static no.sikt.lum.UserConverter.USER_IDENTIFIER_REALMS;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
@@ -22,7 +23,9 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
@@ -355,7 +358,7 @@ class LibraryUserManagementHandlerTest {
         WireMocker.mockAlmaGetResponse(almaCode);
         WireMocker.mockAlmaPutResponse(almaCode);
         var numberOfSuccessFulLibraries = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
-        assertThat(numberOfSuccessFulLibraries, is(equalTo(numberOfSuccessFulLibraries)));
+        assertThat(numberOfSuccessFulLibraries, is(equalTo(83)));
         var reports3Driver = new S3Driver(s3Client, BASEBIBLIOTEK_REPORT);
         var report = reports3Driver.getFile(
             UnixPath.of(HandlerUtils.extractReportFilename(s3Event, LibraryUserManagementHandler.HANDLER_NAME)));
@@ -480,6 +483,35 @@ class LibraryUserManagementHandlerTest {
         assertThrows(ErrorReadingSecretException.class, () -> new LibraryUserManagementHandler(s3Client,
                                                                                                mockedEnvironment,
                                                                                                almaKeysFetcher));
+    }
+
+    @Test
+    void shouldReturnZeroAndLogWhyWhenAlmaApiKeyMapIsEmpty() throws IOException {
+        var bibNr = "1000000";
+        var record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), BaseBibliotekUtils.KATSYST_TIDEMANN)
+                                  .withBibnr(bibNr)
+                                  .withLandkode(BaseBibliotekUtils.COUNTRY_CODE_GERMAN)
+                                  .withEpostBest(EMAIL_BEST)
+                                  .withEpostAdr(EMAIL_ADR)
+                                  .withInst(INST)
+                                  .withBiblType(BIBLTYPE)
+                                  .build();
+        var s3Path = HandlerTestUtils.randomS3Path();
+        var s3Event = prepareBaseBibliotekFromRecords(s3Path, record);
+
+        almaKeysFetcher = spy(almaKeysFetcher);
+        doReturn(Collections.emptyMap()).when(almaKeysFetcher).fetchSecret();
+
+        var appender = LogUtils.getTestingAppender(LibraryUserManagementHandler.class);
+
+        libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client,
+                                                                        mockedEnvironment,
+                                                                        almaKeysFetcher);
+
+        var successfulLibraries = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
+
+        assertThat(successfulLibraries, is(equalTo(0)));
+        assertThat(appender.getMessages(), containsString(SKIPPING_HANDLING_OF_REQUESTS));
     }
 
     private S3Event prepareBaseBibliotekFromRecords(final UnixPath s3Path, final Record... records) throws IOException {
