@@ -5,7 +5,6 @@ import java.util.List;
 import no.nb.basebibliotek.generated.Record;
 import no.sikt.alma.user.generated.User;
 import no.sikt.alma.user.generated.User.UserGroup;
-import nva.commons.core.JacocoGenerated;
 import nva.commons.core.StringUtils;
 
 public class UserGroupConverter {
@@ -40,7 +39,6 @@ public class UserGroupConverter {
 
     //Libnr inneholder informasjon. Kan skape krøll hvis et bibliotek går fra å være et høyskole bibliotek til
     // universitetsbibliotek.
-    @JacocoGenerated
     @SuppressWarnings({
         "PMD.AvoidLiteralsInIfCondition",
         "PMD.CognitiveComplexity",
@@ -148,6 +146,9 @@ public class UserGroupConverter {
      * @return true if any criteria matches input (case ignored)
      */
     private static boolean matches(String input, String... values) {
+        if (input == null) {
+            return false;
+        }
         for (String value : values) {
             if (input.trim().equalsIgnoreCase(value)) {
                 return true;
