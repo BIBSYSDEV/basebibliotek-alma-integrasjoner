@@ -16,6 +16,15 @@ class SerializerUtilsTest {
     }
 
     @Test
+    void shouldIgnoreUsersThatAreMissingRequiredFields() {
+        var user = new User();
+        user.setPrimaryId(null);
+        var result = SerializerUtils.serializeUser(user);
+
+        assertThat(result.isEmpty(), equalTo(true));
+    }
+
+    @Test
     void shouldSerializeUserWithValidData() {
         var user = new User();
         user.setPrimaryId("1234");

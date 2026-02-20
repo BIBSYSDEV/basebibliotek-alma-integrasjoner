@@ -6,9 +6,13 @@ import java.util.MissingResourceException;
 import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("PMD.EmptyCatchBlock")
-public class LanguageCodeConverter {
+public final class LanguageCodeConverter {
 
     public static final Map<String, String> isoAlpha2ToIsoAlpha3CodeMap = new ConcurrentHashMap<>();
+
+    private LanguageCodeConverter() {
+
+    }
 
     static {
         Locale[] availableLocales = Locale.getAvailableLocales();

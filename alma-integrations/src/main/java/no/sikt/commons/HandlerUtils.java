@@ -14,13 +14,17 @@ import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import software.amazon.awssdk.services.s3.S3Client;
 
-public class HandlerUtils {
+public final class HandlerUtils {
 
     public static final int SINGLE_EXPECTED_RECORD = 0;
     public static final String S3_URI_TEMPLATE = "s3://%s/%s";
     public static final String COULD_NOT_FETCH_BASEBIBLIOTEK_REPORT_MESSAGE = " could not fetch basebibliotek\n";
     public static final String REPORT_FILE_NAME_PREFIX = "report-";
     public static final String HYPHEN = "-";
+
+    private HandlerUtils() {
+
+    }
 
     public static String readFile(S3Event event, S3Client s3Client) {
         var s3Driver = new S3Driver(s3Client, extractBucketName(event));

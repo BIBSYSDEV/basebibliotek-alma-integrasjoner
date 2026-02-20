@@ -5,21 +5,31 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import no.sikt.alma.user.generated.User;
+import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SerializerUtils {
+public final class SerializerUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(SerializerUtils.class);
 
     private static final String USER_OR_PRIMARY_ID_IS_NULL = "User is null or primaryId is null";
     private static final String FAILED_TO_SERIALIZE_USER = "Failed to serialize user with primary id: {} because of {}";
 
+    private SerializerUtils() {
+
+    }
+
     public static Optional<SerializedUser> serializeUser(User user) {
         if (user == null || user.getPrimaryId() == null) {
             logger.error(USER_OR_PRIMARY_ID_IS_NULL);
             return Optional.empty();
         }
+        return marshal(user);
+    }
+
+    @JacocoGenerated
+    private static Optional<SerializedUser> marshal(User user) {
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             JAXB.marshal(user, outputStream);
             var serializedXml = outputStream.toString(StandardCharsets.UTF_8);
@@ -30,5 +40,4 @@ public class SerializerUtils {
             return Optional.empty();
         }
     }
-
 }

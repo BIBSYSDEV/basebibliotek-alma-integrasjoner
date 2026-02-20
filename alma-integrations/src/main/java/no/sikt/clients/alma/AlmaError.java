@@ -1,6 +1,9 @@
 package no.sikt.clients.alma;
 
+import nva.commons.core.JacocoGenerated;
+
 @SuppressWarnings("unused")
+@JacocoGenerated
 class AlmaError {
 
     private String errorCode;
