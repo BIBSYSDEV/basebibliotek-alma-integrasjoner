@@ -1,12 +1,15 @@
 package no.sikt.lum;
 
 import static no.sikt.clients.basebibliotek.BaseBibliotekUtils.COUNTRY_CODE_NORWEGIAN;
+import static no.sikt.clients.basebibliotek.BaseBibliotekUtils.KATSYST_BIBSYS;
 import static no.sikt.clients.basebibliotek.BaseBibliotekUtils.KATSYST_TIDEMANN;
 import static no.sikt.commons.AlmaObjectConverter.PERMANENTLY_CLOSED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.math.BigInteger;
 import java.time.LocalDate;
 import java.util.List;
@@ -82,6 +85,54 @@ class UserConverterTest {
         assertThat(result, is(equalTo("Library A")));
     }
 
+    @Test
+    void shouldReportFailureWhenRecordIsMissingRequiredFieldsBibltypeAndInst() {
+        var record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), KATSYST_TIDEMANN)
+                         .withBibnr(BIBNR)
+                         .withLandkode(COUNTRY_CODE_NORWEGIAN)
+                         .build();
+        var baseBibliotek = new BasebibliotekGenerator(record).generateBaseBibliotek();
+        var userConverter = new UserConverter(baseBibliotek, TARGET_ALMA_CODE);
+        var userReportBuilder = new UserReportBuilder();
+        var appender = LogUtils.getTestingAppender(AlmaObjectConverter.class);
+
+        var users = userConverter.toUsers(userReportBuilder);
+
+        assertThat(users.size(), is(equalTo(0)));
+        assertThat(appender.getMessages(), containsString("Could not convert record, missing [inst, bibltype]"));
+        var report = userReportBuilder.generateReport().toString();
+        assertThat(report, containsString("Could not convert to user"));
+    }
+
+    @Test
+    void shouldFormatExceptionMessageCorrectlyWhenInstIsMissing() {
+        var record = new  RecordBuilder(BigInteger.ONE, LocalDate.now(), KATSYST_BIBSYS)
+                         .withBibnr(BIBNR)
+                         .withLandkode(COUNTRY_CODE_NORWEGIAN)
+                         .build();
+        var baseBibliotek = new BasebibliotekGenerator(record).generateBaseBibliotek();
+        var userConverter = new UserConverter(baseBibliotek, TARGET_ALMA_CODE);
+
+        var exception = assertThrows(RuntimeException.class, () -> userConverter.logProblemAndThrowException(record));
+
+        assertThat(exception.getMessage(), containsString("Could not convert record, missing inst"));
+    }
+
+    @Test
+    void shouldFormatExceptionMessageCorrectlyWhenInstIsPresent() {
+        var record = new  RecordBuilder(BigInteger.ONE, LocalDate.now(), KATSYST_BIBSYS)
+                         .withBibnr(BIBNR)
+                         .withLandkode(COUNTRY_CODE_NORWEGIAN)
+                         .withInst(INST)
+                         .build();
+        var baseBibliotek = new BasebibliotekGenerator(record).generateBaseBibliotek();
+        var userConverter = new UserConverter(baseBibliotek, TARGET_ALMA_CODE);
+
+        var exception = assertThrows(RuntimeException.class, () -> userConverter.logProblemAndThrowException(record));
+
+        assertThat(exception.getMessage(), containsString("Could not convert record, missing , record"));
+    }
+
     static Stream<Arguments> provideCountryCodeAndExpectedAmpersandReplacement() {
         return Stream.of(
             Arguments.of("GB", "and"),
@@ -129,25 +180,6 @@ class UserConverterTest {
                    .withInst(INST)
                    .withBiblType(BIBLTYPE)
                    .build();
-    }
-
-    @Test
-    void shouldReportFailureWhenRecordIsMissingRequiredFieldsBibltypeAndInst() {
-        var record = new RecordBuilder(BigInteger.ONE, LocalDate.now(), KATSYST_TIDEMANN)
-                         .withBibnr(BIBNR)
-                         .withLandkode(COUNTRY_CODE_NORWEGIAN)
-                         .build();
-        var baseBibliotek = new BasebibliotekGenerator(record).generateBaseBibliotek();
-        var userConverter = new UserConverter(baseBibliotek, TARGET_ALMA_CODE);
-        var userReportBuilder = new UserReportBuilder();
-        var appender = LogUtils.getTestingAppender(AlmaObjectConverter.class);
-
-        var users = userConverter.toUsers(userReportBuilder);
-
-        assertThat(users.size(), is(equalTo(0)));
-        assertThat(appender.getMessages(), containsString("Could not convert record, missing [inst, bibltype]"));
-        var report = userReportBuilder.generateReport().toString();
-        assertThat(report, containsString("Could not convert to user"));
     }
 
     private List<User> convertRecordToUsers(Record record) {
