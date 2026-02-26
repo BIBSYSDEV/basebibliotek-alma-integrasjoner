@@ -1,6 +1,6 @@
 [versions]
 junit-jupiter = '5.14.1'
-nva-commons = '2.4.6'
+nva-commons = '2.4.11'
 jackson = '2.19.4'
 mockito = '5.21.0'
 hamcrest = '3.0'
