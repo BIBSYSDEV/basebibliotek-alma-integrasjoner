@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import no.sikt.alma.partners.generated.Partner;
 import no.sikt.clients.AbstractHttpUrlConnectionApi;
+import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -184,6 +185,7 @@ public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnect
     }
 
     @Override
+    @JacocoGenerated
     protected Logger getLogger() {
         return LOGGER;
     }

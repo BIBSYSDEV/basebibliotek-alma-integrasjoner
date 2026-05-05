@@ -2,6 +2,7 @@ package test.utils;
 
 import java.math.BigInteger;
 import java.time.LocalDate;
+import javax.xml.datatype.XMLGregorianCalendar;
 import no.nb.basebibliotek.generated.Eressurser;
 import no.nb.basebibliotek.generated.Record;
 
@@ -23,6 +24,9 @@ public class RecordBuilder {
     private transient String vPostNr;
     private transient String vPostSted;
     private transient String inst;
+    private transient String stengt;
+    private transient XMLGregorianCalendar stengtFra;
+    private transient XMLGregorianCalendar stengtTil;
 
     public RecordBuilder(BigInteger rid, LocalDate timestamp, String katsyst) {
         this.rid = rid;
@@ -79,6 +83,21 @@ public class RecordBuilder {
         return this;
     }
 
+    public RecordBuilder withStengt(String stengt) {
+        this.stengt = stengt;
+        return this;
+    }
+
+    public RecordBuilder withStengtFra(XMLGregorianCalendar stengtFra) {
+        this.stengtFra = stengtFra;
+        return this;
+    }
+
+    public RecordBuilder withStengtTil(XMLGregorianCalendar stengtTil) {
+        this.stengtTil = stengtTil;
+        return this;
+    }
+
     public Record build() {
         Record record = new Record();
 
@@ -98,6 +117,9 @@ public class RecordBuilder {
         record.setVpoststed(vPostSted);
         record.setInst(inst);
         record.setBibltype(bibltype);
+        record.setStengt(stengt);
+        record.setStengtFra(stengtFra);
+        record.setStengtTil(stengtTil);
 
         return record;
     }

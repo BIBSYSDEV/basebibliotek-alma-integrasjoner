@@ -42,7 +42,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     public static final String BASEBIBLIOTEK_URI_ENVIRONMENT_NAME = "BASEBIBLIOTEK_REST_URL";
     public static final String HANDLER_NAME = "lum";
     private static final String EVENT = "event";
-    private static final String SKIPPING_HANDLING_OF_REQUESTS =
+    public static final String SKIPPING_HANDLING_OF_REQUESTS =
         "No alma api keys found. Skipping handling of requests.";
     private static final String SUCCESSFUL_UPDATES_SENT_TO_ALMA = "{} successful updates sent to Alma";
     private static final String SUCCESSFULLY_OF_TOTAL =

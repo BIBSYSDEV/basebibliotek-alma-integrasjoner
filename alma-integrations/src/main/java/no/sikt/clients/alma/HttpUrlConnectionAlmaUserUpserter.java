@@ -14,6 +14,7 @@ import no.sikt.clients.AbstractHttpUrlConnectionApi;
 import no.sikt.commons.Redacter;
 import no.sikt.lum.SensitiveXmlDataRedacter;
 import no.sikt.lum.serialize.SerializedUser;
+import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -180,6 +181,7 @@ public class HttpUrlConnectionAlmaUserUpserter extends AbstractHttpUrlConnection
     }
 
     @Override
+    @JacocoGenerated
     protected Logger getLogger() {
         return LOGGER;
     }
