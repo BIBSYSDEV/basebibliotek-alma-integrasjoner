@@ -28,16 +28,8 @@ dependencies {
     implementation libs.apache.commons.lang3
     implementation libs.jakarta.xml.bind
 
-    //implementation platform('software.amazon.awssdk:bom:2.17.191') // Version manually specified for each module in libs.versions.toml
-    //implementation group: 'software.amazon.awssdk', name: 'secretsmanager' // Do we need this to match version?
-
     implementation project(path: ":basebibliotek-generated", configuration: 'default')
     implementation project(path: ":alma-generated", configuration: 'default')
-
-    shadowJar {
-        archiveClassifier.set('')
-        zip64 true
-    }
 }
 
 test {

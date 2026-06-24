@@ -20,8 +20,4 @@ dependencies {
 
     implementation project(path: ":basebibliotek-generated", configuration: 'default')
 
-    shadowJar {
-        archiveClassifier.set('')
-        zip64 true
-    }
 }
