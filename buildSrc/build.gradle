@@ -9,9 +9,9 @@ repositories {
 dependencies {
     // Here we can specify versions which is not supported under plugins bracket
     implementation group: 'nebula.lint', name: 'nebula.lint.gradle.plugin', version: '20.6.2'
-    implementation group: 'org.jacoco', name: 'org.jacoco.core', version: '0.8.14'
-    implementation group: 'org.jacoco', name: 'org.jacoco.report', version: '0.8.14'
-    implementation group: 'com.github.johnrengelman', name: 'shadow', version: '8.1.1'
+    implementation group: 'org.jacoco', name: 'org.jacoco.core', version: '0.8.15'
+    implementation group: 'org.jacoco', name: 'org.jacoco.report', version: '0.8.15'
+    implementation group: 'com.gradleup.shadow', name: 'com.gradleup.shadow.gradle.plugin', version: '9.4.2'
 }
 
 // How Jar files are named
@@ -25,5 +25,5 @@ java {
 
 wrapper {
     distributionType = Wrapper.DistributionType.ALL
-    gradleVersion = "8.14.3"
+    gradleVersion = "8.14.5"
 }

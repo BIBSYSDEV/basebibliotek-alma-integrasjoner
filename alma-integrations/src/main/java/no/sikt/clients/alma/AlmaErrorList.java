@@ -3,7 +3,7 @@ package no.sikt.clients.alma;
 import java.util.List;
 
 @SuppressWarnings("unused")
-class AlmaErrorList {
+public class AlmaErrorList {
 
     private List<AlmaError> error;
 

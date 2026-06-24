@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'com.github.johnrengelman.shadow'
+    id 'com.gradleup.shadow'
     id 'nebula.lint'
     id 'jacoco-report-aggregation'
 }
@@ -19,14 +19,14 @@ subprojects {
 
 
             pmd {
-                toolVersion = '7.20.0'
+                toolVersion = '7.25.0'
                 ruleSetConfig = rootProject.resources.text.fromFile('config/pmd/ruleset.xml')
                 ruleSets = []
                 ignoreFailures = false
             }
 
             checkstyle {
-                toolVersion = '10.26.1'
+                toolVersion = '13.6.0'
                 configFile = rootProject.resources.text.fromFile('config/checkstyle/checkstyle.xml').asFile()
                 configProperties.checkstyleSuppressionsPath =
                         rootProject.resources.text
@@ -35,7 +35,7 @@ subprojects {
             }
 
             jacoco {
-                toolVersion = '0.8.14'
+                toolVersion = '0.8.15'
             }
 
             jacocoTestReport {
