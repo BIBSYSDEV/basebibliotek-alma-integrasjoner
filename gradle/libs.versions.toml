@@ -16,13 +16,13 @@ wiremock = '3.13.2'
 jaxb = '4.0.6'
 gson = '2.13.2'
 apache-commons = '3.20.0'
-xml-bind = '4.0.4'
+xml-bind = '4.0.5'
 aws-sdk = '2.40.9'
 
 # Jaxb group
 jaxb-xjc = '4.0.6'
 jaxb-impl = '4.0.6'
-jakarata-xml-api = '4.0.4'
+jakarata-xml-api = '4.0.5'
 activation-api = '2.1.4'
 
 [libraries]
