@@ -8,10 +8,9 @@ repositories {
 
 dependencies {
     // Here we can specify versions which is not supported under plugins bracket
-    implementation group: 'nebula.lint', name: 'nebula.lint.gradle.plugin', version: '20.6.2'
-    implementation group: 'org.jacoco', name: 'org.jacoco.core', version: '0.8.15'
-    implementation group: 'org.jacoco', name: 'org.jacoco.report', version: '0.8.15'
-    implementation group: 'com.gradleup.shadow', name: 'com.gradleup.shadow.gradle.plugin', version: '9.4.2'
+    implementation "nebula.lint:nebula.lint.gradle.plugin:20.6.2"
+    implementation "org.jacoco:org.jacoco.core:0.8.15"
+    implementation "org.jacoco:org.jacoco.report:0.8.15"
 }
 
 // How Jar files are named
