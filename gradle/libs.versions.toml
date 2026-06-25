@@ -18,7 +18,7 @@ jaxb = '4.0.9'
 gson = '2.14.0'
 apache-commons = '3.20.0'
 xml-bind = '4.0.5'
-aws-sdk = '2.45.1'
+aws-sdk = '2.46.17'
 
 # Jaxb group
 jaxb-xjc = '4.0.9'
