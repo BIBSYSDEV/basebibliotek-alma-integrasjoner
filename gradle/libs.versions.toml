@@ -1,6 +1,6 @@
 [versions]
 junit-jupiter = '6.1.0'
-nva-commons = '2.8.2'
+nva-commons = '2.9.0'
 jackson-annotations = '2.22'
 jackson = '2.22.0'
 mockito = '5.23.0'
