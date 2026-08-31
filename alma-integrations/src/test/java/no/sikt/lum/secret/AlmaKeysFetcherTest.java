@@ -53,10 +53,10 @@ class AlmaKeysFetcherTest {
 
         almaKeysFetcher = new AlmaKeysFetcher(secretsManagerClient);
 
-        var logAppender = LogRecorder.forClass(AlmaKeysFetcher.class);
+        var logRecorder = LogRecorder.forClass(AlmaKeysFetcher.class);
 
         assertThrows(ErrorReadingSecretException.class, () -> almaKeysFetcher.fetchSecret());
-        assertThat(logAppender.asString(), containsString(COULD_NOT_PARSE_SECRET));
+        assertThat(logRecorder.asString(), containsString(COULD_NOT_PARSE_SECRET));
     }
 
     void mockSecret(String secret) {

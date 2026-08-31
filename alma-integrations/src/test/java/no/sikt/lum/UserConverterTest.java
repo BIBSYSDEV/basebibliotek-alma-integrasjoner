@@ -93,12 +93,12 @@ class UserConverterTest {
         var baseBibliotek = new BasebibliotekGenerator(record).generateBaseBibliotek();
         var userConverter = new UserConverter(baseBibliotek, TARGET_ALMA_CODE);
         var userReportBuilder = new UserReportBuilder();
-        var appender = LogRecorder.forClass(AlmaObjectConverter.class);
+        var logRecorder = LogRecorder.forClass(AlmaObjectConverter.class);
 
         var users = userConverter.toUsers(userReportBuilder);
 
         assertThat(users.size(), is(equalTo(0)));
-        assertThat(appender.asString(), containsString("Could not convert record, missing [inst, bibltype]"));
+        assertThat(logRecorder.asString(), containsString("Could not convert record, missing [inst, bibltype]"));
         var report = userReportBuilder.generateReport().toString();
         assertThat(report, containsString("Could not convert to user"));
     }

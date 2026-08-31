@@ -68,11 +68,11 @@ public class BaseBibliotekFetchHandlerTest {
     private transient BasebibliotekFetchHandler baseBibliotekFetchHandler;
     private transient S3Client s3Client;
 
-    private transient LogRecorder appender;
+    private transient LogRecorder logRecorder;
 
     @BeforeEach
     public void init(WireMockRuntimeInfo wireMockInfo) {
-        appender = LogRecorder.forClass(BasebibliotekFetchHandler.class);
+        logRecorder = LogRecorder.forClass(BasebibliotekFetchHandler.class);
         s3Client = mock(S3Client.class);
         Environment environment = mock(Environment.class);
         when(environment.readEnv(BasebibliotekFetchHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).thenReturn(
@@ -94,7 +94,7 @@ public class BaseBibliotekFetchHandlerTest {
         mockedGetRequestWithSpecifiedStatusCode(HttpURLConnection.HTTP_FORBIDDEN, BIBLIOTEK_EKSPORT_BIBLEV_PATH);
         assertThrows(RuntimeException.class, () -> baseBibliotekFetchHandler
                                                        .handleRequest(new ScheduledEvent(), CONTEXT));
-        assertThat(appender.asString(), containsString(expectedMessage));
+        assertThat(logRecorder.asString(), containsString(expectedMessage));
     }
 
     @Test
@@ -114,7 +114,7 @@ public class BaseBibliotekFetchHandlerTest {
 
         var expectedMessage =
             "could not GET " + BASEBIBLIOTEK_BB_2022_04_27_XML;
-        assertThat(appender.asString(), containsString(expectedMessage));
+        assertThat(logRecorder.asString(), containsString(expectedMessage));
     }
 
     @Test
@@ -181,7 +181,7 @@ public class BaseBibliotekFetchHandlerTest {
             .thenThrow(new RuntimeException());
         var expectedMessage = "Could not upload file to s3";
         assertThrows(RuntimeException.class, () -> baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT));
-        assertThat(appender.asString(), containsString(expectedMessage));
+        assertThat(logRecorder.asString(), containsString(expectedMessage));
     }
 
     @Test
@@ -196,7 +196,7 @@ public class BaseBibliotekFetchHandlerTest {
         var scheduledEvent = new ScheduledEvent();
         baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT);
         var expectedMessage = "Record with missing bibnr";
-        assertThat(appender.asString(), containsString(expectedMessage));
+        assertThat(logRecorder.asString(), containsString(expectedMessage));
     }
 
     @Test

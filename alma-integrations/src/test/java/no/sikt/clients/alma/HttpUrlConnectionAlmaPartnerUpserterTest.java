@@ -37,10 +37,10 @@ class HttpUrlConnectionAlmaPartnerUpserterTest {
 
         var upserter = new HttpUrlConnectionAlmaPartnerUpserter(httpClient, "api-key", host);
 
-        var appender = LogRecorder.forClass(HttpUrlConnectionAlmaPartnerUpserter.class);
+        var logRecorder = LogRecorder.forClass(HttpUrlConnectionAlmaPartnerUpserter.class);
 
         assertThat(upserter.upsertPartner(partner), equalTo(false));
-        assertThat(appender.asString(), containsString("Problems communicating with Alma!"));
+        assertThat(logRecorder.asString(), containsString("Problems communicating with Alma!"));
     }
 
     @Test
@@ -61,10 +61,10 @@ class HttpUrlConnectionAlmaPartnerUpserterTest {
 
         var upserter = new HttpUrlConnectionAlmaPartnerUpserter(httpClient, "api-key", host);
 
-        var appender = LogRecorder.forClass(HttpUrlConnectionAlmaPartnerUpserter.class);
+        var logRecorder = LogRecorder.forClass(HttpUrlConnectionAlmaPartnerUpserter.class);
 
         assertThat(upserter.upsertPartner(partner), equalTo(false));
-        assertThat(appender.asString(), containsString("Problems communicating with Alma!"));
+        assertThat(logRecorder.asString(), containsString("Problems communicating with Alma!"));
     }
 
 }

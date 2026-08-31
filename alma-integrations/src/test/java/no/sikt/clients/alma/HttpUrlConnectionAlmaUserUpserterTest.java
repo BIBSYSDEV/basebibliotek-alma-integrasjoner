@@ -30,10 +30,10 @@ class HttpUrlConnectionAlmaUserUpserterTest {
 
         var upserter = new HttpUrlConnectionAlmaUserUpserter(httpClient, getHost(), new SensitiveXmlDataRedacter());
 
-        var appender = LogRecorder.forClass(HttpUrlConnectionAlmaUserUpserter.class);
+        var logRecorder = LogRecorder.forClass(HttpUrlConnectionAlmaUserUpserter.class);
 
         assertThat(upserter.upsertUser(getSerializedUser(), API_KEY), equalTo(false));
-        assertThat(appender.asString(), containsString(PROBLEMS_COMMUNICATING_WITH_ALMA));
+        assertThat(logRecorder.asString(), containsString(PROBLEMS_COMMUNICATING_WITH_ALMA));
     }
 
     @Test
@@ -48,10 +48,10 @@ class HttpUrlConnectionAlmaUserUpserterTest {
 
         var upserter = new HttpUrlConnectionAlmaUserUpserter(httpClient, getHost(), new SensitiveXmlDataRedacter());
 
-        var appender = LogRecorder.forClass(HttpUrlConnectionAlmaUserUpserter.class);
+        var logRecorder = LogRecorder.forClass(HttpUrlConnectionAlmaUserUpserter.class);
 
         assertThat(upserter.upsertUser(getSerializedUser(), API_KEY), equalTo(false));
-        assertThat(appender.asString(), containsString(PROBLEMS_COMMUNICATING_WITH_ALMA));
+        assertThat(logRecorder.asString(), containsString(PROBLEMS_COMMUNICATING_WITH_ALMA));
     }
 
     @Test
@@ -66,10 +66,10 @@ class HttpUrlConnectionAlmaUserUpserterTest {
 
         var upserter = new HttpUrlConnectionAlmaUserUpserter(httpClient, getHost(), new SensitiveXmlDataRedacter());
 
-        var appender = LogRecorder.forClass(HttpUrlConnectionAlmaUserUpserter.class);
+        var logRecorder = LogRecorder.forClass(HttpUrlConnectionAlmaUserUpserter.class);
 
         assertThat(upserter.upsertUser(getSerializedUser(), API_KEY), equalTo(false));
-        assertThat(appender.asString(), containsString(PROBLEMS_COMMUNICATING_WITH_ALMA));
+        assertThat(logRecorder.asString(), containsString(PROBLEMS_COMMUNICATING_WITH_ALMA));
     }
 
     private SerializedUser getSerializedUser() {
