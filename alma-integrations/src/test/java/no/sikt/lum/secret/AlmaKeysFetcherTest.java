@@ -10,7 +10,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import java.nio.file.Path;
 import nva.commons.core.ioutils.IoUtils;
-import nva.commons.logutils.LogUtils;
+import nva.commons.logutils.LogRecorder;
 import nva.commons.secrets.ErrorReadingSecretException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,10 +53,10 @@ class AlmaKeysFetcherTest {
 
         almaKeysFetcher = new AlmaKeysFetcher(secretsManagerClient);
 
-        var logAppender = LogUtils.getTestingAppender(AlmaKeysFetcher.class);
+        var logAppender = LogRecorder.forClass(AlmaKeysFetcher.class);
 
         assertThrows(ErrorReadingSecretException.class, () -> almaKeysFetcher.fetchSecret());
-        assertThat(logAppender.getMessages(), containsString(COULD_NOT_PARSE_SECRET));
+        assertThat(logAppender.asString(), containsString(COULD_NOT_PARSE_SECRET));
     }
 
     void mockSecret(String secret) {

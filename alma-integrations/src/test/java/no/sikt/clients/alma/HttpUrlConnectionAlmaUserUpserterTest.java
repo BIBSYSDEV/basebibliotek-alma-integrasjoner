@@ -15,7 +15,7 @@ import java.nio.file.Path;
 import no.sikt.lum.SensitiveXmlDataRedacter;
 import no.sikt.lum.serialize.SerializedUser;
 import nva.commons.core.ioutils.IoUtils;
-import nva.commons.logutils.LogUtils;
+import nva.commons.logutils.LogRecorder;
 import org.junit.jupiter.api.Test;
 
 class HttpUrlConnectionAlmaUserUpserterTest {
@@ -30,10 +30,10 @@ class HttpUrlConnectionAlmaUserUpserterTest {
 
         var upserter = new HttpUrlConnectionAlmaUserUpserter(httpClient, getHost(), new SensitiveXmlDataRedacter());
 
-        var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaUserUpserter.class);
+        var appender = LogRecorder.forClass(HttpUrlConnectionAlmaUserUpserter.class);
 
         assertThat(upserter.upsertUser(getSerializedUser(), API_KEY), equalTo(false));
-        assertThat(appender.getMessages(), containsString(PROBLEMS_COMMUNICATING_WITH_ALMA));
+        assertThat(appender.asString(), containsString(PROBLEMS_COMMUNICATING_WITH_ALMA));
     }
 
     @Test
@@ -48,10 +48,10 @@ class HttpUrlConnectionAlmaUserUpserterTest {
 
         var upserter = new HttpUrlConnectionAlmaUserUpserter(httpClient, getHost(), new SensitiveXmlDataRedacter());
 
-        var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaUserUpserter.class);
+        var appender = LogRecorder.forClass(HttpUrlConnectionAlmaUserUpserter.class);
 
         assertThat(upserter.upsertUser(getSerializedUser(), API_KEY), equalTo(false));
-        assertThat(appender.getMessages(), containsString(PROBLEMS_COMMUNICATING_WITH_ALMA));
+        assertThat(appender.asString(), containsString(PROBLEMS_COMMUNICATING_WITH_ALMA));
     }
 
     @Test
@@ -66,10 +66,10 @@ class HttpUrlConnectionAlmaUserUpserterTest {
 
         var upserter = new HttpUrlConnectionAlmaUserUpserter(httpClient, getHost(), new SensitiveXmlDataRedacter());
 
-        var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaUserUpserter.class);
+        var appender = LogRecorder.forClass(HttpUrlConnectionAlmaUserUpserter.class);
 
         assertThat(upserter.upsertUser(getSerializedUser(), API_KEY), equalTo(false));
-        assertThat(appender.getMessages(), containsString(PROBLEMS_COMMUNICATING_WITH_ALMA));
+        assertThat(appender.asString(), containsString(PROBLEMS_COMMUNICATING_WITH_ALMA));
     }
 
     private SerializedUser getSerializedUser() {

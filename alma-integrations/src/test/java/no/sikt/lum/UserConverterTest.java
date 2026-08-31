@@ -8,7 +8,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.math.BigInteger;
 import java.time.LocalDate;
@@ -18,7 +17,7 @@ import no.nb.basebibliotek.generated.Record;
 import no.sikt.alma.user.generated.User;
 import no.sikt.commons.AlmaObjectConverter;
 import no.sikt.lum.reporting.UserReportBuilder;
-import nva.commons.logutils.LogUtils;
+import nva.commons.logutils.LogRecorder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -94,12 +93,12 @@ class UserConverterTest {
         var baseBibliotek = new BasebibliotekGenerator(record).generateBaseBibliotek();
         var userConverter = new UserConverter(baseBibliotek, TARGET_ALMA_CODE);
         var userReportBuilder = new UserReportBuilder();
-        var appender = LogUtils.getTestingAppender(AlmaObjectConverter.class);
+        var appender = LogRecorder.forClass(AlmaObjectConverter.class);
 
         var users = userConverter.toUsers(userReportBuilder);
 
         assertThat(users.size(), is(equalTo(0)));
-        assertThat(appender.getMessages(), containsString("Could not convert record, missing [inst, bibltype]"));
+        assertThat(appender.asString(), containsString("Could not convert record, missing [inst, bibltype]"));
         var report = userReportBuilder.generateReport().toString();
         assertThat(report, containsString("Could not convert to user"));
     }
