@@ -14,7 +14,7 @@ import java.nio.file.Path;
 import no.sikt.alma.partners.generated.Partner;
 import no.sikt.alma.partners.generated.PartnerDetails;
 import nva.commons.core.ioutils.IoUtils;
-import nva.commons.logutils.LogUtils;
+import nva.commons.logutils.LogRecorder;
 import org.junit.jupiter.api.Test;
 
 class HttpUrlConnectionAlmaPartnerUpserterTest {
@@ -37,10 +37,10 @@ class HttpUrlConnectionAlmaPartnerUpserterTest {
 
         var upserter = new HttpUrlConnectionAlmaPartnerUpserter(httpClient, "api-key", host);
 
-        var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaPartnerUpserter.class);
+        var logRecorder = LogRecorder.forClass(HttpUrlConnectionAlmaPartnerUpserter.class);
 
         assertThat(upserter.upsertPartner(partner), equalTo(false));
-        assertThat(appender.getMessages(), containsString("Problems communicating with Alma!"));
+        assertThat(logRecorder.asString(), containsString("Problems communicating with Alma!"));
     }
 
     @Test
@@ -61,10 +61,10 @@ class HttpUrlConnectionAlmaPartnerUpserterTest {
 
         var upserter = new HttpUrlConnectionAlmaPartnerUpserter(httpClient, "api-key", host);
 
-        var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaPartnerUpserter.class);
+        var logRecorder = LogRecorder.forClass(HttpUrlConnectionAlmaPartnerUpserter.class);
 
         assertThat(upserter.upsertPartner(partner), equalTo(false));
-        assertThat(appender.getMessages(), containsString("Problems communicating with Alma!"));
+        assertThat(logRecorder.asString(), containsString("Problems communicating with Alma!"));
     }
 
 }

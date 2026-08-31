@@ -70,7 +70,7 @@ import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
-import nva.commons.logutils.LogUtils;
+import nva.commons.logutils.LogRecorder;
 import nva.commons.secrets.ErrorReadingSecretException;
 import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.collection.IsCollectionWithSize;
@@ -177,9 +177,9 @@ class LibraryUserManagementHandlerTest {
         libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client,
                                                                         mockedEnvironment,
                                                                         almaKeysFetcher);
-        var appender = LogUtils.getTestingAppender(LibraryUserManagementHandler.class);
+        var logRecorder = LogRecorder.forClass(LibraryUserManagementHandler.class);
         assertThrows(RuntimeException.class, () -> libraryUserManagementHandler.handleRequest(s3Event, CONTEXT));
-        assertThat(appender.getMessages(), containsString(expectedMessage));
+        assertThat(logRecorder.asString(), containsString(expectedMessage));
     }
 
     @Test
@@ -248,10 +248,10 @@ class LibraryUserManagementHandlerTest {
         libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client,
                                                                         mockedEnvironment,
                                                                         almaKeysFetcher);
-        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionBaseBibliotekApi.class);
+        final var logRecorder = LogRecorder.forClass(HttpUrlConnectionBaseBibliotekApi.class);
         final Integer count = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
         assertThat(count, is(0));
-        assertThat(appender.getMessages(), containsString(LOG_MESSAGE_COMMUNICATION_PROBLEM));
+        assertThat(logRecorder.asString(), containsString(LOG_MESSAGE_COMMUNICATION_PROBLEM));
     }
 
     @Test
@@ -260,10 +260,10 @@ class LibraryUserManagementHandlerTest {
         final Record record = getRecord(BIBNR_RESOLVABLE_TO_ALMA_CODE, KATSYST_BIBSYS, COUNTRY_CODE_NORWEGIAN);
         var s3Event = prepareBaseBibliotekFromRecords(record);
         WireMocker.mockAlmaGetResponseBadRequestNotUserNotFound(LIB_0030100_ID);
-        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaUserUpserter.class);
+        final var logRecorder = LogRecorder.forClass(HttpUrlConnectionAlmaUserUpserter.class);
         final Integer count = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
         assertThat(count, is(0));
-        assertThat(appender.getMessages(), containsString(UNEXPECTED_RESPONSE_FETCHING_USER_LOG_MESSAGE_PREFIX));
+        assertThat(logRecorder.asString(), containsString(UNEXPECTED_RESPONSE_FETCHING_USER_LOG_MESSAGE_PREFIX));
     }
 
     @Test
@@ -273,10 +273,10 @@ class LibraryUserManagementHandlerTest {
         var s3Event = prepareBaseBibliotekFromRecords(record);
         WireMocker.mockAlmaGetResponseUserNotFound(LIB_0030100_ID);
         WireMocker.mockAlmaPostResponseBadRequest();
-        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaUserUpserter.class);
+        final var logRecorder = LogRecorder.forClass(HttpUrlConnectionAlmaUserUpserter.class);
         final Integer count = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
         assertThat(count, is(0));
-        assertThat(appender.getMessages(),
+        assertThat(logRecorder.asString(),
                    containsString(
                        HttpUrlConnectionAlmaUserUpserter.UNEXPECTED_RESPONSE_CREATING_USER_LOG_MESSAGE_PREFIX));
     }
@@ -288,10 +288,10 @@ class LibraryUserManagementHandlerTest {
         var s3Event = prepareBaseBibliotekFromRecords(record);
         WireMocker.mockAlmaGetResponse(LIB_0030100_ID);
         WireMocker.mockAlmaPutResponseBadRequest(LIB_0030100_ID);
-        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaUserUpserter.class);
+        final var logRecorder = LogRecorder.forClass(HttpUrlConnectionAlmaUserUpserter.class);
         final Integer count = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
         assertThat(count, is(0));
-        assertThat(appender.getMessages(), containsString(
+        assertThat(logRecorder.asString(), containsString(
             HttpUrlConnectionAlmaUserUpserter.UNEXPECTED_RESPONSE_UPDATING_USER_LOG_MESSAGE_PREFIX));
     }
 
@@ -302,12 +302,13 @@ class LibraryUserManagementHandlerTest {
         var s3Event = HandlerTestUtils.prepareBaseBibliotekFromXml(bibNrToXmlMap, s3Driver);
         WireMocker.mockAlmaGetResponseUserNotFound(LIB_2062200_ID);
         WireMocker.mockAlmaPostResponseBadRequest();
-        var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaUserUpserter.class);
+        var logRecorder = LogRecorder.forClass(HttpUrlConnectionAlmaUserUpserter.class);
 
         libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
 
-        assertThat(appender.getMessages(), not(containsString("<password>***masked***</password>")));
-        assertThat(appender.getMessages(), containsString("<password>redacted</password>"));
+        // ***masked*** is how the password appear in test resource files before "redacting"
+        assertThat(logRecorder.asString(), not(containsString("<password>***masked***</password>")));
+        assertThat(logRecorder.asString(), containsString("<password>redacted</password>"));
     }
 
     @Test
@@ -317,12 +318,13 @@ class LibraryUserManagementHandlerTest {
         var s3Event = HandlerTestUtils.prepareBaseBibliotekFromXml(bibNrToXmlMap, s3Driver);
         WireMocker.mockAlmaGetResponse(LIB_2062200_ID);
         WireMocker.mockAlmaPutResponseBadRequest(LIB_2062200_ID);
-        var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaUserUpserter.class);
+        var logRecorder = LogRecorder.forClass(HttpUrlConnectionAlmaUserUpserter.class);
 
         libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
 
-        assertThat(appender.getMessages(), not(containsString("<password>***masked***</password>")));
-        assertThat(appender.getMessages(), containsString("<password>redacted</password>"));
+        // ***masked*** is how the password appear in test resource files before "redacting"
+        assertThat(logRecorder.asString(), not(containsString("<password>***masked***</password>")));
+        assertThat(logRecorder.asString(), containsString("<password>redacted</password>"));
     }
 
     @Test
@@ -460,7 +462,7 @@ class LibraryUserManagementHandlerTest {
         almaKeysFetcher = spy(almaKeysFetcher);
         doReturn(Collections.emptyMap()).when(almaKeysFetcher).fetchSecret();
 
-        var appender = LogUtils.getTestingAppender(LibraryUserManagementHandler.class);
+        var logRecorder = LogRecorder.forClass(LibraryUserManagementHandler.class);
 
         libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client,
                                                                         mockedEnvironment,
@@ -474,7 +476,7 @@ class LibraryUserManagementHandlerTest {
         var successfulLibraries = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
 
         assertThat(successfulLibraries, is(equalTo(0)));
-        assertThat(appender.getMessages(), containsString(SKIPPING_HANDLING_OF_REQUESTS));
+        assertThat(logRecorder.asString(), containsString(SKIPPING_HANDLING_OF_REQUESTS));
     }
 
     @Test
@@ -506,7 +508,7 @@ class LibraryUserManagementHandlerTest {
         var record = getRecord(bibNr, KATSYST_TIDEMANN, COUNTRY_CODE_NORWEGIAN);
         var s3Path = HandlerTestUtils.randomS3Path();
         var s3Event = prepareBaseBibliotekFromRecords(s3Path, record);
-        var appender = LogUtils.getTestingAppender(LibraryUserManagementHandler.class);
+        var logRecorder = LogRecorder.forClass(LibraryUserManagementHandler.class);
 
         try (var mockedSerializer = mockStatic(SerializerUtils.class)) {
             mockedSerializer.when(() -> SerializerUtils.serializeUser(any()))
@@ -515,7 +517,7 @@ class LibraryUserManagementHandlerTest {
             var count = libraryUserManagementHandler.handleRequest(s3Event, CONTEXT);
 
             assertThat(count, is(equalTo(0)));
-            assertThat(appender.getMessages(), containsString("Unknown exception when serializing user"));
+            assertThat(logRecorder.asString(), containsString("Unknown exception when serializing user"));
         }
     }
 

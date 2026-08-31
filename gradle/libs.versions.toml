@@ -1,6 +1,6 @@
 [versions]
-junit-jupiter = '6.1.0'
-nva-commons = '2.8.2'
+junit-jupiter = '6.1.2'
+nva-commons = '2.10.2'
 jackson-annotations = '2.22'
 jackson = '2.22.0'
 mockito = '5.23.0'
@@ -8,22 +8,22 @@ hamcrest = '3.0'
 aws-lambda-java-core = '1.4.0'
 aws-lambda-java-events = '3.16.1'
 aws-lambda-java-log4j2 = '1.6.4'
-log4j = '2.26.0'
-log4jApi = '2.26.0'
+log4j = '2.26.1'
+log4jApi = '2.26.1'
 slf4j-api = '2.0.18'
-slf4j-impl = '2.26.0'
-nva-language = '1.2.2'
+slf4j-impl = '2.26.1'
+nva-language = '1.2.3'
 wiremock = '3.13.2'
 jaxb = '4.0.9'
 gson = '2.14.0'
 apache-commons = '3.20.0'
 xml-bind = '4.0.5'
-aws-sdk = '2.45.1'
+aws-sdk = '2.51.2'
 
 # Jaxb group
 jaxb-xjc = '4.0.9'
 jaxb-impl = '4.0.9'
-jakarata-xml-api = '4.0.5'
+jakarta-xml-api = '4.0.5'
 activation-api = '2.1.4'
 
 [libraries]
@@ -82,12 +82,12 @@ jakarta-xml-bind = { group = 'jakarta.xml.bind', name = 'jakarta.xml.bind-api', 
 # Jaxb group
 jaxb-xjc = { group = 'com.sun.xml.bind', name = 'jaxb-xjc', version.ref = 'jaxb-xjc' }
 jaxb-impl = { group = 'com.sun.xml.bind', name = 'jaxb-impl', version.ref = 'jaxb-impl' }
-jakarata-xml-api = { group = 'jakarta.xml.bind', name = 'jakarta.xml.bind-api', version.ref = 'jakarata-xml-api' }
+jakarta-xml-api = { group = 'jakarta.xml.bind', name = 'jakarta.xml.bind-api', version.ref = 'jakarta-xml-api' }
 activation-api = { group = 'jakarta.activation', name = 'jakarta.activation-api', version.ref = 'activation-api' }
 
 [bundles]
 
-jaxb-group = [ 'jaxb-xjc', 'jaxb-impl', 'jakarata-xml-api', 'activation-api' ]
+jaxb-group = [ 'jaxb-xjc', 'jaxb-impl', 'jakarta-xml-api', 'activation-api' ]
 logging = [ 'log4j-api', 'log4j-core', 'slf4j-api', 'log4j-slf4j-impl' ]
 aws-lambda = [ 'aws-lambda-java-core', 'aws-lambda-java-events', 'aws-lambda-java-log4j2' ]
 testing = [ 'junit-jupiter-api', 'junit-jupiter-params', 'junit-jupiter-engine', 'mockito-core', 'hamcrest', 'hamcrest-core', 'nva-testutils', 'nva-logutils' ]

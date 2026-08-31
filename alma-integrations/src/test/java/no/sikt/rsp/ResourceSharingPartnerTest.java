@@ -69,7 +69,7 @@ import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
-import nva.commons.logutils.LogUtils;
+import nva.commons.logutils.LogRecorder;
 import org.hamcrest.core.IsNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -179,9 +179,9 @@ public class ResourceSharingPartnerTest {
         var expectedMessage = randomString();
         s3Client = new FakeS3ClientThrowingException(expectedMessage);
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
-        var appender = LogUtils.getTestingAppender(ResourceSharingPartnerHandler.class);
+        var logRecorder = LogRecorder.forClass(ResourceSharingPartnerHandler.class);
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
-        assertThat(appender.getMessages(), containsString(expectedMessage));
+        assertThat(logRecorder.asString(), containsString(expectedMessage));
     }
 
     @Test
@@ -251,7 +251,7 @@ public class ResourceSharingPartnerTest {
 
         final List<Record> generatedRecords = new ArrayList<>();
         final S3Event s3Event = prepareBaseBibliotekFromRecordSpecifications(generatedRecords, recordSpecification);
-        var appender = LogUtils.getTestingAppender(ResourceSharingPartnerHandler.class);
+        var logRecorder = LogRecorder.forClass(ResourceSharingPartnerHandler.class);
         var expectedLogMessage = "Could not convert record, missing landkode, record";
 
         resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
@@ -259,7 +259,7 @@ public class ResourceSharingPartnerTest {
 
         assertThat(partners, hasSize(expectedSize));
         if (yieldsError) {
-            assertThat(appender.getMessages(), containsString(expectedLogMessage));
+            assertThat(logRecorder.asString(), containsString(expectedLogMessage));
         } else {
             var recordWithoutIsilButContainingBibNrAndLandKode = generatedRecords.getFirst();
             var expectedCraftedPartnerCode = recordWithoutIsilButContainingBibNrAndLandKode.getLandkode()
@@ -626,11 +626,11 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
 
-        final var appender = LogUtils.getTestingAppender(ResourceSharingPartnerHandler.class);
+        final var logRecorder = LogRecorder.forClass(ResourceSharingPartnerHandler.class);
 
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
 
-        assertThat(appender.getMessages(), containsString(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH));
+        assertThat(logRecorder.asString(), containsString(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH));
     }
 
     @Test
@@ -657,11 +657,11 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
 
-        final var appender = LogUtils.getTestingAppender(ResourceSharingPartnerHandler.class);
+        final var logRecorder = LogRecorder.forClass(ResourceSharingPartnerHandler.class);
 
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
 
-        assertThat(appender.getMessages(), containsString(AlmaCodeProvider.EMPTY_MAPPING_TABLE_MESSAGE));
+        assertThat(logRecorder.asString(), containsString(AlmaCodeProvider.EMPTY_MAPPING_TABLE_MESSAGE));
     }
 
     @Test
@@ -688,11 +688,11 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
 
-        final var appender = LogUtils.getTestingAppender(ResourceSharingPartnerHandler.class);
+        final var logRecorder = LogRecorder.forClass(ResourceSharingPartnerHandler.class);
 
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
 
-        assertThat(appender.getMessages(), containsString(LibCodeToAlmaCodeEntry.FIELD_IS_NULL_OR_EMPTY_MESSAGE));
+        assertThat(logRecorder.asString(), containsString(LibCodeToAlmaCodeEntry.FIELD_IS_NULL_OR_EMPTY_MESSAGE));
     }
 
     @ParameterizedTest(name = "Should handle katsys codes differently when generating locateProfile")
@@ -739,12 +739,12 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
 
-        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionBaseBibliotekApi.class);
+        final var logRecorder = LogRecorder.forClass(HttpUrlConnectionBaseBibliotekApi.class);
 
         final Integer count = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
         assertThat(count, is(0));
-        assertThat(appender.getMessages(), containsString(LOG_MESSAGE_COMMUNICATION_PROBLEM));
+        assertThat(logRecorder.asString(), containsString(LOG_MESSAGE_COMMUNICATION_PROBLEM));
     }
 
     @Test
@@ -761,12 +761,12 @@ public class ResourceSharingPartnerTest {
 
         resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
 
-        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaPartnerUpserter.class);
+        final var logRecorder = LogRecorder.forClass(HttpUrlConnectionAlmaPartnerUpserter.class);
 
         final Integer count = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
         assertThat(count, is(0));
-        assertThat(appender.getMessages(),
+        assertThat(logRecorder.asString(),
                    containsString(HttpUrlConnectionAlmaPartnerUpserter.LOG_MESSAGE_COMMUNICATION_PROBLEM));
     }
 
@@ -783,12 +783,12 @@ public class ResourceSharingPartnerTest {
 
         WireMocker.mockAlmaGetResponseBadRequestNotPartnerNotFound(NO_0030100_ID);
 
-        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaPartnerUpserter.class);
+        final var logRecorder = LogRecorder.forClass(HttpUrlConnectionAlmaPartnerUpserter.class);
 
         final Integer count = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
         assertThat(count, is(0));
-        assertThat(appender.getMessages(),
+        assertThat(logRecorder.asString(),
                    containsString(
                        HttpUrlConnectionAlmaPartnerUpserter.UNEXPECTED_RESPONSE_FETCHING_PARTNER_LOG_MESSAGE_PREFIX));
     }
@@ -806,12 +806,12 @@ public class ResourceSharingPartnerTest {
         WireMocker.mockAlmaGetResponsePartnerNotFound(NO_0030100_ID);
         WireMocker.mockAlmaPostResponseBadRequest();
 
-        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaPartnerUpserter.class);
+        final var logRecorder = LogRecorder.forClass(HttpUrlConnectionAlmaPartnerUpserter.class);
 
         final Integer count = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
         assertThat(count, is(0));
-        assertThat(appender.getMessages(),
+        assertThat(logRecorder.asString(),
                    containsString(
                        HttpUrlConnectionAlmaPartnerUpserter.UNEXPECTED_RESPONSE_CREATING_PARTNER_LOG_MESSAGE_PREFIX));
     }
@@ -829,12 +829,12 @@ public class ResourceSharingPartnerTest {
         WireMocker.mockAlmaGetResponse(NO_0030100_ID);
         WireMocker.mockAlmaPutResponseBadRequest(NO_0030100_ID);
 
-        final var appender = LogUtils.getTestingAppender(HttpUrlConnectionAlmaPartnerUpserter.class);
+        final var logRecorder = LogRecorder.forClass(HttpUrlConnectionAlmaPartnerUpserter.class);
 
         final Integer count = resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT);
 
         assertThat(count, is(0));
-        assertThat(appender.getMessages(),
+        assertThat(logRecorder.asString(),
                    containsString(
                        HttpUrlConnectionAlmaPartnerUpserter.UNEXPECTED_RESPONSE_UPDATING_PARTNER_LOG_MESSAGE_PREFIX));
     }
