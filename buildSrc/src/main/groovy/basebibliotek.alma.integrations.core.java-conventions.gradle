@@ -1,6 +1,5 @@
 plugins {
     id 'java'
-    id 'com.github.johnrengelman.shadow'
     id 'nebula.lint'
     id 'jacoco-report-aggregation'
 }
@@ -19,14 +18,14 @@ subprojects {
 
 
             pmd {
-                toolVersion = '7.20.0'
+                toolVersion = '7.25.0'
                 ruleSetConfig = rootProject.resources.text.fromFile('config/pmd/ruleset.xml')
                 ruleSets = []
                 ignoreFailures = false
             }
 
             checkstyle {
-                toolVersion = '10.26.1'
+                toolVersion = '13.6.0'
                 configFile = rootProject.resources.text.fromFile('config/checkstyle/checkstyle.xml').asFile()
                 configProperties.checkstyleSuppressionsPath =
                         rootProject.resources.text
@@ -35,7 +34,7 @@ subprojects {
             }
 
             jacoco {
-                toolVersion = '0.8.14'
+                toolVersion = '0.8.15'
             }
 
             jacocoTestReport {
@@ -44,7 +43,7 @@ subprojects {
                 }
             }
 
-            // We do not want a jar for our own modules, just a fatJar.
+            // SAM handles packaging, disable default jar task for function modules
             jar.enabled = false
         }
 }
@@ -57,11 +56,6 @@ tasks.named('test', Test) {
     testLogging {
        events 'skipped', 'failed' //, 'passed'
     }
-}
-
-// We want to compile all jars especially those from auto generated modules before building or else the build will fail
-tasks.named('build').configure {
-    dependsOn tasks.named('shadowJar')
 }
 
 tasks.named('jacocoTestReport', JacocoReport) {

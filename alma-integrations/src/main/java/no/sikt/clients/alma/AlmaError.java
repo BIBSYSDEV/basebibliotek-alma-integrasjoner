@@ -4,7 +4,7 @@ import nva.commons.core.JacocoGenerated;
 
 @SuppressWarnings("unused")
 @JacocoGenerated
-class AlmaError {
+public class AlmaError {
 
     private String errorCode;
     private String errorMessage;

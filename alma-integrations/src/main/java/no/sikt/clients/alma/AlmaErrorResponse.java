@@ -1,7 +1,7 @@
 package no.sikt.clients.alma;
 
 @SuppressWarnings("unused")
-class AlmaErrorResponse {
+public class AlmaErrorResponse {
 
     private boolean errorsExist;
     private AlmaErrorList errorList;

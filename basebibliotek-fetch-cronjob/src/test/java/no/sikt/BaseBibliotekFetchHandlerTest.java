@@ -42,8 +42,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import no.unit.nva.stubs.WiremockHttpClient;
 import nva.commons.core.Environment;
-import nva.commons.logutils.LogUtils;
-import nva.commons.logutils.TestAppender;
+import nva.commons.logutils.LogRecorder;
 import org.hamcrest.core.Every;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,11 +68,11 @@ public class BaseBibliotekFetchHandlerTest {
     private transient BasebibliotekFetchHandler baseBibliotekFetchHandler;
     private transient S3Client s3Client;
 
-    private transient TestAppender appender;
+    private transient LogRecorder logRecorder;
 
     @BeforeEach
     public void init(WireMockRuntimeInfo wireMockInfo) {
-        appender = LogUtils.getTestingAppender(BasebibliotekFetchHandler.class);
+        logRecorder = LogRecorder.forClass(BasebibliotekFetchHandler.class);
         s3Client = mock(S3Client.class);
         Environment environment = mock(Environment.class);
         when(environment.readEnv(BasebibliotekFetchHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).thenReturn(
@@ -95,7 +94,7 @@ public class BaseBibliotekFetchHandlerTest {
         mockedGetRequestWithSpecifiedStatusCode(HttpURLConnection.HTTP_FORBIDDEN, BIBLIOTEK_EKSPORT_BIBLEV_PATH);
         assertThrows(RuntimeException.class, () -> baseBibliotekFetchHandler
                                                        .handleRequest(new ScheduledEvent(), CONTEXT));
-        assertThat(appender.getMessages(), containsString(expectedMessage));
+        assertThat(logRecorder.asString(), containsString(expectedMessage));
     }
 
     @Test
@@ -115,7 +114,7 @@ public class BaseBibliotekFetchHandlerTest {
 
         var expectedMessage =
             "could not GET " + BASEBIBLIOTEK_BB_2022_04_27_XML;
-        assertThat(appender.getMessages(), containsString(expectedMessage));
+        assertThat(logRecorder.asString(), containsString(expectedMessage));
     }
 
     @Test
@@ -182,7 +181,7 @@ public class BaseBibliotekFetchHandlerTest {
             .thenThrow(new RuntimeException());
         var expectedMessage = "Could not upload file to s3";
         assertThrows(RuntimeException.class, () -> baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT));
-        assertThat(appender.getMessages(), containsString(expectedMessage));
+        assertThat(logRecorder.asString(), containsString(expectedMessage));
     }
 
     @Test
@@ -197,7 +196,7 @@ public class BaseBibliotekFetchHandlerTest {
         var scheduledEvent = new ScheduledEvent();
         baseBibliotekFetchHandler.handleRequest(scheduledEvent, CONTEXT);
         var expectedMessage = "Record with missing bibnr";
-        assertThat(appender.getMessages(), containsString(expectedMessage));
+        assertThat(logRecorder.asString(), containsString(expectedMessage));
     }
 
     @Test
