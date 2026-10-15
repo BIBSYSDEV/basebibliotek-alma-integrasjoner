@@ -1,4 +1,4 @@
-package no.sikt.lum.secret;
+package no.sikt.commons.secret;
 
 @FunctionalInterface
 public interface SecretFetcher<T> {
