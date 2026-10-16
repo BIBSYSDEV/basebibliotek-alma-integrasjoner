@@ -1,30 +1,38 @@
 package no.sikt.rsp;
 
+import static nva.commons.core.paths.UriWrapper.fromUri;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.google.gson.Gson;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import no.nb.basebibliotek.generated.BaseBibliotek;
 import no.sikt.alma.partners.generated.Partner;
-import no.sikt.clients.alma.AlmaPartnerUpserter;
 import no.sikt.clients.BaseBibliotekApi;
+import no.sikt.clients.alma.AlmaPartnerUpserter;
 import no.sikt.clients.alma.HttpUrlConnectionAlmaPartnerUpserter;
 import no.sikt.clients.basebibliotek.HttpUrlConnectionBaseBibliotekApi;
 import no.sikt.commons.HandlerUtils;
+import no.sikt.commons.secret.CachingSecretFetcher;
+import no.sikt.commons.secret.SecretFetcher;
+import no.sikt.rsp.secret.AlmaApiKeyFetcher;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.StringUtils;
 import nva.commons.core.paths.UnixPath;
-import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, Integer> {
 
     private static final Logger logger = LoggerFactory.getLogger(ResourceSharingPartnerHandler.class);
@@ -41,9 +49,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
     public static final String SHARED_CONFIG_BUCKET_NAME_ENV_NAME = "SHARED_CONFIG_BUCKET";
     public static final String LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH_ENV_KEY =
         "LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH";
-    private static final String ALMA_API_KEY_ENV_KEY = "ALMA_APIKEY";
     private final transient S3Client s3Client;
-    private final transient AlmaPartnerUpserter almaPartnerUpserter;
     private final transient List<Partner> partners;
 
     private final transient Environment environment;
@@ -54,22 +60,28 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
 
     private final transient BaseBibliotekApi baseBibliotekApi;
 
+    private final transient HttpClient httpClient;
+    private final transient CachingSecretFetcher<String> cachedAlmaApiKey;
+    private final transient URI almaUri;
+
     @JacocoGenerated
     @SuppressWarnings("unused")
     public ResourceSharingPartnerHandler() {
-        this(S3Driver.defaultS3Client().build(), new Environment());
+        this(S3Driver.defaultS3Client().build(),
+             new Environment(),
+             new AlmaApiKeyFetcher(defaultSecretsManagerClient()));
     }
 
-    public ResourceSharingPartnerHandler(S3Client s3Client, Environment environment) {
+    public ResourceSharingPartnerHandler(S3Client s3Client,
+                                         Environment environment,
+                                         SecretFetcher<String> almaApiKeyFetcher) {
         this.s3Client = s3Client;
         this.environment = environment;
 
-        final String almaApiKey = environment.readEnv(ALMA_API_KEY_ENV_KEY);
-        final URI almaUri = UriWrapper.fromUri(environment.readEnv(ALMA_API_HOST)).getUri();
-        this.almaPartnerUpserter = new HttpUrlConnectionAlmaPartnerUpserter(almaApiKey, almaUri);
-
-        final URI basebibliotekUri =
-            UriWrapper.fromUri(environment.readEnv(BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).getUri();
+        this.cachedAlmaApiKey = new CachingSecretFetcher<>(almaApiKeyFetcher, Duration.ofMinutes(15));
+        this.almaUri = fromUri(environment.readEnv(ALMA_API_HOST)).getUri();
+        this.httpClient = defaultHttpClient();
+        var basebibliotekUri = fromUri(environment.readEnv(BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).getUri();
         this.baseBibliotekApi = new HttpUrlConnectionBaseBibliotekApi(basebibliotekUri);
         this.partners = new ArrayList<>();
         this.reportS3BucketName = environment.readEnv(REPORT_BUCKET_ENVIRONMENT_NAME);
@@ -98,7 +110,8 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
             var basebiblioteks = HandlerUtils
                 .generateBasebibliotek(bibnrList, reportStringBuilder, baseBibliotekApi);
             partners.addAll(generatePartners(basebiblioteks, reportStringBuilder, almaCodeProvider, illServer));
-            int counter = sendToAlmaAndCountSuccess(partners, reportStringBuilder);
+            var almaPartnerUpserter = createAlmaPartnerUpserter();
+            int counter = sendToAlmaAndCountSuccess(partners, reportStringBuilder, almaPartnerUpserter);
             HandlerUtils.reportToS3Bucket(reportStringBuilder, s3event, s3Client, reportS3BucketName, HANDLER_NAME);
             return counter;
         } catch (Exception exception) {
@@ -106,8 +119,9 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
         }
     }
 
-
-    private int sendToAlmaAndCountSuccess(List<Partner> partners, StringBuilder reportStringBuilder) {
+    private int sendToAlmaAndCountSuccess(List<Partner> partners,
+                                          StringBuilder reportStringBuilder,
+                                          AlmaPartnerUpserter almaPartnerUpserter) {
         var counter = 0;
         for (Partner partner : partners) {
             var charIndexStartOfBibNrInPartnerCode = 3;
@@ -116,7 +130,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
                             .getCode()
                             .substring(charIndexStartOfBibNrInPartnerCode);
 
-            if (sendToAlma(partner)) {
+            if (almaPartnerUpserter.upsertPartner(partner)) {
                 counter++;
                 reportStringBuilder
                     .append(bibNr)
@@ -150,10 +164,6 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
         return partners;
     }
 
-    private boolean sendToAlma(Partner partner) {
-        return almaPartnerUpserter.upsertPartner(partner);
-    }
-
     public List<Partner> getPartners() {
         return partners;
     }
@@ -163,6 +173,26 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
         return exception instanceof RuntimeException
                    ? (RuntimeException) exception
                    : new RuntimeException(exception);
+    }
+
+    @JacocoGenerated
+    private static SecretsManagerClient defaultSecretsManagerClient() {
+        return SecretsManagerClient.builder()
+                   .region(Region.EU_WEST_1)
+                   .build();
+    }
+
+    @JacocoGenerated
+    private static HttpClient defaultHttpClient() {
+        return HttpClient.newBuilder()
+                   .version(HttpClient.Version.HTTP_2)
+                   .build();
+    }
+
+    private HttpUrlConnectionAlmaPartnerUpserter createAlmaPartnerUpserter() {
+        return new HttpUrlConnectionAlmaPartnerUpserter(httpClient,
+                                                        cachedAlmaApiKey.fetchSecret(),
+                                                        almaUri);
     }
 
 }

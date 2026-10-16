@@ -57,7 +57,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
 
     private final transient BaseBibliotekApi baseBibliotekApi;
     private final transient AlmaUserUpserter almaUserUpserter;
-    private final CachingSecretFetcher<Map<String, String>> cachedAlmaApiKey;
+    private final CachingSecretFetcher<Map<String, String>> cachedAlmaInstitutionApiKeys;
     private transient Map<String, String> almaApiKeyMap;
     private final transient Map<String, List<User>> usersPerAlmaInstanceMap = new ConcurrentHashMap<>();
 
@@ -66,18 +66,17 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     public LibraryUserManagementHandler() {
         this(S3Driver.defaultS3Client().build(),
              new Environment(),
-             new AlmaKeysFetcher(SecretsManagerClient.builder()
-                                     .region(Region.EU_WEST_1)
-                                     .build())
+             new AlmaKeysFetcher(defaultSecretsManagerClient())
         );
     }
 
     public LibraryUserManagementHandler(S3Client s3Client,
                                         Environment environment,
-                                        SecretFetcher<Map<String,String>> almaKeysFetcher) {
+                                        SecretFetcher<Map<String,String>> almaInstitutionKeysFetcher) {
         this.s3Client = s3Client;
         final var almaUri = fromUri(environment.readEnv(ALMA_API_HOST)).getUri();
-        this.cachedAlmaApiKey = new CachingSecretFetcher<>(almaKeysFetcher, Duration.ofMinutes(15));
+        this.cachedAlmaInstitutionApiKeys = new CachingSecretFetcher<>(almaInstitutionKeysFetcher,
+                                                                       Duration.ofMinutes(15));
         this.almaUserUpserter = new HttpUrlConnectionAlmaUserUpserter(almaUri);
         final var basebibliotekUri = fromUri(environment.readEnv(BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).getUri();
         this.baseBibliotekApi = new HttpUrlConnectionBaseBibliotekApi(basebibliotekUri);
@@ -87,7 +86,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     @Override
     public Integer handleRequest(S3Event s3event, Context context) {
         logger.info(EVENT + gson.toJson(s3event));
-        almaApiKeyMap = cachedAlmaApiKey.fetchSecret();
+        almaApiKeyMap = cachedAlmaInstitutionApiKeys.fetchSecret();
         if (almaApiKeyMap.isEmpty()) {
             logger.info(SKIPPING_HANDLING_OF_REQUESTS);
             return 0;
@@ -197,6 +196,13 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         return exception instanceof RuntimeException
                    ? (RuntimeException) exception
                    : new RuntimeException(exception);
+    }
+
+    @JacocoGenerated
+    private static SecretsManagerClient defaultSecretsManagerClient() {
+        return SecretsManagerClient.builder()
+                   .region(Region.EU_WEST_1)
+                   .build();
     }
 
 }
