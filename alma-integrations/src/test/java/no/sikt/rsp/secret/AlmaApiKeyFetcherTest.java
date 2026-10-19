@@ -1,5 +1,6 @@
 package no.sikt.rsp.secret;
 
+import static no.sikt.rsp.secret.AlmaApiKeyFetcher.FETCHED_FROM_SECRETS_MANAGER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -20,7 +21,6 @@ class AlmaApiKeyFetcherTest {
 
     private static final String ALMA_APIKEY_SECRET = "{ \"ALMA_APIKEY\": \"abcd1234efgh5678\" }";
     private static final String ALMA_APIKEY_VALUE = "abcd1234efgh5678";
-    private static final String SHORT_ALMA_APIKEY_SECRET = "{ \"ALMA_APIKEY\": \"abcd1234\" }";
 
     private SecretsManagerClient secretsManagerClient;
     private GetSecretValueResponse getSecretValueResponse;
@@ -43,25 +43,14 @@ class AlmaApiKeyFetcherTest {
     }
 
     @Test
-    void shouldLogLastPartOfApiKey() {
+    void shouldLogWhenFetchingFreshFromSecretsManager() {
         mockSecret(ALMA_APIKEY_SECRET);
         almaApiKeyFetcher = new AlmaApiKeyFetcher(secretsManagerClient);
         var logRecorder = LogRecorder.forClass(AlmaApiKeyFetcher.class);
 
         almaApiKeyFetcher.fetchSecret();
 
-        assertThat(logRecorder.asString(), containsString("Last part of api key: ****5678"));
-    }
-
-    @Test
-    void shouldMaskLoggingOfLastPartOfApiKeyWhenKeyIsTooShort() {
-        mockSecret(SHORT_ALMA_APIKEY_SECRET);
-        almaApiKeyFetcher = new AlmaApiKeyFetcher(secretsManagerClient);
-        var logRecorder = LogRecorder.forClass(AlmaApiKeyFetcher.class);
-
-        almaApiKeyFetcher.fetchSecret();
-
-        assertThat(logRecorder.asString(), containsString("Last part of api key: ****"));
+        assertThat(logRecorder.asString(), containsString(FETCHED_FROM_SECRETS_MANAGER));
     }
 
     @Test
