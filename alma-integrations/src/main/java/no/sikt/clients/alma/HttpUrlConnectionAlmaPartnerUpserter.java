@@ -57,10 +57,6 @@ public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnect
                                                          .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
                                                                     false);
 
-    public HttpUrlConnectionAlmaPartnerUpserter(final String almaApiKey, final URI almaApiHost) {
-        this(HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build(), almaApiKey, almaApiHost);
-    }
-
     public HttpUrlConnectionAlmaPartnerUpserter(final HttpClient httpClient, final String almaApiKey,
                                                 final URI almaApiHost) {
         super(httpClient);
