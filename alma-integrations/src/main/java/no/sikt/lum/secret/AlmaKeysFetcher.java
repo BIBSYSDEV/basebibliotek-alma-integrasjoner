@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
+import no.sikt.commons.secret.SecretFetcher;
 import nva.commons.secrets.ErrorReadingSecretException;
 import nva.commons.secrets.SecretsReader;
 import org.slf4j.Logger;

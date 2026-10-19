@@ -1,11 +1,12 @@
 package no.sikt.lum;
 
 import static no.sikt.lum.serialize.SerializerUtils.serializeUser;
+import static nva.commons.core.paths.UriWrapper.fromUri;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.google.gson.Gson;
-import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -17,16 +18,16 @@ import no.sikt.clients.alma.AlmaUserUpserter;
 import no.sikt.clients.alma.HttpUrlConnectionAlmaUserUpserter;
 import no.sikt.clients.basebibliotek.HttpUrlConnectionBaseBibliotekApi;
 import no.sikt.commons.HandlerUtils;
+import no.sikt.commons.secret.CachingSecretFetcher;
 import no.sikt.lum.reporting.AlmaReportBuilder;
 import no.sikt.lum.reporting.ReportGenerator;
 import no.sikt.lum.reporting.UserReportBuilder;
 import no.sikt.lum.secret.AlmaKeysFetcher;
-import no.sikt.lum.secret.SecretFetcher;
+import no.sikt.commons.secret.SecretFetcher;
 import no.sikt.lum.serialize.SerializedUser;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
-import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.regions.Region;
@@ -56,7 +57,8 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
 
     private final transient BaseBibliotekApi baseBibliotekApi;
     private final transient AlmaUserUpserter almaUserUpserter;
-    private final transient Map<String, String> almaApiKeyMap;
+    private final CachingSecretFetcher<Map<String, String>> cachedAlmaInstitutionApiKeys;
+    private transient Map<String, String> almaApiKeyMap;
     private final transient Map<String, List<User>> usersPerAlmaInstanceMap = new ConcurrentHashMap<>();
 
     @JacocoGenerated
@@ -64,21 +66,19 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     public LibraryUserManagementHandler() {
         this(S3Driver.defaultS3Client().build(),
              new Environment(),
-             new AlmaKeysFetcher(SecretsManagerClient.builder()
-                                     .region(Region.EU_WEST_1)
-                                     .build())
+             new AlmaKeysFetcher(defaultSecretsManagerClient())
         );
     }
 
     public LibraryUserManagementHandler(S3Client s3Client,
                                         Environment environment,
-                                        SecretFetcher<Map<String,String>> almaKeysFetcher) {
+                                        SecretFetcher<Map<String,String>> almaInstitutionKeysFetcher) {
         this.s3Client = s3Client;
-        final URI almaUri = UriWrapper.fromUri(environment.readEnv(ALMA_API_HOST)).getUri();
-        almaApiKeyMap = almaKeysFetcher.fetchSecret();
+        final var almaUri = fromUri(environment.readEnv(ALMA_API_HOST)).getUri();
+        this.cachedAlmaInstitutionApiKeys = new CachingSecretFetcher<>(almaInstitutionKeysFetcher,
+                                                                       Duration.ofMinutes(15));
         this.almaUserUpserter = new HttpUrlConnectionAlmaUserUpserter(almaUri);
-        final URI basebibliotekUri =
-            UriWrapper.fromUri(environment.readEnv(BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).getUri();
+        final var basebibliotekUri = fromUri(environment.readEnv(BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).getUri();
         this.baseBibliotekApi = new HttpUrlConnectionBaseBibliotekApi(basebibliotekUri);
         this.reportS3BucketName = environment.readEnv(REPORT_BUCKET_ENVIRONMENT_NAME);
     }
@@ -86,6 +86,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
     @Override
     public Integer handleRequest(S3Event s3event, Context context) {
         logger.info(EVENT + gson.toJson(s3event));
+        almaApiKeyMap = cachedAlmaInstitutionApiKeys.fetchSecret();
         if (almaApiKeyMap.isEmpty()) {
             logger.info(SKIPPING_HANDLING_OF_REQUESTS);
             return 0;
@@ -195,6 +196,13 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         return exception instanceof RuntimeException
                    ? (RuntimeException) exception
                    : new RuntimeException(exception);
+    }
+
+    @JacocoGenerated
+    private static SecretsManagerClient defaultSecretsManagerClient() {
+        return SecretsManagerClient.builder()
+                   .region(Region.EU_WEST_1)
+                   .build();
     }
 
 }
