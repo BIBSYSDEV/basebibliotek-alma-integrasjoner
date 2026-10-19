@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import no.sikt.alma.partners.generated.Partner;
 import no.sikt.clients.AbstractHttpUrlConnectionApi;
+import no.sikt.commons.secret.SecretFetcher;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
@@ -51,16 +52,17 @@ public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnect
         UNEXPECTED_RESPONSE_FETCHING_PARTNER_LOG_MESSAGE_PREFIX + " '%s' from Alma.\nStatus code: "
         + "%d\nResponse body: %s";
 
-    private final transient String almaApikey;
+    private final transient SecretFetcher<String> cachedAlmaApiKeyFetcher;
     private final transient URI almaApiHost;
     private static final ObjectMapper objectMapper = new ObjectMapper()
                                                          .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
                                                                     false);
 
-    public HttpUrlConnectionAlmaPartnerUpserter(final HttpClient httpClient, final String almaApiKey,
+    public HttpUrlConnectionAlmaPartnerUpserter(final HttpClient httpClient,
+                                                final SecretFetcher<String> cachedAlmaApiKeyFetcher,
                                                 final URI almaApiHost) {
         super(httpClient);
-        this.almaApikey = almaApiKey;
+        this.cachedAlmaApiKeyFetcher = cachedAlmaApiKeyFetcher;
         this.almaApiHost = almaApiHost;
     }
 
@@ -70,7 +72,7 @@ public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnect
                                         .uri(UriWrapper.fromUri(almaApiHost)
                                                  .addChild(PARTNERS_URL_PATH)
                                                  .addChild(code).getUri())
-                                        .setHeader(AUTHORIZATION_HEADER_NAME, APIKEY_KEY + SPACE_KEY + almaApikey)
+                                        .setHeader(AUTHORIZATION_HEADER_NAME, authorizationHeaderValue())
                                         .setHeader(ACCEPT_HEADER_NAME, APPLICATION_JSON)
                                         .build();
         try {
@@ -119,7 +121,7 @@ public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnect
                                             .uri(UriWrapper.fromUri(almaApiHost)
                                                      .addChild(PARTNERS_URL_PATH)
                                                      .addChild(partner.getPartnerDetails().getCode()).getUri())
-                                            .setHeader(AUTHORIZATION_HEADER_NAME, APIKEY_KEY + SPACE_KEY + almaApikey)
+                                            .setHeader(AUTHORIZATION_HEADER_NAME, authorizationHeaderValue())
                                             .header(CONTENT_TYPE_HEADER_NAME, APPLICATION_XML)
                                             .build();
 
@@ -149,7 +151,7 @@ public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnect
                                             .uri(UriWrapper.fromUri(almaApiHost)
                                                      .addChild(PARTNERS_URL_PATH)
                                                      .getUri())
-                                            .setHeader(AUTHORIZATION_HEADER_NAME, APIKEY_KEY + SPACE_KEY + almaApikey)
+                                            .setHeader(AUTHORIZATION_HEADER_NAME, authorizationHeaderValue())
                                             .header(CONTENT_TYPE_HEADER_NAME, APPLICATION_XML)
                                             .build();
 
@@ -166,6 +168,10 @@ public class HttpUrlConnectionAlmaPartnerUpserter extends AbstractHttpUrlConnect
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(LOG_MESSAGE_COMMUNICATION_PROBLEM, e);
         }
+    }
+
+    private String authorizationHeaderValue() {
+        return APIKEY_KEY + SPACE_KEY + cachedAlmaApiKeyFetcher.fetchSecret();
     }
 
     @Override
