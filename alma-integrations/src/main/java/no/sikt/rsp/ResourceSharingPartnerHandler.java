@@ -73,7 +73,7 @@ public class ResourceSharingPartnerHandler implements RequestHandler<S3Event, In
         this.s3Client = s3Client;
         this.environment = environment;
 
-        var cachedAlmaApiKeyFetcher = new CachingSecretFetcher<>(almaApiKeyFetcher, Duration.ofMinutes(15));
+        var cachedAlmaApiKeyFetcher = new CachingSecretFetcher<>(almaApiKeyFetcher, Duration.ofMinutes(60));
         var almaUri = fromUri(environment.readEnv(ALMA_API_HOST)).getUri();
         this.almaPartnerUpserter = new HttpUrlConnectionAlmaPartnerUpserter(defaultHttpClient(),
                                                                             cachedAlmaApiKeyFetcher,

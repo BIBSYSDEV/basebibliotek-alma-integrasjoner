@@ -76,7 +76,7 @@ public class LibraryUserManagementHandler implements RequestHandler<S3Event, Int
         this.s3Client = s3Client;
         final var almaUri = fromUri(environment.readEnv(ALMA_API_HOST)).getUri();
         this.cachedAlmaInstitutionApiKeys = new CachingSecretFetcher<>(almaInstitutionKeysFetcher,
-                                                                       Duration.ofMinutes(15));
+                                                                       Duration.ofMinutes(60));
         this.almaUserUpserter = new HttpUrlConnectionAlmaUserUpserter(almaUri);
         final var basebibliotekUri = fromUri(environment.readEnv(BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).getUri();
         this.baseBibliotekApi = new HttpUrlConnectionBaseBibliotekApi(basebibliotekUri);
