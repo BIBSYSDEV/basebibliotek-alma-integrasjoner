@@ -451,10 +451,12 @@ class LibraryUserManagementHandlerTest {
             .thenReturn(getSecretValueResponse);
 
         almaKeysFetcher = new AlmaKeysFetcher(secretsManagerClient);
+        libraryUserManagementHandler = new LibraryUserManagementHandler(s3Client,
+                                                                        mockedEnvironment,
+                                                                        almaKeysFetcher);
 
-        assertThrows(ErrorReadingSecretException.class, () -> new LibraryUserManagementHandler(s3Client,
-                                                                                               mockedEnvironment,
-                                                                                               almaKeysFetcher));
+        assertThrows(ErrorReadingSecretException.class,
+                     () -> libraryUserManagementHandler.handleRequest(new S3Event(), CONTEXT));
     }
 
     @Test

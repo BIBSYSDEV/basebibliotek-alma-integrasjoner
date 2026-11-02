@@ -22,6 +22,7 @@ import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static test.utils.HandlerTestUtils.createS3Event;
@@ -62,6 +63,7 @@ import no.sikt.clients.alma.HttpUrlConnectionAlmaPartnerUpserter;
 import no.sikt.clients.basebibliotek.BaseBibliotekUtils;
 import no.sikt.clients.basebibliotek.HttpUrlConnectionBaseBibliotekApi;
 import no.sikt.commons.HandlerUtils;
+import no.sikt.rsp.secret.AlmaApiKeyFetcher;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
@@ -77,6 +79,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
+import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest;
+import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
 import test.utils.BasebibliotekGenerator;
 import test.utils.EressurserBuilder;
 import test.utils.FakeS3ClientThrowingException;
@@ -111,14 +116,25 @@ public class ResourceSharingPartnerTest {
     private static final Environment mockedEnvironment = mock(Environment.class);
     private static final boolean AUTO_CLAIM_IS_SUPPORTED = true;
     private static final int AUTO_CLAIM_TIME = 3;
+    private static final String ALMA_APIKEY_DUMMY = "{ \"ALMA_APIKEY\": \"abcd1234\" }";
     private transient FakeS3Client s3Client;
     private transient S3Driver s3Driver;
     private transient ResourceSharingPartnerHandler resourceSharingPartnerHandler;
+    private transient AlmaApiKeyFetcher almaApiKeyFetcher;
 
     @BeforeEach
     public void init(WireMockRuntimeInfo wireMockInfo) throws IOException {
         s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, SHARED_CONFIG_BUCKET_NAME_ENV_VALUE);
+
+        var secretsManagerClient = mock(SecretsManagerClient.class);
+        almaApiKeyFetcher = new AlmaApiKeyFetcher(secretsManagerClient);
+        var getSecretValueResponse = mock(GetSecretValueResponse.class);
+        when(getSecretValueResponse.secretString())
+            .thenReturn(ALMA_APIKEY_DUMMY);
+        when(secretsManagerClient.getSecretValue(any(GetSecretValueRequest.class)))
+            .thenReturn(getSecretValueResponse);
+
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_API_HOST)).thenReturn(
             UriWrapper.fromUri(wireMockInfo.getHttpBaseUrl()).toString());
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).thenReturn(
@@ -136,7 +152,9 @@ public class ResourceSharingPartnerTest {
 
         s3Driver.insertFile(UnixPath.of(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH), fullLibCodeToAlmaCodeMapping);
 
-        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client,
+                                                                          mockedEnvironment,
+                                                                          almaApiKeyFetcher);
     }
 
     @Test
@@ -178,7 +196,9 @@ public class ResourceSharingPartnerTest {
         var s3Event = createS3Event(randomString());
         var expectedMessage = randomString();
         s3Client = new FakeS3ClientThrowingException(expectedMessage);
-        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client,
+                                                                          mockedEnvironment,
+                                                                          almaApiKeyFetcher);
         var logRecorder = LogRecorder.forClass(ResourceSharingPartnerHandler.class);
         assertThrows(RuntimeException.class, () -> resourceSharingPartnerHandler.handleRequest(s3Event, CONTEXT));
         assertThat(logRecorder.asString(), containsString(expectedMessage));
@@ -624,7 +644,9 @@ public class ResourceSharingPartnerTest {
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ILL_SERVER_ENV_NAME)).thenReturn(
             ILL_SERVER_ENVIRONMENT_VALUE);
 
-        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client,
+                                                                          mockedEnvironment,
+                                                                          almaApiKeyFetcher);
 
         final var logRecorder = LogRecorder.forClass(ResourceSharingPartnerHandler.class);
 
@@ -655,7 +677,9 @@ public class ResourceSharingPartnerTest {
         s3Driver.insertFile(UnixPath.of(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH),
                             IoUtils.stringFromResources(Path.of("emptyLibCodeToAlmaCodeMapping.json")));
 
-        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client,
+                                                                          mockedEnvironment,
+                                                                          almaApiKeyFetcher);
 
         final var logRecorder = LogRecorder.forClass(ResourceSharingPartnerHandler.class);
 
@@ -686,7 +710,9 @@ public class ResourceSharingPartnerTest {
         s3Driver.insertFile(UnixPath.of(LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH),
                             IoUtils.stringFromResources(Path.of("invalidLibCodeToAlmaCodeMapping.json")));
 
-        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client,
+                                                                          mockedEnvironment,
+                                                                          almaApiKeyFetcher);
 
         final var logRecorder = LogRecorder.forClass(ResourceSharingPartnerHandler.class);
 
@@ -737,7 +763,9 @@ public class ResourceSharingPartnerTest {
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.BASEBIBLIOTEK_URI_ENVIRONMENT_NAME)).thenReturn(
             UriWrapper.fromUri("http://localhost:9999").toString());
 
-        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client,
+                                                                          mockedEnvironment,
+                                                                          almaApiKeyFetcher);
 
         final var logRecorder = LogRecorder.forClass(HttpUrlConnectionBaseBibliotekApi.class);
 
@@ -759,7 +787,9 @@ public class ResourceSharingPartnerTest {
         when(mockedEnvironment.readEnv(ResourceSharingPartnerHandler.ALMA_API_HOST)).thenReturn(
             UriWrapper.fromUri("http://localhost:9999").toString());
 
-        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client, mockedEnvironment);
+        resourceSharingPartnerHandler = new ResourceSharingPartnerHandler(s3Client,
+                                                                          mockedEnvironment,
+                                                                          almaApiKeyFetcher);
 
         final var logRecorder = LogRecorder.forClass(HttpUrlConnectionAlmaPartnerUpserter.class);
 

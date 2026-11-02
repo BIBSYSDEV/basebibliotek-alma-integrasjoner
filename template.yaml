@@ -67,7 +67,6 @@ Resources:
           LIB_CODE_TO_ALMA_CODE_MAPPING_FILE_PATH: !Ref LibCodeToAlmaCodeFilePath
           ILL_SERVER: !Ref IllServerUri
           ALMA_API_HOST: !Ref AlmaApiHost
-          ALMA_APIKEY: '{{resolve:secretsmanager:ALMA_APIKEY:SecretString:ALMA_APIKEY}}'
       Events:
         BasebibliotekFileUploadForRsp:
           Type: S3
@@ -243,6 +242,21 @@ Resources:
               - secretsmanager:GetSecretValue
             Resource:
               - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:alma_api_keys_full*'
+
+  AlmaKeyForRspAccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub AlmaKeyForRspAccessPolicy-${AWS::StackName}
+      Roles:
+        - !Ref ResourceSharingPartnerHandlerRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource:
+              - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:ALMA_APIKEY*'
 
   BasebibliotekXmlBucket:
     Type: AWS::S3::Bucket
